@@ -34,6 +34,7 @@ Last updated: 2026-11-18, 03:20 WIB (builder session).
   users 10 and 999; create one US space; install SFA and the apps; SFA profile from the Virginia proxy +
   always-on + lockdown; the leak check; prove uiautomator2 in a secondary user; then post G2G's queued TikTok clip
   from the owner user (`trill`), read the link, engage, and mark the post in ClipMaker.
+  **The exact commands are in [`docs/step1-runbook.md`](docs/step1-runbook.md).**
 - Still to do for the US space: TikTok's US build (`musically`) is not on the phone yet. The space works without
   it; US brands' TikTok posts wait for it.
 
