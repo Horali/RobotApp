@@ -5,7 +5,7 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-18, 02:40 WIB (builder session).
+Last updated: 2026-11-18, 03:20 WIB (builder session).
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
@@ -15,21 +15,31 @@ Last updated: 2026-11-18, 02:40 WIB (builder session).
   `200 {profile_id, platform, password}`, `404` nothing saved for that profile+platform, `409` saved but the blob
   cannot be decrypted, `400` for `youtube` (that account signs in with its Gmail password). Same bearer token,
   host allow-list and no-browser-Origin rules as every other route.
-  Tests: a unit test with a fake cipher, and 8 new checks in Chameleon's `npm run test:api` (real safeStorage,
-  encrypted at rest, the 401/400/404 paths). That suite: 37 pass, 0 fail, exit 0.
+  Tests: a unit test with a fake cipher, and 8 new checks in Chameleon's `npm run test:api` (real
+  safeStorage, encrypted at rest, the 401/400/404 paths). That suite: 37 pass, 0 fail, exit 0.
   **Catch:** the Chameleon app that is running now still has the old code in memory. The route works after its
   next restart (close it and open it again). Nothing else needs it before the first real login.
+- **Step 1's code. Done 2026-11-18** (commit `ec37460`): the `robotapp` package and the `robot` CLI — the
+  06:00-10:00 guard every phone call goes through, the shared phone lock, the write-ahead journal (Post is
+  pressed once, enforced by the database), `doctor`, the Chameleon client (a password is fetched only when it is
+  typed and cannot be printed), spaces, time-zone switching, sing-box config/import/always-on, the leak check,
+  pushing a clip into a space's gallery, the TikTok login and post flows, engagement. 34 tests pass against
+  `FakePhone`/`FakeScreen`, no phone needed.
+- **Prepared for the phone run:** the sing-box APK (F-Droid 1.14.4, certificate checked) is downloaded to
+  `data/apk/`; `.env` holds Chameleon's token; the two proxies are known to be **HTTP** (port 50100); the queued
+  G2G TikTok clip and its caption are ready.
 
 **Next**
-- **Step 1** — one throwaway account end to end (§11): repo skeleton, `robot doctor`, the 06:00-10:00 guard and
-  the shared phone lock, the phone clean-up (auto-clicker, users 10 and 999), one US space, `musically`, SFA +
-  lockdown, leak check, video into the space, uiautomator2 in a secondary user, the throwaway's login, one TikTok
-  post, the link, engagement.
+- **Step 1 on the real phone, inside 06:00-10:00 WIB** (§11): `robot doctor`; uninstall the auto-clicker; delete
+  users 10 and 999; create one US space; install SFA and the apps; SFA profile from the Virginia proxy +
+  always-on + lockdown; the leak check; prove uiautomator2 in a secondary user; then post G2G's queued TikTok clip
+  from the owner user (`trill`), read the link, engage, and mark the post in ClipMaker.
+- Still to do for the US space: TikTok's US build (`musically`) is not on the phone yet. The space works without
+  it; US brands' TikTok posts wait for it.
 
 **What you must do**
-- Nothing right now. When step 1 reaches the phone: it must run inside 06:00-10:00 WIB, so the real-phone part
-  waits for the morning. You'll be asked to watch in scrcpy.
-- Before the first real login: restart Chameleon so the new route is live.
+- Nothing right now. The real-phone part runs after 06:00; you can watch in scrcpy.
+- Before the first real login (not needed for the G2G post): restart Chameleon so the new route is live.
 
 
 **Firm rule (user, 2026-11-18): the robot touches the phone only from 06:00 to 10:00 your time (WIB).** Every
@@ -972,6 +982,23 @@ Still open (small, none blocks step 1):
   daemon already has a decrypt channel to the main process. Route name and query as in §5.1.
 - **2026-11-18, P1:** `platform=youtube` is refused (400) rather than silently answered with the Gmail password:
   two different secrets behind one name would be a trap for the caller.
+- **2026-11-18, step 1: the first real post is G2G's queued TikTok clip, not a throwaway.** No throwaway account
+  exists yet: a brand-new TikTok account is a ClipMaker/Chameleon sign-up job, not something RobotApp can make.
+  G2G's `trill` is already logged in by hand in the owner user, and a TikTok clip has been queued for it since
+  2026-11-15 (`ad6b19b9…`, "He bets on a fight and picks the wrong guy"). Posting that one proves the whole
+  pipeline on a post that is waiting anyway, with no new-account risk. The throwaway login path is built and
+  unit-tested; its first real run happens when an account exists. **User approved this on 2026-11-18.**
+- **2026-11-18, step 1: the two APKs are downloaded from official sources.** sing-box (SFA) 1.14.4 from F-Droid
+  (`io.nekohasekai.sfa_746.apk`, built and signed by the developer; certificate SHA-256
+  `32250a4b…3549641`, recorded in the runbook), and TikTok's US build from APKMirror only after `apksigner`
+  shows the expected signer. **User approved both on 2026-11-18.**
+- **2026-11-18, step 1: the proxies in Chameleon are HTTP, not SOCKS5.** Both Proxy-Seller records are
+  `protocol: http, port: 50100` (the plan assumed SOCKS5 on 50101), so the sing-box config builds an `http`
+  outbound for them and a `socks` one only if a record says so.
+- **2026-11-18, step 1: the running Chameleon app predates the new route.** It answers 404 for
+  `/v1/profiles/:id/platform-password` until it is restarted. No login is needed before that restart; the G2G
+  post needs no password at all.
+
 
 
 ---
