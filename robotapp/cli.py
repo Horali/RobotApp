@@ -175,9 +175,24 @@ def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
             install_apk(phone, apk_path)
 
     emit({"t": "step", "name": "create space"})
-    space = spaces.create(args.space_name)
-    emit({"t": "info", "name": "space created", "user": space.user_id, "name": space.name})
-    enter_space(phone, space.user_id)
+    existing = next((u for u in phone.users() if u.name == args.space_name), None)
+    if existing is not None:
+        # A re-run must not create a second space with the same name: reuse it and refresh what it holds.
+        emit({"t": "info", "name": "space exists", "user": existing.id, "name": existing.name})
+        space_user = existing.id
+        spaces.start(space_user)
+        spaces.configure(space_user)
+        for package in SPACE_PACKAGES:
+            try:
+                phone.install_existing(package, space_user)
+            except Exception as exc:  # noqa: BLE001
+                log.warning("could not install %s into user %s: %s", package, space_user, exc)
+        spaces.grant_media(space_user)
+    else:
+        created = spaces.create(args.space_name)
+        space_user = created.user_id
+        emit({"t": "info", "name": "space created", "user": space_user, "name": created.name})
+    enter_space(phone, space_user)
 
     if args.proxy_id:
         emit({"t": "step", "name": "vpn"})
@@ -191,18 +206,18 @@ def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
         )
         config = build_config(proxy)
         with serve_once(config) as (url, served):
-            import_profile(phone, url, space.user_id)
+            import_profile(phone, url, space_user)
             emit({"t": "info", "name": "profile import opened", "served": served["done"]})
-        state = always_on(phone, space.user_id)
+        state = always_on(phone, space_user)
         emit({"t": "info", "name": "always-on", **state})
 
     emit({"t": "step", "name": "leak check"})
     screen = screen_for(phone, settings)
     from .leakcheck import check_us
 
-    result = check_us(phone, screen, space.user_id, expected_ip=args.expected_ip, shots_dir=settings.shots_dir)
+    result = check_us(phone, screen, space_user, expected_ip=args.expected_ip, shots_dir=settings.shots_dir)
     emit({"t": "leakcheck", **result.as_dict()})
-    emit({"t": "info", "name": "space ready", "user": space.user_id, "ok": result.ok})
+    emit({"t": "info", "name": "space ready", "user": space_user, "ok": result.ok})
     leave_space(phone)
     return EXIT_OK if result.ok else EXIT_ERROR
 

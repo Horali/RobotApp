@@ -158,7 +158,10 @@ class U2Screen:
     def set_text(self, text: str) -> None:
         """Paste-like entry for a caption: one call, so newlines and emoji survive (a paste is what people do)."""
         self.guard.check("type")
-        self.device(focused=True).set_text(text)
+        try:
+            self.device(focused=True).set_text(text)
+        except Exception:  # noqa: BLE001 - some fields refuse setText; the IME still works
+            self.device.send_keys(text)
         jitter(300, 700)
 
     def clear_field(self) -> None:

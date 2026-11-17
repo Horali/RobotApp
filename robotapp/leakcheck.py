@@ -49,18 +49,24 @@ def page_text(screen: Screen) -> str:
     return "\n".join(f"{e.text}\n{e.desc}" for e in screen.elements() if e.text or e.desc)
 
 
-def dismiss_chrome_intro(screen: Screen, timeout_s: float = 8.0) -> bool:
-    """Chrome's first-run screens (§4.2 step 11). Returns True when something was dismissed."""
-    try:
-        elements = wait_for(screen, CHROME_FIRST_RUN, timeout_s=timeout_s)
-    except Exception:  # noqa: BLE001 - no intro is the normal case after the first time
-        return False
-    for label in ("Accept & continue", "Use without an account", "No thanks", "Got it"):
-        button = find(elements, label)
-        if button is not None:
-            screen.tap(button)
-            return True
-    return False
+def dismiss_chrome_intro(screen: Screen, timeout_s: float = 6.0) -> int:
+    """Chrome's first-run screens (§4.2 step 11): up to three taps. Returns how many were dismissed."""
+    dismissed = 0
+    for _ in range(3):
+        try:
+            elements = wait_for(screen, CHROME_FIRST_RUN, timeout_s=timeout_s)
+        except Exception:  # noqa: BLE001 - no intro is the normal case after the first time
+            return dismissed
+        for label in ("Accept & continue", "Use without an account", "No thanks", "Got it"):
+            button = find(elements, label)
+            if button is not None:
+                screen.tap(button)
+                dismissed += 1
+                time.sleep(1.5)
+                break
+        else:
+            return dismissed
+    return dismissed
 
 
 def read_trace(phone: Phone, screen: Screen, user: int, timeout_s: float = 30.0) -> tuple[str | None, str | None, str]:
