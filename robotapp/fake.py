@@ -80,7 +80,8 @@ class FakePhone:
             return f"versionName={version}" if version else ""
         if command.startswith("pm create-user"):
             name = command.split('"')[1]
-            new_id = max(int(re.search(r"\{(\d+):", row).group(1)) for row in self.user_rows) + 1  # type: ignore[union-attr]
+            ids = [int(m.group(1)) for row in self.user_rows if (m := re.search(r"\{(\d+):", row))]
+            new_id = (max(ids) if ids else 0) + 1
             self.user_rows.append(f"\tUserInfo{{{new_id}:{name}:10}} ")
             return f"Success: created user id {new_id}"
         return self._answer(command)

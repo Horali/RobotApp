@@ -281,7 +281,10 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
     remote = push_video(phone, args.video, args.user)
     emit({"t": "info", "name": "video pushed", "remote": remote, "length_s": length})
 
-    caption, tags = split_caption(args.caption)
+    caption_text = args.caption
+    if args.caption_file:
+        caption_text = Path(args.caption_file).read_text(encoding="utf-8")
+    caption, tags = split_caption(caption_text)
     if args.hashtags:
         tags = [t.strip() for t in args.hashtags.split(",") if t.strip()]
     package = args.package or (TIKTOK_ID if args.user == 0 else TIKTOK_US)
@@ -390,6 +393,7 @@ def parser() -> argparse.ArgumentParser:
     po.add_argument("--user", type=int, required=True)
     po.add_argument("--video", type=Path, required=True)
     po.add_argument("--caption", default="")
+    po.add_argument("--caption-file", default="", help="read the caption from a UTF-8 file (newlines and emoji)")
     po.add_argument("--hashtags", default="")
     po.add_argument("--length", type=float, default=0.0)
     po.add_argument("--sound", default=None)
