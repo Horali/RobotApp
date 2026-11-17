@@ -1,4 +1,4 @@
-"""The `robot` command (PLAN §8.1, §8.2).
+"""The `robot` command (PLAN Â§8.1, Â§8.2).
 
 One command, JSON events on stdout, human logs on stderr, so ClipMaker can start it and read lines. In step 1 it
 is run by hand:
@@ -17,6 +17,7 @@ import argparse
 import json
 import logging
 import sys
+import time
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -30,7 +31,7 @@ from .fake import FakePhone, fake_guard
 from .journal import Journal, write_status
 from .log import setup
 from .media import push_video, video_length
-from .post.base import FAILED, PostResult, PostSpec
+from .post.base import FAILED, PostResult, PostSpec, split_caption
 from .post.tiktok import TIKTOK_ID, TIKTOK_US, TikTokPoster
 from .secrets import Chameleon, ChameleonError
 from .spaces import SPACE_PACKAGES, Spaces
@@ -68,6 +69,29 @@ def require_window() -> None:
         raise OutsideWindow(
             f"it is {datetime.now().strftime('%H:%M')} WIB and the robot only works 06:00-10:00 ({describe()})"
         )
+
+
+def enter_space(phone, user: int) -> None:
+    """The screen only shows one user at a time: to read a space's screen, that space must be in front."""
+    if phone.current_user() == user:
+        return
+    phone.switch_user(user)
+    for _ in range(10):
+        time.sleep(1.0)
+        if phone.current_user() == user:
+            time.sleep(2.0)  # let the launcher settle before uiautomator2 reads it
+            return
+    raise RobotError(f"could not switch the phone to user {user}")
+
+
+def leave_space(phone) -> None:
+    """Leave the phone the way other scripts expect it (§9): the owner user in front."""
+    try:
+        if phone.current_user() != 0:
+            phone.switch_user(0)
+            time.sleep(2.0)
+    except Exception as exc:  # noqa: BLE001 - never mask the job's own result
+        log.warning("could not switch back to the owner user: %s", exc)
 
 
 # -- commands --------------------------------------------------------------------------------------
@@ -111,7 +135,7 @@ def cmd_lock(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
-    """§4.1 / §4.2: clean the phone, create one US space, put the apps and the VPN in, check for leaks."""
+    """Â§4.1 / Â§4.2: clean the phone, create one US space, put the apps and the VPN in, check for leaks."""
     phone, _ = build(args, settings)
     spaces = Spaces(phone)
     chameleon = Chameleon(settings.chameleon_url, settings.chameleon_token)
@@ -133,6 +157,13 @@ def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
                 emit({"t": "info", "name": "user not removed", "user": user_id, "detail": str(exc)})
         timezone.disable_auto_detection(phone)
 
+    if args.sfa_apk:
+        emit({"t": "step", "name": "install sing-box"})
+        sfa = Path(args.sfa_apk)
+        if args.sfa_sha256:
+            emit({"t": "info", "name": "apk certificate", "sha256": verify_apk(sfa, args.sfa_sha256)})
+        install_apk(phone, sfa)
+
     if args.musically_apk:
         emit({"t": "step", "name": "install musically"})
         apk_path = Path(args.musically_apk)
@@ -146,6 +177,7 @@ def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
     emit({"t": "step", "name": "create space"})
     space = spaces.create(args.space_name)
     emit({"t": "info", "name": "space created", "user": space.user_id, "name": space.name})
+    enter_space(phone, space.user_id)
 
     if args.proxy_id:
         emit({"t": "step", "name": "vpn"})
@@ -171,6 +203,7 @@ def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
     result = check_us(phone, screen, space.user_id, expected_ip=args.expected_ip, shots_dir=settings.shots_dir)
     emit({"t": "leakcheck", **result.as_dict()})
     emit({"t": "info", "name": "space ready", "user": space.user_id, "ok": result.ok})
+    leave_space(phone)
     return EXIT_OK if result.ok else EXIT_ERROR
 
 
@@ -181,6 +214,7 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
     journal = Journal(settings.db_path)
     job_id = args.job or f"login-{uuid.uuid4().hex[:8]}"
     journal.start_job(job_id, "login", payload={"user": args.user, "profile": args.profile_id})
+    enter_space(phone, args.user)
 
     def code_provider() -> str:
         if args.code:
@@ -204,6 +238,7 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
         return EXIT_NEEDS
     journal.set_state(job_id, "done" if result.logged_in else "failed")
     emit({"t": "done", "job": job_id, "handle": result.handle, "logged_in": result.logged_in})
+    leave_space(phone)
     return EXIT_OK if result.logged_in else EXIT_ERROR
 
 
@@ -213,6 +248,7 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
     journal = Journal(settings.db_path)
     job_id = args.job or f"post-{uuid.uuid4().hex[:8]}"
     journal.start_job(job_id, "post", payload={"user": args.user, "video": str(args.video)})
+    enter_space(phone, args.user)
 
     if args.leakcheck:
         from .leakcheck import check_g2g, check_us
@@ -230,26 +266,57 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
     remote = push_video(phone, args.video, args.user)
     emit({"t": "info", "name": "video pushed", "remote": remote, "length_s": length})
 
+    caption, tags = split_caption(args.caption)
+    if args.hashtags:
+        tags = [t.strip() for t in args.hashtags.split(",") if t.strip()]
+    package = args.package or (TIKTOK_ID if args.user == 0 else TIKTOK_US)
     spec = PostSpec(
         upload_id=args.upload_id,
         platform="tiktok",
         video=args.video,
         length_s=length,
-        caption=args.caption,
-        hashtags=[t.strip() for t in (args.hashtags or "").split(",") if t.strip()],
+        caption=caption,
+        hashtags=tags,
         sound=args.sound,
         sound_required=args.sound_required,
     )
-    poster = TikTokPoster(phone, screen, journal, job_id, package=args.package, emit=emit, shots_dir=settings.shots_dir)
+    poster = TikTokPoster(phone, screen, journal, job_id, package=package, emit=emit, shots_dir=settings.shots_dir)
     try:
-        result = poster.post(spec)
+        result = poster.post(spec, dry_run=args.dry_run)
     except NeedsHuman as exc:
         emit(exc.as_event())
         journal.set_state(job_id, "needs_human")
         return EXIT_NEEDS
     journal.set_state(job_id, "done" if result.ok else result.outcome)
     emit(result.as_event())
+    leave_space(phone)
     return EXIT_OK if result.ok else EXIT_ERROR
+
+
+def cmd_screen(args: argparse.Namespace, settings: Settings) -> int:
+    """What is on the phone now: the texts uiautomator2 can see (short), and optionally a screenshot.
+
+    This is the tool for writing and fixing a step's signature on a real app version (§6.2).
+    """
+    phone, _ = build(args, settings)
+    screen = screen_for(phone, settings)
+    elements = screen.elements()
+    rows = [
+        {"text": e.text, "desc": e.desc, "id": e.resource_id, "bounds": list(e.bounds), "clickable": e.clickable}
+        for e in elements
+        if e.text or e.desc or e.clickable
+    ]
+    if args.json:
+        emit({"t": "screen", "count": len(rows), "elements": rows[: args.limit]})
+    else:
+        for row in rows[: args.limit]:
+            label = row["text"] or row["desc"]
+            print(f"{label!r:45.45}  id={row['id'][-40:]:40.40}  {row['bounds']}")
+    if args.shot:
+        path = settings.shots_dir / "screen.png"
+        screen.screenshot(path)
+        print(f"screenshot: {path}")
+    return EXIT_OK
 
 
 def cmd_status(args: argparse.Namespace, settings: Settings) -> int:
@@ -288,6 +355,8 @@ def parser() -> argparse.ArgumentParser:
     pr.add_argument("--delete-users", type=int, nargs="*", default=[10, 999])
     pr.add_argument("--musically-apk", default="")
     pr.add_argument("--apk-sha256", default="")
+    pr.add_argument("--sfa-apk", default="", help="sing-box APK to install once (F-Droid, developer-signed)")
+    pr.add_argument("--sfa-sha256", default="")
     pr.add_argument("--expected-ip", default="")
     pr.set_defaults(func=cmd_provision)
 
@@ -310,16 +379,22 @@ def parser() -> argparse.ArgumentParser:
     po.add_argument("--length", type=float, default=0.0)
     po.add_argument("--sound", default=None)
     po.add_argument("--sound-required", action="store_true")
-    po.add_argument("--package", default=TIKTOK_US)
+    po.add_argument("--package", default="", help="default: trill for user 0, musically otherwise")
     po.add_argument("--upload-id", default="local-test")
     po.add_argument("--expected-ip", default="")
     po.add_argument("--no-leakcheck", dest="leakcheck", action="store_false")
+    po.add_argument("--dry-run", action="store_true", help="walk the flow up to the Post button, then stop")
     po.add_argument("--job", default="")
     po.set_defaults(func=cmd_post, leakcheck=True)
 
     st = sub.add_parser("status", help="what happened to a job")
     st.add_argument("job")
     st.set_defaults(func=cmd_status)
+
+    sc = sub.add_parser("screen", help="what is on the phone now (for fixing signatures)")
+    sc.add_argument("--shot", action="store_true", help="also save a screenshot to data/shots/screen.png")
+    sc.add_argument("--limit", type=int, default=40)
+    sc.set_defaults(func=cmd_screen)
     return p
 
 
@@ -329,7 +404,7 @@ def main(argv: list[str] | None = None) -> int:
     settings.ensure_dirs()
     setup(settings.logs_dir)
 
-    if args.command in ("doctor", "provision", "login", "post"):
+    if args.command in ("doctor", "provision", "login", "post", "screen"):
         try:
             require_window()
         except OutsideWindow as exc:
@@ -338,7 +413,7 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_OUTSIDE
 
     lock = PhoneLock()
-    needs_lock = args.command in ("provision", "login", "post")
+    needs_lock = args.command in ("provision", "login", "post", "screen")
     if needs_lock:
         try:
             lock.acquire(wait_s=60)

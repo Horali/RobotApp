@@ -60,7 +60,7 @@ class TikTokPoster:
         self.handle: str | None = None
 
     # -- the whole post ----------------------------------------------------------------------------
-    def post(self, spec: PostSpec) -> PostResult:
+    def post(self, spec: PostSpec, dry_run: bool = False) -> PostResult:
         result = PostResult(spec.upload_id, spec.platform, FAILED)
         try:
             self._step(1, "open app")
@@ -90,6 +90,14 @@ class TikTokPoster:
             self._shot("tiktok-before-post")
             self.journal.mark(self.job_id, FAILED, spec.upload_id, spec.platform, {"reason": result.reason})
             log.warning("tiktok: failed before Post: %s", exc)
+            return result
+
+        if dry_run:
+            # Everything up to the press, nothing pressed: what an app update's dry run uses (§12).
+            self._shot("tiktok-dry-run")
+            result.outcome = "dry_run"
+            result.reason = "stopped before Post on purpose"
+            log.info("tiktok: dry run reached the post screen; nothing was pressed")
             return result
 
         # From here on, never press Post twice.
@@ -133,10 +141,19 @@ class TikTokPoster:
 
         self._step(12, "engage")
         try:
+            self._back_to_feed()
             result.engaged_s = engage(self.phone)
         except Exception as exc:  # noqa: BLE001 - engagement errors are ignored (§6.4)
             log.warning("tiktok: engagement stopped early: %s", exc)
         return result
+
+    def _back_to_feed(self) -> None:
+        """Engagement happens on the feed, not on the video page the link was read from."""
+        for _ in range(3):
+            if HOME.matches(self.screen.elements()):
+                return
+            self.screen.press_back()
+            time.sleep(1.0)
 
     # -- steps -------------------------------------------------------------------------------------
     def _open(self) -> None:
@@ -220,7 +237,7 @@ class TikTokPoster:
         self.screen.tap(field)
         time.sleep(0.8)
         if spec.caption:
-            self.screen.type_text(spec.caption, min_ms=25, max_ms=70)
+            self.screen.set_text(spec.caption)  # paste-like: newlines and emoji survive
         for tag in spec.hashtags:
             if not tag:
                 continue
@@ -253,14 +270,16 @@ class TikTokPoster:
                 break
 
     def _wait_uploaded(self) -> None:
-        """The upload overlay: up to 5 minutes (§6.4 step 10)."""
+        """The upload overlay: up to 5 minutes (§6.4 step 10). Done when the feed is back."""
         deadline = time.monotonic() + 300
+        saw_overlay = False
         while time.monotonic() < deadline:
-            text = " ".join(e.text + " " + e.desc for e in self.screen.elements()).lower()
-            if "uploaded" in text or "video is being uploaded" in text:
-                return
-            if "post" in text and "upload" not in text and "posting" not in text:
-                return  # back on the feed: the overlay is gone, which means it finished
+            elements = self.screen.elements()
+            text = " ".join(e.text + " " + e.desc for e in elements).lower()
+            if any(word in text for word in ("uploading", "uploaded", "posting", "processing")):
+                saw_overlay = True
+            elif HOME.matches(elements) or PROFILE.matches(elements):
+                return  # back on the feed: the overlay finished (or never had time to show)
             time.sleep(2.0)
         raise RuntimeError("the upload overlay did not finish")
 

@@ -7,12 +7,19 @@ button is never pressed again).
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 POSTED = "posted"
 UNSURE = "unsure_after_post"
 FAILED = "failed_before_post"
+
+
+def split_caption(caption: str) -> tuple[str, list[str]]:
+    """ClipMaker's own split (phone_posts.split_tags): the text, then the hashtags typed one by one."""
+    tags = re.findall(r"#\w+", caption or "")
+    return re.sub(r"[ \t]*#\w+", "", caption or "").strip(), tags
 
 
 @dataclass

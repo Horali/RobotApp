@@ -20,6 +20,7 @@ SPACE_PACKAGES = (
     "com.instagram.android",
     "com.google.android.youtube",
     "io.nekohasekai.sfa",
+    "com.android.chrome",  # the leak check needs a browser inside the space (§4.5)
 )
 # Media permissions granted up front; location and contacts are deliberately NOT granted (§4.2 step 6).
 SPACE_PERMISSIONS = (

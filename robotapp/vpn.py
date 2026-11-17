@@ -39,14 +39,21 @@ class Proxy:
 
 
 def build_config(proxy: Proxy, dns_server: str = "1.1.1.1") -> dict:
-    """A strict, leak-free profile: all traffic through the proxy, DNS through it, QUIC blocked."""
-    outbound: dict[str, object] = {
-        "type": "socks",
-        "tag": "proxy",
-        "server": proxy.host,
-        "server_port": int(proxy.port),
-        "version": "5",
-    }
+    """A strict, leak-free profile: all traffic through the proxy, DNS through it, QUIC blocked.
+
+    Proxy-Seller's records in Chameleon are HTTP proxies (port 50100); a SOCKS5 record is handled too, because
+    the plan assumed 50101. Either way the outbound is the only way out.
+    """
+    if proxy.protocol.lower().startswith("socks"):
+        outbound: dict[str, object] = {
+            "type": "socks",
+            "tag": "proxy",
+            "server": proxy.host,
+            "server_port": int(proxy.port),
+            "version": "5",
+        }
+    else:
+        outbound = {"type": "http", "tag": "proxy", "server": proxy.host, "server_port": int(proxy.port)}
     if proxy.username:
         outbound["username"] = proxy.username
     if proxy.password is not None:

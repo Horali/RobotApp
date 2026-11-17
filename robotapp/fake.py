@@ -266,6 +266,9 @@ class FakeScreen:
     def type_secret(self, secret) -> None:
         self.typed.append(secret.reveal())
 
+    def set_text(self, text: str) -> None:
+        self.typed.append(text)
+
     def clear_field(self) -> None:
         self.typed.clear()
 
