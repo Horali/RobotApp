@@ -31,7 +31,17 @@ EMAIL_FORM = Signature("email form", any_of=("Email / Username", "Email or usern
 PASSWORD_FORM = Signature("password form", any_of=("Password", "Forgot password"))
 CODE_FORM = Signature("code form", any_of=("Verify it's you", "Enter the code", "We sent a code", "6-digit code"))
 PROFILE = Signature("profile", any_of=("Edit profile", "Followers", "Following"))
-CAPTCHA = Signature("captcha", any_of=("Confirm you're human", "Slide to verify", "Verify", "puzzle", "Rotate"))
+CAPTCHA = Signature(
+    "captcha",
+    any_of=(
+        "Confirm you're human",
+        "Slide to verify",
+        "Verify you are human",
+        "puzzle",
+        "Rotate the image",
+        "drag the slider",
+    ),
+)
 
 # Screens the robot must not try to clear on its own (§5.4).
 STOP_WORDS = (
