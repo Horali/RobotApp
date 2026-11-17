@@ -1,7 +1,12 @@
 # RobotApp: the phone robot (build plan)
 
 Status: **plan only, nothing built.** First written 2026-11-17; updated 2026-11-18 with the user's answers to
-§13, YouTube Shorts from the phone, and a new capacity plan. Ask the user before any code.
+§13, YouTube Shorts from the phone, a new capacity plan, and (second update, same day) the firm rule that the
+robot only works **06:00-10:00 WIB**. Ask the user before any code.
+
+**Firm rule (user, 2026-11-18): the robot touches the phone only from 06:00 to 10:00 your time (WIB).** Every
+robot job runs inside it: posting, engagement, views, setup, logins, wipes, app updates. Outside it the phone
+belongs to your other scripts; the robot sends no commands at all (§7.2, §9).
 
 RobotApp is "Chameleon for phones": a small program on the laptop that drives the user's old Android phone over
 adb. It owns the phone's **spaces** (one Android user per brand), their proxies, their setup, the logins and the
@@ -28,33 +33,40 @@ How to read this plan:
 
 | Where on the phone | Brand | Apps | Network | Lifetime |
 |---|---|---|---|---|
-| Owner user (user 0) | G2GChannel Clips (Indonesian test brand) | TikTok `trill` (already there), YouTube | home Wi-Fi, **no proxy, no VPN, ever** | permanent |
+| Owner user (user 0) | G2GChannel Clips (Indonesian test brand) | TikTok `trill` and YouTube, **already logged in by hand**: the robot only posts | home Wi-Fi, **no proxy, no VPN, ever** | permanent |
 | US space 1-3 (new users) | the US brands, one per space | TikTok US build `musically`, Instagram, YouTube | `us-ps-2-newyork` through a locked VPN | while the brand posts by phone |
 
 Ruang Ganda (999) and the old "Brand" user (10) get deleted first, which leaves room for **exactly 3 US spaces**
 (the phone allows 4 users including the owner).
 
-**What it does each day:** up to **11 posts** with today's accounts (3 US brands × TikTok + Instagram + YouTube,
-plus G2G's TikTok + YouTube). **12 if G2G gets an Instagram account** (it has none today). Timetable in §7.2.
-**After your corrections, phone time is no longer the limit; the number of spaces (3) is.**
+**What it does each day, all between 06:00 and 10:00 WIB:** one sitting per US brand (Instagram → TikTok →
+YouTube), then G2G (TikTok → YouTube). With a third US brand that is **11 posts a day**; with today's brands
+(Speed, Timmy, G2G) it is **8**. Timetable in §7.2: done by about 09:00 in winter and in summer, leaving
+09:00-10:00 for retries, setup and logins.
+**Two limits now:** the 4-hour window (it fits 3 US brands, just, in US summer time) and the 3 US spaces.
 
-**What you still do:** about 10-15 minutes once (§4.1). Per new account: 0 HANDS, except a Telegram ping for a
+**What you still do:** about 10 minutes once (§4.1). Per new account: 0 HANDS, except a Telegram ping for a
 CAPTCHA or an unusual check (~30 s), and possibly a few minutes the first time each brand's **Google** account
-signs in on the phone (Google's checks are stricter, §5.6).
+signs in on the phone (Google's checks are stricter, and nobody knows yet where its codes go, §5.6). Pings
+always come between 06:00 and 10:00, when you're up.
 
 **Things to know (the honest part):**
 1. **YouTube's ~0 views are more likely the channels and the clips than the laptop** (§8.7). Only 4 Shorts were
-   ever posted, all 2-3 days old, from brand-new channels. Test before switching (§8.8).
+   ever posted, all 2-3 days old, from brand-new channels. Test with Timmy first (§8.8).
 2. **YouTube and TikTok on the phone for good means spaces stop recycling.** A US brand then holds its space
    forever → at most 3 US brands on this phone. Recycling only helps brands that leave the phone after 10 posts.
-3. **G2G in your owner user needs two changes there:** the auto-clicker accessibility service off, and the owner's
-   screen lock (PIN/pattern) removed, or the robot can't unlock the phone for G2G (§3.3).
-4. **All US brands on one IP + one phone** is a real linking risk (§3.4).
-5. **The robot can't read TikTok/Instagram passwords yet** (Chameleon keeps them in its main process). A small
+3. **G2G's posts move to the Indonesian morning** (~08:40-09:00 WIB) because of the 06:00-10:00 rule. Indonesian
+   guides rate 19:00-22:00 higher; mornings are listed too, but as weaker slots (§7.2).
+4. **US summer time is tight:** the third US brand's Instagram then has about 10 minutes to spare before the
+   Instagram window closes (08:00 WIB in summer). A late morning means that one Instagram waits for tomorrow (§7.2).
+5. **Speed and Timmy share one IP + one phone** (a linking risk, §3.4); the third US brand gets the second IP.
+6. **The robot can't read TikTok/Instagram passwords yet** (Chameleon keeps them in its main process). A small
    Chameleon change is needed (§5.1).
-6. **Wi-Fi adb dies on every reboot.** Fix: Android's "Wireless debugging" + a tiny boot helper (§9).
-7. The Warming Guide's DO NOT list says "Use bots, automation tools, or scheduling apps for first 10 posts". You
+7. **Wi-Fi adb dies on every reboot.** Fix: Android's "Wireless debugging" + a tiny boot helper (§9).
+8. The Warming Guide's DO NOT list says "Use bots, automation tools, or scheduling apps for first 10 posts". You
    accepted this risk; the plan still starts with a throwaway account.
+9. **The robot and your other scripts share one phone.** The robot needs the phone left in a known state at 06:00
+   (owner user in front, no VPN in the owner, no space open). A shared lock is planned (§9).
 
 ---
 
@@ -123,14 +135,17 @@ Can't be a space (no VPN, no adb, facts above). Deleted on your word.
 ### 3.3 G2G in the owner user: what to switch off
 
 G2G stays Indonesian with no proxy, so the owner user (home Wi-Fi, Indonesia) matches it. **Rule: never a VPN or
-lockdown on user 0** (it would also cut your own apps and adb). Re-checking the earlier concerns:
+lockdown on user 0** (it would also cut your own apps and adb). **G2G's TikTok and YouTube are already logged in by
+hand in the owner user (your answer, 2026-11-18): the robot never logs G2G in, it only posts.** Your personal
+TikTok is not on this phone, so `trill` holds only G2G. Re-checking the earlier concerns:
 
-| Concern | Risk for G2G (opinion) | What to do |
+| Concern | Risk for G2G (opinion) | What to do (your answers) |
 |---|---|---|
-| **Auto-clicker accessibility service** (`com.rise.automatic.autoclicker.clicker`) | **High.** Any app can list the enabled accessibility services (a public Android API); an auto-clicker next to TikTok is a classic bot signal | **Turn it off** (Settings → Accessibility → the auto-clicker → off), or uninstall it if you don't use it. HANDS 30 s, or AUTO with your OK |
-| **Owner screen lock** (PIN/pattern is set) | Blocks the robot: G2G sessions need the owner user unlocked, and the robot must not hold your phone PIN | **Set the owner's screen lock to None or Swipe** (HANDS 1 min). Catch: anyone holding the phone opens your 17 Google accounts; the phone stays at home. It also makes Wi-Fi adb after a reboot simpler (§9) |
-| 17 personal Google accounts, 3 Instagram logins | Low to medium. Since Android 8 an app can't list other apps' accounts without you picking them. But Google sees every account on a device: **G2G's Google/YouTube account will be linked to your personal ones** | Accept for a test brand. The robot never taps "Continue with Google"/one-tap offers in TikTok; it logs in with email + password |
-| Your own TikTok in the same `trill` app (if you use one there) | Two accounts in one TikTok install = one device ID for both | The robot uses TikTok's account switcher and checks the handle before posting. Tell me if your personal TikTok is logged in there (§13) |
+| **Auto-clicker accessibility service** (`com.rise.automatic.autoclicker.clicker`) | **High.** Any app can list the enabled accessibility services (a public Android API); an auto-clicker next to TikTok is a classic bot signal | **Uninstall it** (you said yes): `pm uninstall --user 0 com.rise.automatic.autoclicker.clicker`, AUTO in step 1, then check `enabled_accessibility_services` is empty |
+| **Owner screen lock** (PIN/pattern is set) | Blocks the robot: G2G sittings need the owner user unlocked, and the robot must not hold your phone PIN | **Set it to None** (you said yes). HANDS 1 min: Settings → Security → Screen lock → None (asks your PIN once). Catch: anyone holding the phone opens your 17 Google accounts; the phone stays at home. It also makes Wi-Fi adb after a reboot simpler (§9) |
+| 17 personal Google accounts, 3 Instagram logins | Since Android 8 an app can't list other apps' accounts without you picking them. Google sees every account on a device, so **G2G's Google/YouTube account is already linked to your personal ones** (you logged it in by hand) | Accepted for a test brand. The robot never taps "Continue with Google"/one-tap offers |
+| Which YouTube account is active | The owner's YouTube app has many Google accounts | Each G2G sitting checks the avatar shows **G2G's channel** and switches to it if not; it leaves it on G2G afterwards (your phone's YouTube is rarely used; say if you want it switched back) |
+| Which TikTok account is active | Only G2G is in `trill` | The robot checks the handle before posting; anything else → no post, ping |
 | Notifications from your apps during a G2G sitting | A WhatsApp pop-up can cover a button | Do Not Disturb on during G2G sittings, back to your setting after (AUTO) |
 | OpenVPN Connect in the owner | A VPN left on would move G2G off Indonesia | The robot checks no VPN is up before a G2G sitting; if one is, no posting |
 | Location | Indonesia = true for G2G, no conflict | Still deny TikTok/YouTube location permission (the guide says location off) |
@@ -149,22 +164,20 @@ Facts (read-only from ClipMaker's `warmup.db` and Chameleon's database):
 | Timmy Clips | TikTok (2), Instagram (0, in its calm until ~2026-11-19), YouTube (1 Short) | `us-ps-2-newyork` | one Gmail for all three, Gmail profile linked |
 | (none) | — | `us-ps-1-virginia` is bought but **unused** | — |
 
-**Your decision:** only `us-ps-2-newyork` for now; all US brands share it.
+**Your decision (2026-11-18):** Speed and Timmy stay on `us-ps-2-newyork`. The **third US brand** (none exists
+yet) gets `us-ps-1-virginia`, already paid and idle (auto-renew on, decisions.md 2026-11-10), so no extra cost.
 
 **Linking risk (opinion):** one IP alone looks like a household. One IP **plus** one phone **plus** one Wi-Fi
-behind it, for 3 brands × 3 platforms = 9 accounts, looks like one person running a network of accounts. If
-one account gets banned for spam, platforms may look at accounts that share its IP and device (anti-detect
-vendors call these "chain bans"; not verified). Separate Android users give each space its own app IDs, which
-helps, but the IP and hardware stay shared.
+behind it, for Speed and Timmy's 6 accounts, looks more like one person running several brands. If one account
+gets banned for spam, platforms may look at accounts that share its IP and device (anti-detect vendors call
+these "chain bans"; not verified). Separate Android users give each space its own app IDs, which helps, but the
+IP and hardware stay shared. The third brand on its own IP keeps that cluster from growing.
 
-**When a second IP becomes worth it (opinion):**
-- when the **third US brand** joins (more than ~6 accounts on one IP);
-- right away after **any** account on the IP is disabled or banned (move the healthy brands, never the flagged one);
-- note: `us-ps-1-virginia` is already paid (auto-renew on, decisions.md 2026-11-10) and idle, so using it costs
-  nothing extra. Rule stays: an account never changes IP, so a new IP is for a **new** brand.
+**When another IP becomes worth it (opinion):** for every further new brand; and right away if **any** account on
+`us-ps-2-newyork` is disabled or banned (new brands then go elsewhere; an existing account never changes IP).
 
-Also: add G2G's missing email logins with Chameleon's **Edit** button in Show accounts; check Speed Instagram's
-email has a Gmail profile.
+Also: check Speed Instagram's email has a Gmail profile (its codes can't be read otherwise). G2G's missing email
+logins in Chameleon no longer block the robot (it never logs G2G in), but are worth adding for the record.
 
 ---
 
@@ -175,7 +188,7 @@ email has a Gmail profile.
 | # | Step | Who | Time |
 |---|---|---|---|
 | 1 | ~~SIM out~~ done (2026-11-18: `ABSENT,ABSENT`) | — | — |
-| 2 | Owner user: turn off the auto-clicker accessibility service; set the screen lock to None/Swipe (§3.3) | HANDS | 2 min |
+| 2 | Owner user: set the screen lock to **None** (§3.3); the robot uninstalls the auto-clicker | HANDS + AUTO | 1 min |
 | 3 | **Wireless debugging** on and paired once: Developer options → Wireless debugging → on → "Always allow on this network" → "Pair device with pairing code"; the laptop runs `adb pair` with the code you read out | HANDS + AUTO | 2 min |
 | 4 | Install RobotApp's tiny boot helper ("Keeper", our own app from this repo) in the owner and let it turn Wireless debugging back on after a reboot (`pm grant ... WRITE_SECURE_SETTINGS`) | AUTO | — |
 | 5 | Automatic time zone off (`cmd time_zone_detector set_auto_detection_enabled false` and `set_geo_detection_enabled false`), so only the robot sets it (§4.6) | AUTO | — |
@@ -183,9 +196,10 @@ email has a Gmail profile.
 | 7 | Proxy app sing-box "SFA" (§4.4) installed once: Play Store in the owner, or the official GitHub release APK | HANDS 1 min or AUTO (your OK to download) | — |
 | 8 | Play Store (owner): auto-update off for TikTok, Instagram, YouTube. The robot updates on purpose once a week and re-tests its screens | HANDS | 1 min |
 | 9 | XOS battery manager (Phone Master): let SFA and Keeper run in the background if XOS asks; the robot also adds them to Android's battery allow-list | AUTO, maybe HANDS | 0-2 min |
-| 10 | TikTok US build `musically` onto the phone (§4.7) | AUTO (needs a US Google Play account or your OK for a download) | — |
+| 10 | TikTok US build `musically` onto the phone (§4.7) | AUTO (Play first; a signed download is OK'd by you) | — |
 
-Total HANDS: about 6-10 minutes, once.
+Total HANDS: about 5-8 minutes, once. The AUTO parts run inside 06:00-10:00, in the free time after the
+sittings (09:00-10:00) or on a day with no posts.
 
 ### 4.2 Per new US space: all AUTO
 
@@ -211,7 +225,8 @@ but one AOSP commit says only the system may change them, so **a plain `settings
 UI fallbacks. The VPN consent app-op exists ([bayton.org on vpndialogs](https://sysapps.bayton.org/packages/com.android.vpndialogs));
 that `appops set` skips the dialog here is **not verified** ([someone's `pm grant` attempt failed](https://kaweah.freedombox.rocks/kiwix/stackoverflow.com_en_all_2023-11/questions/67980851/grant-android-vpn-permission-via-command-line-using-adb)).
 
-Time per space (opinion): 3-5 minutes unattended, plus the Google sign-in (§5.6).
+Time per space (opinion): 3-5 minutes unattended, plus the Google sign-in (§5.6). Runs in the 09:00-10:00 free
+slot, or in a sitting slot on a day that brand has nothing to post.
 
 ### 4.3 Google accounts in spaces (changed: YouTube needs one)
 
@@ -278,14 +293,19 @@ every sitting runs at least 1, 2 and 5. **Opinion.**
   the day.
 
 **How to do it safely:**
-1. Switch only **twice a day**, not per sitting: New York just before the first US sitting (~03:25 your time),
-   Jakarta right after the last US sitting (~07:45). G2G's evening sitting then needs no switch.
+1. Switch only **twice a day**, both inside the window: New York at **06:00** (the robot's first command of the
+   day), Jakarta right after the last US sitting (~08:20). G2G's sitting comes after that switch. The phone shows
+   New York time only 06:00-08:20; the rest of the day it is on Jakarta time for you and your other scripts.
+   (Your timetable said 05:55; the firm 06:00-10:00 rule wins, and the switch takes a second, so it's the first
+   step at 06:00.)
 2. Before switching to New York: **force-stop G2G's TikTok and YouTube** in the owner (`am force-stop --user 0
    <pkg>`). A force-stopped app gets no broadcasts and no push until it is opened again, so it never sees New
    York. (YouTube is also your personal YouTube app; it just restarts when you open it.)
 3. Never switch while a space app is open; check with `getprop persist.sys.timezone` and the clock after.
 4. The network clock stays automatic (only the zone changes, the real time is always right).
-5. If a sitting is retried late, the robot re-checks the zone before opening any space.
+5. A leftover US job after 08:20 (a retry in 09:00-10:00) switches to New York again first, and back to Jakarta
+   right after; G2G's apps are force-stopped again before.
+6. If the robot crashes mid-morning, its 10:00 clean-up (§9) still puts the zone back to Jakarta.
 
 ### 4.7 Getting TikTok's US build (`musically`) onto the phone
 
@@ -299,9 +319,12 @@ Options, in order (opinion):
    com.zhiliaoapp.musically` puts it in the other US spaces. Installed by Play, like on any US phone.
    **Unknown:** each brand Gmail's Play country (set when the account first used Play; Gmails made on the
    Indonesian IP are probably "Indonesia" and will get `trill`). Step 1 checks.
-2. **A signed download** (e.g. APKMirror's bundle), only with your OK: the robot checks the signing certificate
-   matches TikTok's before installing (`apksigner verify --print-certs`), installs with `adb install-multiple`.
-   Catch: the installer then shows as adb, not Play (a small oddity; not known to matter).
+2. **A signed download, if Play won't offer it (you said OK, 2026-11-18):** APKMirror's listing for
+   `com.zhiliaoapp.musically`, uploaded by TikTok's developer account. Before installing, the robot checks
+   (`apksigner verify --print-certs`) that the signing certificate matches the one APKMirror shows for that app
+   **and** the one in an older version of the same listing (same signer over time = not a re-signed copy). Any
+   mismatch → stop, nothing installed. Installs with `adb install-multiple`. Catch: the installer then shows as
+   adb, not Play (a small oddity; not known to matter). The download lands in its own folder outside the repo.
 3. Never: a modded or "lite" build.
 
 ### 4.8 Wiping a US space for reuse (AUTO, ~3-5 min)
@@ -345,7 +368,8 @@ Human-speed typing: 90-260 ms between characters, small random pauses. **One log
 5. Read the handle on the Profile tab and report it (ClipMaker's handles are empty today).
 6. Scroll For You 3-5 min, watch-only.
 
-G2G (owner): the same, inside `trill`'s account switcher if another TikTok account is already there.
+G2G: **no login, ever** (already logged in by hand in the owner user). If G2G's TikTok or YouTube is ever found
+logged out, the robot doesn't log it back in: it pings you and skips G2G that day.
 
 ### 5.3 Instagram login
 
@@ -367,9 +391,9 @@ G2G (owner): the same, inside `trill`'s account switcher if another TikTok accou
 | | any screen it doesn't recognise for 60 s |
 
 The ping: Telegram, screenshot, two buttons **Done** / **Give up**, and a code can be typed back as a reply
-(for an SMS code that reached your own phone). You solve it on the phone or in scrcpy (~30 s). No answer in 15 min
-→ the job stops safely; nothing is retried until the next day. At night (the YouTube sittings, §7.2) nobody
-answers, so a challenge there just waits for the morning.
+(for an SMS code that reached your own phone). You solve it on the phone or in scrcpy (~30 s). Pings only happen
+06:00-10:00, so you're up. No answer in 15 min, or 10:00 comes → the job stops safely; nothing is retried until
+the next day.
 
 ### 5.5 Moving the brands' accounts onto the robot phone (every login is a new-device login)
 
@@ -377,24 +401,28 @@ answers, so a challenge there just waits for the morning.
 browser. So **the Infinix is a new device for every account**, TikTok, Instagram and Google alike.
 
 What keeps the risk down (opinion):
-- **Only the device changes, never the IP:** each US space uses `us-ps-2-newyork`, the same IP the accounts'
-  Chameleon profiles use; G2G uses the home Indonesian line, like its Chameleon profile.
-- **Log in outside the posting window**, at a normal daytime hour for the account's country, **one day before**
-  its first robot post; 3-5 min watch-only after login.
+- **Only the device changes, never the IP:** each US space uses its brand's proxy, the same IP the accounts'
+  Chameleon profiles use.
+- **Log in inside the 06:00-10:00 window, on a day before the account's first robot post** (in the 09:00-10:00
+  free slot, = 21:00-22:00 New York in winter, 22:00-23:00 in summer: a normal evening hour for a US user), then
+  3-5 min watch-only. Never in the same sitting as a post.
 - **One new login per day**, at most. A week of watching after the first brand before the next.
-- **After the robot takes an account, stop using it on the S25+** (log out there). One phone per account looks
-  more normal than an account bouncing between two phones and two networks every evening. (Your S25+ likely
-  posts through a different app/IP setup; mixing both is the bigger risk.)
+- **Once the robot has an account (first robot post done), you log it out of your S25+** (your yes, 2026-11-18;
+  HANDS ~1 min per account, Telegram reminds you). One phone per account looks more normal than an account
+  bouncing between two phones and two networks every day.
 - Never move an account inside a calm or after a fresh flag.
 
 The safest order:
-1. **Throwaway account** (a new US test brand, made in Chameleon on `us-ps-2-newyork`, warmed like the others).
-   One week.
+1. **Throwaway account** (a new US test brand, made in Chameleon, warmed like the others). One week. **Opinion:**
+   put it on `us-ps-1-virginia`, not on Speed and Timmy's IP, so a flag on the throwaway can't touch them. Catch:
+   if the throwaway gets flagged, the third real brand should not get that IP either. Afterwards its space is
+   wiped, which tests recycling too.
 2. **Speed's TikTok**, then **Timmy's TikTok** (no flags, few posts so far).
 3. **Instagrams** after their calm ends and their first Story is up (Timmy's calm ends ~2026-11-19; Speed's
    Instagram is a replacement account, keep it gentle).
-4. **Google/YouTube** sign-ins last, one brand first, only for the YouTube test (§8.8).
-5. **G2G** in the owner whenever you like: its IP country doesn't change, so it's the lowest-risk move.
+4. **Google/YouTube** sign-ins last: **Timmy first**, for the YouTube test (§8.8).
+5. **G2G:** nothing to move; it's already logged in on this phone. It can start as soon as the owner-user changes
+   (§3.3) are done.
 
 ### 5.6 Signing in the brand's Google account in a space (for YouTube)
 
@@ -404,9 +432,13 @@ services screen: **Backup off, Location off** → done. Then YouTube → avatar 
 brand's (a Gmail can own several channels; pick by name).
 
 Google's checks are stricter than TikTok's (opinion, from how Google treats new devices):
-- **"Verify it's you"** with choices. The robot takes only "get a code at <the brand's Gmail>"-type options it can
-  read. A code to a **recovery email or phone** it can't read → ping you (you read it on your own phone or inbox
-  and reply with the code).
+- **Where Google's codes go is unknown** (your answer: not sure what recovery the brand Gmails have). So plan for
+  a ping every time Google asks: the robot screenshots Google's "Verify it's you" page, which **shows the masked
+  destination** (e.g. "a code to j•••@gmail.com" or "•• 12"), and sends it to you on Telegram with the choices
+  listed. You pick one with a button; if a code arrives somewhere you can read, you reply with it. If none of the
+  choices reach you, you press Give up and that brand's Google sign-in waits (YouTube stays on the laptop).
+- The robot itself only takes choices it can finish alone: a code to the brand's own Gmail (read by ClipMaker's
+  Gmail reader).
 - **"Tap Yes on your phone"** → only if the Gmail is signed in on an Android phone somewhere; it isn't, so this
   should not appear.
 - **"Couldn't sign you in / try again later"** → stop; try again in 24 h+, never in a loop.
@@ -442,9 +474,12 @@ Fresh name and today's time, so it's the newest video. One copy per sitting serv
 
 ### 6.3 The order inside one sitting (your correction)
 
-US brand, morning sitting: **Instagram first** (its window ends an hour earlier), then **TikTok**. Each post is
-followed by its own 3-5 min of watch-mostly engagement in that app (the guide: "do not just post and close the
-app"). YouTube has its own sitting outside that window (§7.2). G2G: TikTok, then YouTube, in its evening sitting.
+One sitting per brand per day, all inside 06:00-10:00 WIB (your answers, 2026-11-18):
+- **US brand:** **Instagram** (its window ends an hour earlier) → **TikTok** → **YouTube**.
+- **G2G (owner user):** **TikTok** → **YouTube**.
+
+Each post is followed by its own 3-5 min of watch-mostly engagement in that app, likes off (the guide: "do not
+just post and close the app"). One copy of the video serves all the brand's apps.
 
 ### 6.4 TikTok post flow
 
@@ -520,8 +555,8 @@ YouTube 21.45.90 is on the phone (owner); `install-existing` puts it in each US 
 ### 6.8 The link and the 24-hour views (TikTok, Instagram)
 
 - Link → ClipMaker `phone_posts.mark_posted` (same checks as a pasted link).
-- 24 h views: read **at the start of the brand's next-day sitting** (sittings run at the same time daily, a few
-  minutes later each day, so ≥ 24 h has passed): profile → the post's tile ("▷ 1,234" / Reels play count) →
+- 24 h views: read in the brand's next-day sitting, **right before that app's post** (so ~24 h after
+  yesterday's; see the 23 h 30 min note in §7.2): profile → the post's tile ("▷ 1,234" / Reels play count) →
   ClipMaker `phone_posts.set_views` → the guide's first-post check decides whether today's post goes out. No extra
   sitting. An unreadable number → Telegram asks you, as today.
 
@@ -544,59 +579,77 @@ G2G in the owner: always `ready`, never wiped.
 
 ### 7.2 One day on the phone (your capacity rules)
 
-Rules used (your corrections, 2026-11-18):
+Rules used (your decisions, 2026-11-18):
+- **The robot works only 06:00-10:00 WIB.** No night or evening sittings.
 - **No gap between a brand's own apps** in one sitting. **30 minutes between brands** (from one brand's last post to
   the next brand's first post).
-- US TikTok + Instagram in the guide's window: TikTok 6-10 PM New York, Instagram 6-9 PM. Instagram first.
-- **US YouTube outside that window.** Buffer's 2026 data of Shorts says the best slots are around **4 PM, 6 PM
-  and 7 PM** ([Buffer](https://buffer.com/resources/best-time-to-post-on-youtube/?lang=en)); other sources disagree
-  ([Tryordinal](https://www.tryordinal.com/blog/best-time-to-post-on-youtube-shorts): 12-3 PM and 7-10 PM). 6-7 PM
-  is taken by TikTok/Instagram, so: **3:30-5:00 PM New York**.
-- **G2G in an Indonesian evening window:** Indonesian guides agree most on **19:00-22:00 WIB** as prime time
-  ([Dealls](https://dealls.com/pengembangan-karir/jadwal-fyp-tiktok),
-  [timetopost](https://timetopost.co/best-time-to-post/tiktok/indonesia/)). Opinion: start at **19:30 WIB**.
-- Durations (opinion, measured in step 1): open space + checks 2 min; one post 4-5 min + link 1 min; engage 4 min.
+- US Instagram must be inside 6-9 PM New York, US TikTok inside 6-10 PM New York (Targeting Guide). YouTube has no
+  window rule; inside the sitting it lands around 6:30-8:10 PM New York, which Buffer's 2026 Shorts data counts
+  among the best slots (**6 PM and 7 PM**, [Buffer](https://buffer.com/resources/best-time-to-post-on-youtube/?lang=en)).
+- G2G goes last, after the time zone is back on Jakarta.
+- Durations (opinion, measured in step 1): open space + checks 2 min; read yesterday's views 2 min; each post
+  ~5 min + link 1 min; engagement 4 min (3-5).
 
-**Timetable, one winter day (your time, WIB; New York = WIB − 12 h):**
+So one US sitting takes ~36 min, with its posts at about +9 (Instagram), +19 (TikTok), +29 (YouTube) minutes. The
+30-min gap then starts the next brand ~50 min after the previous one.
 
-| WIB | New York | Phone does | Posts |
+**Timetable, one day (your time, WIB). Winter: New York = WIB − 12 h. Summer (March to early November):
+New York = WIB − 11 h.**
+
+| WIB | New York (winter / summer) | Phone does | Posts |
 |---|---|---|---|
-| 03:25 | 15:25 | time zone → New York; force-stop G2G's apps | |
-| 03:30-03:43 | 15:30-15:43 | **US 1** sitting: YouTube (posted ~03:37), engage | 1 |
-| 04:00-04:13 | 16:00-16:13 | **US 2**: YouTube (~04:07) | 1 |
-| 04:30-04:43 | 16:30-16:43 | **US 3**: YouTube (~04:37) | 1 |
-| 06:00-06:21 | 18:00-18:21 | **US 1**: yesterday's views → Instagram (~06:06) → engage → TikTok (~06:15) → engage | 2 |
-| 06:39-07:00 | 18:39-19:00 | **US 2**: Instagram (~06:45) → TikTok (~06:54) | 2 |
-| 07:18-07:39 | 19:18-19:39 | **US 3**: Instagram (~07:24) → TikTok (~07:33) | 2 |
-| 07:45 | 19:45 | time zone → Jakarta | |
-| 19:30-19:50 | 07:30-07:50 | **G2G** (owner): yesterday's views → TikTok (~19:36) → engage → YouTube (~19:46) → engage | 2 |
-| | | **Total** | **11** (12 with a G2G Instagram) |
+| 06:00 | 18:00 / 19:00 | time zone → New York; force-stop G2G's TikTok and YouTube | |
+| 06:00-06:36 | 18:00 / 19:00 | **US 1**: open space, leak check, yesterday's views → Instagram (~06:09) → engage → TikTok (~06:19) → engage → YouTube (~06:29) → engage | 3 |
+| 06:50-07:26 | 18:50 / 19:50 | **US 2**: Instagram (~06:59) → TikTok (~07:09) → YouTube (~07:19) | 3 |
+| 07:40-08:16 | 19:40 / 20:40 | **US 3**: Instagram (~07:49) → TikTok (~07:59) → YouTube (~08:09) | 3 |
+| 08:16 | — | time zone → Jakarta | |
+| 08:31-08:55 | — | **G2G** (owner user): yesterday's views → TikTok (~08:39) → engage → YouTube (~08:49) → engage | 2 |
+| 08:55-10:00 | — | **free slot:** retries, late posts, setup, logins, wipes, weekly app updates | |
+| 10:00 | — | hard stop; the phone is yours/your scripts' | |
+| | | **Total** | **11** (8 with today's brands: Speed, Timmy, G2G) |
 
-- Phone busy about **2 hours a day** (YouTube ~40 min, US evening ~65 min, G2G ~20 min); you do nothing unless
-  pinged.
-- In US summer time (March to early November) every US row moves **one hour earlier** in WIB.
-- Slack: the TikTok/Instagram window could hold **2 more US brands** (Instagram's last start ~08:40 WIB), and the
-  YouTube slot 2 more (15:00-17:30 NY). **So time is no longer the limit: spaces are (3 US).**
-- If a sitting is late (a retry, a challenge), the next brand slides by the same amount; a post that would miss
-  its window waits for tomorrow.
-- YouTube sittings run while you sleep and during the night shift (the robot is light, no rendering). A
-  challenge there waits until morning (§5.4).
+**Does it fit?**
+- **Winter: yes, easily.** US 3's Instagram (~07:49 WIB = 7:49 PM New York) has ~70 min to spare before Instagram's
+  9 PM close; its TikTok ~2 h before 10 PM.
+- **Summer: yes, but tight for one post.** The Instagram window is then 05:00-08:00 WIB, and the robot can't start
+  before 06:00. US 3's Instagram (~07:49) has **~10 minutes** to spare. TikTok's window ends 09:00 WIB, fine.
+  If the morning runs more than ~10 min late (a challenge, a slow upload), US 3's Instagram waits for tomorrow
+  (its TikTok and YouTube still go). To soften it (opinion): put last the brand whose Instagram has graduated or
+  has nothing due, and keep the brand order fixed (it also keeps each brand's posting time steady).
+- **Why not your ~07:00 and ~08:00 starts:** the 30-min gap counts from one brand's **last** post to the next
+  brand's **first** post, so sittings can start ~50 min apart. Starting US 3 at 08:00 would put its Instagram at
+  ~08:09: fine in winter, **past the 08:00 Instagram close in summer**. The plan uses the earliest allowed start.
+- **G2G's time moves to ~08:40 WIB** (an Indonesian morning). Indonesian guides rate **19:00-22:00 WIB** highest
+  ([Dealls](https://dealls.com/pengembangan-karir/jadwal-fyp-tiktok),
+  [timetopost](https://timetopost.co/best-time-to-post/tiktok/indonesia/)); mornings appear on some lists as
+  weaker slots. Fine for a test brand; the cost of the 06:00-10:00 rule.
+- **Phone busy** ~06:00-08:55 (about 3 h); ~65 min free for leftovers. **Two limits now:** the window (3 US
+  brands in summer) and the spaces (3 US).
+- Anything that misses its platform's window or 10:00 waits for tomorrow. A Post is never pressed after 09:55;
+  engagement is cut short at 10:00 if needed.
+
+**The "yesterday's views first" catch (and fix):** with sittings at the same time every day, yesterday's post is
+~23 h 50 min old when today's sitting starts, a few minutes short of the guide's 24 h, and ClipMaker only asks
+for views after 24 h (`phone_posts.CHECK_AFTER`). It matters only while an account is in the guide's first-post
+check (until it reaches 200+ views on a warmup post). Fix (opinion): the robot reads each app's views **right
+before that app's post** (so ~24 h), and ClipMaker accepts a robot reading from **23 h 30 min** on. The guide's
+"wait 24 hours" is about letting views come in; ten minutes don't change that. Cleared accounts' views are read
+whenever convenient (the free slot).
+
+**Setup, logins and wipes** (your rule): in the 08:55-10:00 free slot, or in a brand's sitting slot on a day it
+has nothing to post. A new account's first login happens on a day **before** its first robot post, never in the
+same sitting.
 
 **Do I agree with "no gap within a brand"? Yes (opinion), reasons:**
 - The Targeting Guide's flag is "rapidly switch between accounts on same device": many accounts **on one
-  platform** traded back and forth. Posting one clip to your own TikTok, Instagram and YouTube in one sitting is
+  platform** traded back and forth. Posting one clip to your own Instagram, TikTok and YouTube in one sitting is
   what every creator does, and each app has exactly one account in that space.
-- The real gap that matters, between brands, stays.
-- Small caveat: each post still gets its own 3-5 min of engagement in its app before the next app opens.
-
-**Simpler alternative I'd consider (opinion):** put YouTube **inside** each brand's evening sitting (third, after
-TikTok). 6-7 PM New York is one of Buffer's best Shorts slots too, each brand's space opens once a day instead of
-twice, and 3 US brands still fit by ~08:10 WIB. Your version is fine; this one means fewer space switches and no
-night sittings. Your call.
+- The gap that matters, between brands, stays.
+- Each post still gets its own 3-5 min of engagement in its app before the next app opens.
 
 **Changes this needs in ClipMaker** (listed in §8.4): the 30-min gap per brand instead of per account
-(`phone_posts.account_gap`), one sitting taking several due posts of one brand, per-brand windows (G2G Indonesian,
-YouTube 3:30-5 PM New York).
+(`phone_posts.account_gap`), one sitting taking a brand's due posts (Instagram, TikTok, YouTube), the robot's
+06:00-10:00 WIB window, G2G's window = 06:00-10:00 WIB, and the 23 h 30 min views reading.
 
 ### 7.3 Recycling, honestly
 
@@ -646,6 +699,7 @@ brands, jobs, journal) and a `data/status.json` with what the phone is doing now
 Sitting job (one brand, its due posts in order):
 ```json
 {"proto": 1, "job_id": "...", "brand": "<brand id>", "time_zone": "America/New_York",
+ "work_window": "06:00-10:00 Asia/Jakarta", "no_post_after": "09:55",
  "read_views": [{"upload_id": "...", "platform": "instagram", "url": "https://..."}],
  "posts": [
    {"upload_id": "...", "platform": "instagram", "video": "C:/.../x.mp4", "length_s": 41.2,
@@ -685,7 +739,7 @@ the result; ClipMaker picks it up with `robot status`.
 |---|---|
 | new `tools/phone_robot.py` | the adapter: builds a sitting from a brand's due posts, spawns `robot sitting`, event loop in a thread, answers `needs`, maps each `done` |
 | `tools/approve.py` (`phone_tick`, `send_phone_post`) | robot branch before Telegram: `CLIPMAKER_PHONE_ROBOT=1` + brand opted in + RobotApp says `ready` + `robot doctor` OK → claim the brand's due rows → start the sitting. Otherwise Telegram as today. `send_phone_post` learns YouTube (title + description) for the hand-post fallback |
-| `phone_posts.py` | `account_gap` → **per brand** (no gap within a brand); new `due_for_brand()` (Instagram, TikTok, YouTube order); per-brand/per-platform windows (`in_window`: G2G 19:00-22:00 Asia/Jakarta; robot YouTube 15:30-17:30 New York); `check_link` accepts `youtube.com/shorts/<id>` / `youtu.be/<id>`; the first-post 24 h check (`verdict`) stays TikTok/Instagram only; `steps()` text for a YouTube hand post |
+| `phone_posts.py` | `account_gap` → **per brand** (no gap within a brand); new `due_for_brand()` (Instagram, TikTok, YouTube order); robot sittings only 06:00-10:00 Asia/Jakarta; G2G's window = 06:00-10:00 Asia/Jakarta; robot YouTube rides in the brand's sitting (no own window); a robot views reading counts from 23 h 30 min (`CHECK_AFTER`); hand posts via Telegram keep today's windows; `check_link` accepts `youtube.com/shorts/<id>` / `youtu.be/<id>`; the first-post 24 h check (`verdict`) stays TikTok/Instagram only; `steps()` text for a YouTube hand post |
 | `campaign_posts.py` | `post_mode`: YouTube → `phone` for brands with "YouTube by phone" on (`PHONE_PLATFORMS` gets YouTube only through that switch); everything else unchanged |
 | `bridge/uploads.py` | **no change needed:** the upload worker only takes `mode = 'auto'` rows (`campaign_posts.queued`), and `phone_to_submit` already submits any posted phone row to Content Rewards. To check: YouTube's pinned comment is then the robot's job |
 | `tools/phone_mode.py` + the Phone page in `web/src` | YouTube rows and "the robot is posting this now (step 4 of 12)" from RobotApp's `status.json` |
@@ -740,8 +794,9 @@ away, it's the clip and its first seconds.
 
 ### 8.8 The YouTube test (before switching all brands)
 
-- **One US brand** (suggest **Timmy**: US IP, posts on all three platforms), **14 days**, one Short a day at the same
-  time (~3:30 PM New York).
+- **Timmy** (your choice), **14 days**, one Short a day at the same time: the YouTube slot of Timmy's sitting
+  (~06:30 WIB, 6:30 PM New York in winter). On laptop days ClipMaker holds Timmy's YouTube row until that same
+  time, then lets the laptop uploader post it, so both methods post at the same hour.
 - **Alternate days:** phone, laptop, phone, laptop… (7 each). Comparing "before vs after" would mix up the method
   with the channel simply getting older; alternating keeps both the same age.
 - **Change one thing only:** same titles, same kind of clips (pick which clip goes to which day by coin flip), **no
@@ -763,7 +818,9 @@ away, it's the clip and its first seconds.
 | A VPN blocking the laptop | Opinion: a US space's lockdown covers only that space's apps; adb belongs to the owner, which **never** gets a VPN | step 1 checks adb stays up with a space's lockdown on |
 | Phone asleep / XOS kills helpers | stay-awake is on (7); Keeper and SFA on the battery allow-list | `robot doctor` before every job |
 | Flaky cable | — | Cable only as a fallback: when a USB phone appears, the laptop re-enables Wi-Fi debugging from it (`adb -d tcpip 5555`) |
-| Phone offline in a window | — | Laptop watchdog every minute; posts fall back (§8.5); one "phone offline" message per window |
+| Phone offline in the window | — | From 05:50 the laptop only *checks* the connection (no phone commands); at 06:00 it reconnects if needed. Offline → posts fall back (§8.5); one "phone offline" message per morning |
+| Sharing the phone with your other scripts | Your rule: the phone is theirs outside 06:00-10:00 | A shared lock file on the laptop (e.g. `%LOCALAPPDATA%\PhoneLock\phone.lock`, holder + until-time): RobotApp takes it at 06:00 and gives it back by 10:00; your scripts should take it too and leave it free in the window. At 06:00 the robot checks the phone is in a known state (owner user in front, no space running, no VPN in the owner) and, if not, waits up to 5 min, then pings you rather than closing someone else's work |
+| A job runs past 10:00 | Firm rule | No Post pressed after 09:55; at 10:00 the robot finishes reading a link if a post is already out, stops engagement, closes the space, puts the time zone back to Jakarta, turns Do Not Disturb off, releases the lock. Unfinished posts wait for tomorrow |
 | Heat | 40.5 °C charging with the screen on | screen off between sittings; pause above 43 °C; sittings are spread over the day |
 
 ---
@@ -789,13 +846,13 @@ Prerequisites outside RobotApp:
 
 | Step | What | Done when | Effort (guess) |
 |---|---|---|---|
-| **1. One account, end to end** | Repo skeleton, `robot doctor`. Delete users 10 and 999; create **one** US space; `musically` onto the phone (§4.7); apps, permissions, time-zone switching, SFA + config, always-on + lockdown, leak check, **video into the space** (§6.1), uiautomator2 in a secondary user, login of the **throwaway** with its Gmail code (a hand-run code reader for now), **one TikTok post** from a plain CLI (no ClipMaker), link read, 3-5 min engagement. You watch in scrcpy; kill switch = turn the phone's Wi-Fi off | one real post on the throwaway, 0 HANDS except watching; timings measured | 2-3 sessions |
+| **1. One account, end to end** | Repo skeleton, `robot doctor`, the **06:00-10:00 guard** (refuses to touch the phone outside it) and the shared phone lock. Uninstall the auto-clicker; delete users 10 and 999; create **one** US space; `musically` onto the phone (§4.7); apps, permissions, time-zone switching, SFA + config, always-on + lockdown, leak check, **video into the space** (§6.1), uiautomator2 in a secondary user, login of the **throwaway** with its Gmail code (a hand-run code reader for now), **one TikTok post** from a plain CLI (no ClipMaker), link read, 3-5 min engagement. You watch in scrcpy; kill switch = turn the phone's Wi-Fi off | one real post on the throwaway, 0 HANDS except watching; timings measured | 2-3 sessions |
 | 2. Wi-Fi adb survives reboots | Keeper, Wireless debugging pairing, mDNS reconnect, watchdog, cable fallback | phone rebooted → robot reconnects alone | 1 session |
 | 3. Safety rails + fake phone | journal (never press Post twice), outcomes, screen signatures, FakePhone tests, password-leak test | tests green | 1 session |
 | 4. ClipMaker wiring | §8.4 behind `CLIPMAKER_PHONE_ROBOT` (off) + per-brand opt-in; sittings, per-brand gap and windows; `needs` answered; Phone mode line | an opted-in brand's sitting posts by robot; any failure lands in Telegram as today | 1-2 sessions |
 | 5. Instagram | §6.5 + login §5.3 | one Reel by the robot | 1-2 sessions |
 | 6. YouTube | Google sign-in (§5.6), Shorts flow (§6.7), the "YouTube by phone" switch (§8.6), then **the 14-day test** (§8.8) | one Short by the robot; test running | 1-2 sessions + 2 weeks |
-| 7. G2G in the owner | owner checks (§3.3), `trill` account switching, Indonesian window, no-VPN check | G2G's TikTok and YouTube posted by robot in its evening sitting | 1 session |
+| 7. G2G in the owner | owner checks (§3.3), handle/channel check (no login), no-VPN check, Do Not Disturb, sitting after the switch back to Jakarta | G2G's TikTok and YouTube posted by robot at ~08:40 WIB | 1 session (can come early: no login needed) |
 | 8. Sound + views + engagement polish | §6.6, §6.8 | 24 h views read in sittings; trending sound added (or cleanly skipped) | 1-2 sessions |
 | 9. Lifecycle | queue, assign, setup-next, graduate, wipe, reuse (§7.1) | a graduated brand frees its space alone | 1 session |
 | 10. Move real accounts in | one per day, safest first (§5.5) | each account clean for a week on the robot | your time: a look per day |
@@ -811,13 +868,16 @@ this file as its brief.
 |---|---|---|
 | The Warming Guide forbids automation for the first 10 posts | certain, by its letter | you accepted; throwaway first |
 | Platform detects automation → shadowban/ban | unknown, moderate | human-like timing, watch-mostly, likes off, uiautomator2 attached only when needed |
-| **9 US accounts on one IP + one phone get linked** | medium | separate users; second IP at the 3rd US brand or after any ban (§3.4) |
-| **Auto-clicker seen next to G2G's TikTok** | high if left on | turn it off (§3.3) |
+| **Speed and Timmy (6 accounts) on one IP + one phone get linked** | medium | separate users; the 3rd US brand on `us-ps-1-virginia`; new brands on new IPs (§3.4) |
+| **Auto-clicker seen next to G2G's TikTok** | gone once uninstalled | uninstall in step 1 (§3.3) |
+| **US summer time: the 3rd brand's Instagram misses 08:00 WIB** | some mornings | earliest starts, fixed order, a graduated/idle Instagram goes last; else it waits a day (§7.2) |
+| G2G posts in a weaker Indonesian morning slot | certain | accepted (06:00-10:00 rule) |
+| The robot and your other scripts collide on the phone | low with the lock | shared lock file + known-state check at 06:00 (§9) |
 | G2G's Google linked to your personal Google accounts | certain | accepted for a test brand |
 | Daily time-zone flips seen by G2G's apps | low | flip twice a day, force-stop G2G's apps first (§4.6) |
-| Google sign-in checks in spaces | likely once per brand | codes via you; one attempt per day |
+| Google sign-in checks in spaces | likely once per brand | where codes go is unknown: you're pinged with the masked destination; one attempt per day; YouTube stays on the laptop for that brand if it fails (§5.6) |
 | New-device logins (every account) | likely once per account | same IP as before; one per day; stop using the S25+ for robot accounts |
-| `musically` can't come from Play (no US Play account) | medium | a signed download with your OK (§4.7) |
+| `musically` can't come from Play (no US Play account) | medium | a signed download, certificate checked (you OK'd it, §4.7) |
 | YouTube by phone doesn't beat the laptop | likely (opinion) | the 14-day test decides before switching brands (§8.8) |
 | Spaces never free up (TikTok/YouTube stay on the phone) | certain until ClipMaker changes | 3 US brands max on this phone; second phone later |
 | App update changes a screen | high over months | auto-update off everywhere; weekly planned update + a dry run up to (not including) Post |
@@ -842,23 +902,28 @@ Answered:
 7. TikTok laptop uploader: later, a separate ClipMaker task.
 8. Time zone: switched by the robot (Jakarta for G2G, New York for US brands).
 9. Engagement: 3-5 min after each post, watch-mostly, likes off.
-10. Proxies: only `us-ps-2-newyork` for now.
+10. Proxies: Speed and Timmy on `us-ps-2-newyork`; the third US brand (when made) on `us-ps-1-virginia`.
 11. You hand-post from the S25+: every robot login is a new-device login.
-12. New: YouTube Shorts from the phone, per brand; capacity rules of §7.2.
+12. YouTube Shorts from the phone, per brand, inside each brand's sitting (Instagram → TikTok → YouTube).
 
-Still open:
-1. **Owner user:** OK to turn off (or uninstall) the auto-clicker, and to set the owner's screen lock to None/Swipe?
-2. **G2G's logins:** which Gmail owns G2G's YouTube channel and TikTok? (Chameleon has no email assigned to them.)
-   Is your personal TikTok logged in to `trill` on this phone?
-3. **G2G Instagram:** make one? (11 → 12 posts a day.)
-4. **Brand Gmails' recovery email/phone:** where do Google's "verify it's you" codes go? (Decides how often you're
-   pinged for Google sign-ins.)
-5. **YouTube timing:** keep YouTube in its own 3:30-5 PM New York sitting (your choice), or fold it into the evening
-   sitting (fewer switches, §7.2)?
-6. **YouTube test brand:** Timmy?
-7. **`us-ps-1-virginia`:** it's paid and idle; use it for the third US brand?
-8. **Downloads:** if Play can't give `musically`, OK to download a signed copy (APKMirror) after a certificate check?
-9. **After a robot takes an account:** OK to log it out of your S25+?
+Second round (2026-11-18):
+- **Firm rule:** the robot works only 06:00-10:00 WIB; every job inside it (§7.2, §9).
+- Owner user: uninstall the auto-clicker; screen lock → None.
+- G2G's TikTok and YouTube are already logged in by hand in the owner user: the robot never logs G2G in. Your
+  personal TikTok is not on this phone.
+- G2G Instagram: not now (so 11 posts a day with a third US brand, 8 today).
+- Brand Gmails' recovery: unknown → plan for pinging you (§5.6).
+- YouTube test brand: Timmy.
+- `us-ps-1-virginia`: for the third US brand.
+- Downloads: a signed `musically` is OK after the certificate check, if Play won't offer it.
+- Robot accounts get logged out of your S25+ once the robot has them.
+
+Still open (small, none blocks step 1):
+1. **Throwaway's IP:** `us-ps-1-virginia` (keeps a flag away from Speed/Timmy, but then the third brand may need
+   a new IP if the throwaway gets flagged), or `us-ps-2-newyork`? (§5.5; my pick: Virginia.)
+2. **The 23 h 30 min views reading** for robot sittings (§7.2): OK?
+3. **Your other scripts:** can they take/leave the shared phone lock (§9)? What do they leave on screen at 06:00?
+4. **G2G's YouTube app:** leave it on G2G's channel after posting, or switch back to your account?
 
 ---
 
@@ -871,6 +936,7 @@ RobotApp/
     phone.py            the Phone interface (real over adb, FakePhone for tests)
     spaces.py           create / start / wipe users; owner-user rules
     timezone.py         switch + verify, force-stop rules
+    window.py           the 06:00-10:00 WIB guard, the shared phone lock, the 10:00 clean-up
     vpn.py              sing-box config, import, always-on, lockdown
     leakcheck.py
     secrets.py          Chameleon daemon client (secrets in memory only)
