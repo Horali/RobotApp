@@ -23,9 +23,23 @@ def media_store(user_id: int) -> str:
     return f"/storage/emulated/{user_id}"
 
 
+def find_ffprobe() -> str | None:
+    """ffprobe from PATH, from FFPROBE in the environment, or ClipMaker's Remotion copy (this laptop)."""
+    import os
+
+    for candidate in (os.environ.get("FFPROBE"), os.environ.get("ROBOTAPP_FFPROBE")):
+        if candidate and Path(candidate).exists():
+            return candidate
+    found = shutil.which("ffprobe")
+    if found:
+        return found
+    known = Path(r"C:\Users\child\PROJECTS\ClipMaker\renderer\node_modules\@remotion\compositor-win32-x64-msvc\ffprobe.exe")
+    return str(known) if known.exists() else None
+
+
 def video_length(path: Path) -> float | None:
-    """Length in seconds, from ffprobe when it is on the laptop (ClipMaker ships one). None when unknown."""
-    ffprobe = shutil.which("ffprobe")
+    """Length in seconds, from ffprobe when it is on the laptop. None when unknown."""
+    ffprobe = find_ffprobe()
     if not ffprobe:
         return None
     try:

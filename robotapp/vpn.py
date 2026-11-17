@@ -109,12 +109,12 @@ def serve_once(config: dict, seconds: float = 60.0):
             if self.path != f"/{token}/config.json":
                 self.send_error(404)
                 return
+            served["done"] = True  # the phone asked: the import link worked
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
-            served["done"] = True
 
         def log_message(self, *args) -> None:  # never log the request path: it holds the token
             return

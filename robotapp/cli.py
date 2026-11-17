@@ -1,4 +1,4 @@
-"""The `robot` command (PLAN Â§8.1, Â§8.2).
+﻿"""The `robot` command (PLAN Ã‚Â§8.1, Ã‚Â§8.2).
 
 One command, JSON events on stdout, human logs on stderr, so ClipMaker can start it and read lines. In step 1 it
 is run by hand:
@@ -85,7 +85,7 @@ def enter_space(phone, user: int) -> None:
 
 
 def leave_space(phone) -> None:
-    """Leave the phone the way other scripts expect it (§9): the owner user in front."""
+    """Leave the phone the way other scripts expect it (Â§9): the owner user in front."""
     try:
         if phone.current_user() != 0:
             phone.switch_user(0)
@@ -135,7 +135,7 @@ def cmd_lock(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
-    """Â§4.1 / Â§4.2: clean the phone, create one US space, put the apps and the VPN in, check for leaks."""
+    """Ã‚Â§4.1 / Ã‚Â§4.2: clean the phone, create one US space, put the apps and the VPN in, check for leaks."""
     phone, _ = build(args, settings)
     spaces = Spaces(phone)
     chameleon = Chameleon(settings.chameleon_url, settings.chameleon_token)
@@ -314,7 +314,7 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
 def cmd_screen(args: argparse.Namespace, settings: Settings) -> int:
     """What is on the phone now: the texts uiautomator2 can see (short), and optionally a screenshot.
 
-    This is the tool for writing and fixing a step's signature on a real app version (§6.2).
+    This is the tool for writing and fixing a step's signature on a real app version (Â§6.2).
     """
     phone, _ = build(args, settings)
     screen = screen_for(phone, settings)
@@ -335,6 +335,27 @@ def cmd_screen(args: argparse.Namespace, settings: Settings) -> int:
         screen.screenshot(path)
         print(f"screenshot: {path}")
     return EXIT_OK
+
+
+def cmd_sitting(args: argparse.Namespace, settings: Settings) -> int:
+    """One brand's sitting, from the JSON contract in PLAN Â§8.2 (a file, or stdin)."""
+    from .sitting import Sitting, run as run_sitting
+
+    body = json.loads(Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read())
+    sitting = Sitting.from_json(body)
+    phone, _ = build(args, settings)
+    screen = screen_for(phone, settings)
+    chameleon = Chameleon(settings.chameleon_url, settings.chameleon_token)
+    journal = Journal(settings.db_path)
+    if sitting.user is not None:
+        enter_space(phone, sitting.user)
+    try:
+        results = run_sitting(
+            sitting, phone, screen, journal, chameleon, emit, shots_dir=settings.shots_dir, dry_run=args.dry_run
+        )
+    finally:
+        leave_space(phone)
+    return EXIT_OK if all(r.ok for r in results) else EXIT_ERROR
 
 
 def cmd_status(args: argparse.Namespace, settings: Settings) -> int:
@@ -406,6 +427,11 @@ def parser() -> argparse.ArgumentParser:
     po.add_argument("--job", default="")
     po.set_defaults(func=cmd_post, leakcheck=True)
 
+    si = sub.add_parser("sitting", help="one brand's sitting (JSON from PLAN Â§8.2)")
+    si.add_argument("--file", default="", help="the sitting JSON; stdin when omitted")
+    si.add_argument("--dry-run", action="store_true", help="walk every post up to its Post button, then stop")
+    si.set_defaults(func=cmd_sitting)
+
     st = sub.add_parser("status", help="what happened to a job")
     st.add_argument("job")
     st.set_defaults(func=cmd_status)
@@ -423,7 +449,7 @@ def main(argv: list[str] | None = None) -> int:
     settings.ensure_dirs()
     setup(settings.logs_dir)
 
-    if args.command in ("doctor", "provision", "login", "post", "screen"):
+    if args.command in ("doctor", "provision", "login", "post", "screen", "sitting"):
         try:
             require_window()
         except OutsideWindow as exc:
@@ -432,7 +458,7 @@ def main(argv: list[str] | None = None) -> int:
             return EXIT_OUTSIDE
 
     lock = PhoneLock()
-    needs_lock = args.command in ("provision", "login", "post", "screen")
+    needs_lock = args.command in ("provision", "login", "post", "screen", "sitting")
     if needs_lock:
         try:
             lock.acquire(wait_s=60)
