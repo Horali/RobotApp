@@ -1,8 +1,36 @@
 # RobotApp: the phone robot (build plan)
 
-Status: **plan only, nothing built.** First written 2026-11-17; updated 2026-11-18 with the user's answers to
-§13, YouTube Shorts from the phone, a new capacity plan, and (second update, same day) the firm rule that the
-robot only works **06:00-10:00 WIB**. Ask the user before any code.
+Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is built, step 1 is in progress. See
+**Progress** below.
+
+## Progress
+
+Last updated: 2026-11-18, 02:40 WIB (builder session).
+
+**Done**
+- **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
+  in Chameleon's daemon (commit `c1f6672`, repo `chameleon-browser`). It reads the encrypted
+  `platform-passwords.json` that the main process writes and asks the main process to decrypt **one value per
+  request** over the secrets channel it already has; nothing is cached, nothing is logged. Answers:
+  `200 {profile_id, platform, password}`, `404` nothing saved for that profile+platform, `409` saved but the blob
+  cannot be decrypted, `400` for `youtube` (that account signs in with its Gmail password). Same bearer token,
+  host allow-list and no-browser-Origin rules as every other route.
+  Tests: a unit test with a fake cipher, and 8 new checks in Chameleon's `npm run test:api` (real safeStorage,
+  encrypted at rest, the 401/400/404 paths). That suite: 37 pass, 0 fail, exit 0.
+  **Catch:** the Chameleon app that is running now still has the old code in memory. The route works after its
+  next restart (close it and open it again). Nothing else needs it before the first real login.
+
+**Next**
+- **Step 1** — one throwaway account end to end (§11): repo skeleton, `robot doctor`, the 06:00-10:00 guard and
+  the shared phone lock, the phone clean-up (auto-clicker, users 10 and 999), one US space, `musically`, SFA +
+  lockdown, leak check, video into the space, uiautomator2 in a secondary user, the throwaway's login, one TikTok
+  post, the link, engagement.
+
+**What you must do**
+- Nothing right now. When step 1 reaches the phone: it must run inside 06:00-10:00 WIB, so the real-phone part
+  waits for the morning. You'll be asked to watch in scrcpy.
+- Before the first real login: restart Chameleon so the new route is live.
+
 
 **Firm rule (user, 2026-11-18): the robot touches the phone only from 06:00 to 10:00 your time (WIB).** Every
 robot job runs inside it: posting, engagement, views, setup, logins, wipes, app updates. Outside it the phone
@@ -924,6 +952,27 @@ Still open (small, none blocks step 1):
 2. **The 23 h 30 min views reading** for robot sittings (§7.2): OK?
 3. **Your other scripts:** can they take/leave the shared phone lock (§9)? What do they leave on screen at 06:00?
 4. **G2G's YouTube app:** leave it on G2G's channel after posting, or switch back to your account?
+
+*(All four are answered now — see §13.1. The list stays as the record of what was asked.)*
+
+### 13.1 Answers to those four (user, 2026-11-18, third round)
+
+1. **Throwaway IP: `us-ps-1-virginia`. Yes.** The throwaway (and its one space) uses Virginia, not Speed/Timmy's
+   New York IP.
+2. **The 23 h 30 min views reading: yes.** A views reading at **23 h 30 min** counts as the 24 h reading for the
+   guide's first-post check.
+3. **Shared phone lock: yes, use it.** No other script uses the phone today. Any future script must take the lock
+   and leave the owner user on the home screen with no space open.
+4. **G2G's YouTube app stays on G2G's channel** after posting; the robot does not switch it back.
+
+### 13.2 Decided by the builder (no user question needed)
+
+- **2026-11-18, P1:** the platform-password route lives in the **daemon** and reads the file the main process
+  already writes, instead of moving the store into the daemon. Smallest change, one storage format, and the
+  daemon already has a decrypt channel to the main process. Route name and query as in §5.1.
+- **2026-11-18, P1:** `platform=youtube` is refused (400) rather than silently answered with the Gmail password:
+  two different secrets behind one name would be a trap for the caller.
+
 
 ---
 
