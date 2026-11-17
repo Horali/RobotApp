@@ -1,4 +1,4 @@
-﻿"""The `robot` command (PLAN Ã‚Â§8.1, Ã‚Â§8.2).
+"""The `robot` command (PLAN Ã‚Â§8.1, Ã‚Â§8.2).
 
 One command, JSON events on stdout, human logs on stderr, so ClipMaker can start it and read lines. In step 1 it
 is run by hand:
@@ -37,7 +37,16 @@ from .secrets import Chameleon, ChameleonError
 from .spaces import SPACE_PACKAGES, Spaces
 from .ui import U2Screen
 from .vpn import Proxy, always_on, build_config, import_profile, serve_once, vpn_state
-from .window import LockHeld, OutsideWindow, PhoneLock, describe, in_window, seconds_left
+from .window import (
+    BUILD_MODE_ENV,
+    LockHeld,
+    OutsideWindow,
+    PhoneLock,
+    build_mode,
+    describe,
+    in_window,
+    seconds_left,
+)
 
 log = logging.getLogger("robotapp")
 
@@ -65,10 +74,19 @@ def screen_for(phone, settings: Settings):
 
 
 def require_window() -> None:
-    if not in_window():
-        raise OutsideWindow(
-            f"it is {datetime.now().strftime('%H:%M')} WIB and the robot only works 06:00-10:00 ({describe()})"
+    if in_window():
+        return
+    if build_mode():
+        log.warning(
+            "BUILD MODE is on (%s=1): using the phone at %s, outside 06:00-10:00. "
+            "Unset it before any other script shares this phone.",
+            BUILD_MODE_ENV,
+            datetime.now().strftime("%H:%M"),
         )
+        return
+    raise OutsideWindow(
+        f"it is {datetime.now().strftime('%H:%M')} WIB and the robot only works 06:00-10:00 ({describe()})"
+    )
 
 
 def enter_space(phone, user: int) -> None:

@@ -23,7 +23,7 @@ from .post.base import FAILED, PostResult, PostSpec
 from .post.tiktok import TIKTOK_ID, TIKTOK_US, TikTokPoster
 from .secrets import Chameleon
 from .ui import Screen
-from .window import WIB, post_allowed
+from .window import WIB, build_mode, post_allowed
 
 log = logging.getLogger("robotapp")
 

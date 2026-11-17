@@ -28,6 +28,33 @@ WINDOW_START = dtime(6, 0)
 WINDOW_END = dtime(10, 0)
 NO_POST_AFTER = dtime(9, 55)
 
+# Build mode: while the robot is being built there is no other script on the phone, so the user allowed it to be
+# used at any hour (2026-11-18). Off unless this variable is set, and every use is logged loudly.
+BUILD_MODE_ENV = "ROBOTAPP_BUILD_MODE"
+_build_warned = False
+
+
+def build_mode() -> bool:
+    return os.environ.get(BUILD_MODE_ENV, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _warn_build_mode(action: str, moment: datetime) -> None:
+    """Once per process: using the phone outside the window must never be silent."""
+    global _build_warned
+    if _build_warned:
+        return
+    _build_warned = True
+    import logging
+
+    logging.getLogger("robotapp").warning(
+        "BUILD MODE (%s=1): %s at %s, outside the 06:00-10:00 window (%s). "
+        "Unset it before any other script shares this phone.",
+        BUILD_MODE_ENV,
+        action,
+        moment.strftime("%H:%M"),
+        describe(moment),
+    )
+
 
 class OutsideWindow(RuntimeError):
     """Raised instead of touching the phone outside 06:00-10:00 WIB."""
@@ -80,25 +107,41 @@ def describe(moment: datetime | None = None) -> str:
 
 
 class WindowGuard:
-    """The gate every phone command passes. `clock` is injectable so tests can move time."""
+    """The gate every phone command passes. `clock` is injectable so tests can move time.
 
-    def __init__(self, clock=now_wib) -> None:
+    `allow_outside` overrides the window for a test; the build-mode switch is the environment variable, so a
+    normal run can never be outside the window by accident.
+    """
+
+    def __init__(self, clock=now_wib, allow_outside: bool | None = None) -> None:
         self._clock = clock
+        self._allow_outside = allow_outside
+
+    def _outside_ok(self) -> bool:
+        return self._allow_outside if self._allow_outside is not None else build_mode()
 
     def check(self, action: str = "touch the phone") -> None:
         moment = self._clock()
-        if not in_window(moment):
-            raise OutsideWindow(
-                f"refusing to {action}: it is {moment:%H:%M} WIB, outside the 06:00-10:00 window "
-                f"({describe(moment)}). The phone belongs to the other scripts until 06:00."
-            )
+        if in_window(moment):
+            return
+        if self._outside_ok():
+            _warn_build_mode(action, moment)
+            return
+        raise OutsideWindow(
+            f"refusing to {action}: it is {moment:%H:%M} WIB, outside the 06:00-10:00 window "
+            f"({describe(moment)}). The phone belongs to the other scripts until 06:00."
+        )
 
     def check_post(self, action: str = "press Post") -> None:
         moment = self._clock()
-        if not post_allowed(moment):
-            raise OutsideWindow(
-                f"refusing to {action} at {moment:%H:%M} WIB: no post after 09:55, and none outside 06:00-10:00."
-            )
+        if post_allowed(moment):
+            return
+        if self._outside_ok():
+            _warn_build_mode(action, moment)
+            return
+        raise OutsideWindow(
+            f"refusing to {action} at {moment:%H:%M} WIB: no post after 09:55, and none outside 06:00-10:00."
+        )
 
 
 def default_lock_path() -> Path:
