@@ -1,0 +1,32 @@
+# secrets
+.env
+.env.*
+*.key
+*.pem
+
+# runtime data: robot.db, logs, phone screenshots, journal, configs with ids
+data/
+*.log
+*.png
+*.jpg
+*.mp4
+
+# python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# android helper build
+keeper/build/
+keeper/.gradle/
+keeper/local.properties
+*.apk
+*.aab
+
+# editors / os
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
