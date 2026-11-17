@@ -19,15 +19,18 @@ Last updated: 2026-11-18, 03:20 WIB (builder session).
   safeStorage, encrypted at rest, the 401/400/404 paths). That suite: 37 pass, 0 fail, exit 0.
   **Catch:** the Chameleon app that is running now still has the old code in memory. The route works after its
   next restart (close it and open it again). Nothing else needs it before the first real login.
-- **Step 1's code. Done 2026-11-18** (commit `ec37460`): the `robotapp` package and the `robot` CLI — the
-  06:00-10:00 guard every phone call goes through, the shared phone lock, the write-ahead journal (Post is
-  pressed once, enforced by the database), `doctor`, the Chameleon client (a password is fetched only when it is
-  typed and cannot be printed), spaces, time-zone switching, sing-box config/import/always-on, the leak check,
-  pushing a clip into a space's gallery, the TikTok login and post flows, engagement. 34 tests pass against
-  `FakePhone`/`FakeScreen`, no phone needed.
+- **Step 1's code. Done 2026-11-18** (commits `ec37460` … `bd9e5b5`): the `robotapp` package and the `robot`
+  CLI — the 06:00-10:00 guard every phone call goes through, the shared phone lock, the write-ahead journal (Post
+  is pressed once, enforced by the database), `doctor`, the Chameleon client (a password is fetched only when it
+  is typed and cannot be printed), spaces, time-zone switching, sing-box config/import/always-on, the leak check,
+  pushing a clip into a space's gallery, the TikTok login and post flows, engagement, and `robot sitting` (the
+  §8.2 JSON contract, so ClipMaker can be written against it already). **56 tests pass** against
+  `FakePhone`/`FakeScreen` — including a scripted walk of the whole post and login flows, which caught a real bug
+  (the CAPTCHA signature matched TikTok's "Verify it's you" code screen).
 - **Prepared for the phone run:** the sing-box APK (F-Droid 1.14.4, certificate checked) is downloaded to
   `data/apk/`; `.env` holds Chameleon's token; the two proxies are known to be **HTTP** (port 50100); the queued
-  G2G TikTok clip and its caption are ready.
+  G2G TikTok clip, its caption and its exact length (61.6 s) are in `data/g2g-sitting.json`; the commands are in
+  [`docs/step1-runbook.md`](docs/step1-runbook.md).
 
 **Next**
 - **Step 1 on the real phone, inside 06:00-10:00 WIB** (§11): `robot doctor`; uninstall the auto-clicker; delete
