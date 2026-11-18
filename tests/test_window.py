@@ -41,7 +41,8 @@ def test_no_post_after_0955() -> None:
     assert post_allowed(at(5, 59)) is False
 
 
-def test_guard_refuses_outside_and_names_the_reason() -> None:
+def test_guard_refuses_outside_and_names_the_reason(monkeypatch) -> None:
+    monkeypatch.delenv("ROBOTAPP_BUILD_MODE", raising=False)  # a test never inherits the shell
     guard = WindowGuard(clock=lambda: at(3, 0))
     with pytest.raises(OutsideWindow) as caught:
         guard.check("read the screen")
@@ -49,11 +50,22 @@ def test_guard_refuses_outside_and_names_the_reason() -> None:
     assert "06:00" in describe(at(3, 0))
 
 
-def test_guard_allows_inside_and_post_cutoff() -> None:
+def test_guard_allows_inside_and_post_cutoff(monkeypatch) -> None:
+    monkeypatch.delenv("ROBOTAPP_BUILD_MODE", raising=False)
     WindowGuard(clock=lambda: at(7, 0)).check("read the screen")
     WindowGuard(clock=lambda: at(7, 0)).check_post("press Post")
     with pytest.raises(OutsideWindow):
         WindowGuard(clock=lambda: at(9, 56)).check_post("press Post")
+
+
+def test_build_mode_lets_the_guard_pass_outside(monkeypatch) -> None:
+    """ROBOTAPP_BUILD_MODE=1 is the user's build-time allowance: the phone may be used at 3 AM."""
+    monkeypatch.setenv("ROBOTAPP_BUILD_MODE", "1")
+    WindowGuard(clock=lambda: at(3, 0)).check("read the screen")
+    WindowGuard(clock=lambda: at(3, 0)).check_post("press Post")
+    monkeypatch.setenv("ROBOTAPP_BUILD_MODE", "0")
+    with pytest.raises(OutsideWindow):
+        WindowGuard(clock=lambda: at(3, 0)).check("read the screen")
 
 
 def test_seconds_left_and_next_start() -> None:

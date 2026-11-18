@@ -55,10 +55,24 @@ editor); a substring tap on "Profile" opened the *video author's* profile (now a
 caption goes in one paste and is read back; TikTok's location prompt is cleared via "Open settings" + Back.
 
 **Next**
-- **Step 2 (Wi-Fi adb that survives a reboot):** the Keeper app, Wireless debugging pairing, mDNS, watchdog.
-  Today the phone still needs `adb connect` (it was already up, on the cable as well).
-- Then step 3 (safety rails + FakePhone tests are partly done), step 4 (ClipMaker wiring — the sitting contract
-  and a working post make it a small job now).
+- **Step 2 — DONE 2026-11-18, 22:32 WIB** ("phone rebooted → robot reconnects alone"):
+  - **The laptop half is the real fix:** `robot connect` (and `resolve_serial`, which every command now runs)
+    finds the phone by **mDNS** (`_adb-tls-connect._tcp`, a new random port after every reboot), connects with
+    the already-authorized adb key, and falls back to `adb tcpip 5555` over the cable — pinned to the robot
+    phone's USB serial (`PHONE_USB_SERIAL`), so another phone on the cable is never touched.
+  - **Proven twice by reboots** (ports 46841 → 45307 → 36459): reboot → ~2 min → `robot connect` connects →
+    `doctor` green.
+  - **Honest finding: this XOS/Android 13 build persists `adb_wifi_enabled=1` across reboots by itself.**
+    A control test with Keeper disabled came back with Wireless debugging on. The plan's fear (§9) does not
+    hold on this firmware; **Keeper (built, installed, granted) is insurance, not the mechanism** — an 8.6 KB
+    receiver that re-sets the flag at boot in case an OEM update reverts to AOSP behaviour.
+  - Built `keeper.apk` by hand (javac → d8 → aapt2 → apksigner, no Gradle; `keeper/build.py`), installed in
+    the owner user, `WRITE_SECURE_SETTINGS` granted, battery-allowlisted. 6 reconnect tests (fake adb binary),
+    63 tests green.
+- **Step 3 next (safety rails + fake phone)** — partly done already (the journal, outcomes, signatures,
+  FakePhone tests and the scripted flow tests are in). Remaining: the password-leak grep test over real
+  output, and the screen-signature fixtures saved from the real apps.
+- Then step 4 (ClipMaker wiring — the sitting contract and a working post make it a small job now).
 - **TikTok's US build (`musically`) is still not on the phone**: the space is ready except for it, so US brands'
   TikTok posts wait. The APKMirror download is the missing piece.
 - The throwaway account does not exist yet; the login path (built, unit-tested) has not run on a real account.

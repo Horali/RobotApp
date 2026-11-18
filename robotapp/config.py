@@ -40,6 +40,7 @@ def load_dotenv(path: Path) -> dict[str, str]:
 class Settings:
     adb: Path = DEFAULT_ADB
     serial: str = DEFAULT_SERIAL
+    usb_serial: str = ""  # the robot phone's USB serial, so the cable fallback never touches another phone
     chameleon_url: str = DEFAULT_CHAMELEON
     chameleon_token: str = ""
     data_dir: Path = field(default_factory=lambda: REPO_ROOT / "data")
@@ -60,6 +61,7 @@ class Settings:
         return cls(
             adb=Path(get("ADB_PATH") or DEFAULT_ADB),
             serial=get("PHONE_SERIAL") or DEFAULT_SERIAL,
+            usb_serial=get("PHONE_USB_SERIAL") or "",
             chameleon_url=(get("CHAMELEON_API_URL") or DEFAULT_CHAMELEON).rstrip("/"),
             chameleon_token=get("CHAMELEON_TOKEN") or "",
             data_dir=Path(data) if data else REPO_ROOT / "data",

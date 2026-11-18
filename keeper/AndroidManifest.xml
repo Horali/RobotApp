@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keeper: RobotApp's boot helper (PLAN.md section 9, step 2).
+
+     Android forgets the adb TCP port on every reboot, and Wireless debugging is a setting the
+     owner would have to re-tap after every boot. Keeper does that one tap for them: on boot it
+     sets `adb_wifi_enabled = 1`, which turns Wireless debugging back on. The laptop then finds
+     the phone by mDNS and connects with its already-authorized key.
+
+     WRITE_SECURE_SETTINGS is not granted at install: the laptop grants it once with
+     `pm grant app.robotapp.keeper android.permission.WRITE_SECURE_SETTINGS` over adb.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="app.robotapp.keeper">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+
+    <application
+        android:label="Keeper"
+        android:allowBackup="false"
+        android:icon="@android:drawable/sym_def_app_icon">
+
+        <receiver
+            android:name=".KeeperReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <!-- Transsion/MTK devices also fire these on power-on. -->
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.transsion.reboot.qucikboot.poweron" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

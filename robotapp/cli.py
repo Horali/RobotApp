@@ -1,4 +1,4 @@
-﻿"""The `robot` command (PLAN section 8.1, section 8.2).
+"""The `robot` command (PLAN section 8.1, section 8.2).
 
 One command, JSON events on stdout, human logs on stderr, so ClipMaker can start it and read lines. In step 1 it
 is run by hand:
@@ -57,20 +57,42 @@ def emit(event: dict) -> None:
     print(json.dumps(event, ensure_ascii=False), flush=True)
 
 
+def resolve_serial(settings: Settings, emit_event: bool = True) -> str:
+    """The serial to talk to: the configured one, or whatever mDNS found after a reboot.
+
+    Transport only (adb connect / mdns services), never a phone shell command, so this is the one
+    part of a job that may run at 05:50: it wakes nothing on the phone. The cable fallback is
+    pinned to the robot phone's USB serial, so another phone on the cable is never touched.
+    """
+    from .reconnect import Reconnector
+
+    reconnector = Reconnector(settings.adb)
+    if reconnector.state_of(settings.serial) == "device":
+        return settings.serial
+    serial = reconnector.reconnect(settings.serial, usb_serial=settings.usb_serial)
+    if not serial:
+        return settings.serial  # let the command itself report the phone as unreachable
+    if serial != settings.serial and emit_event:
+        emit({"t": "info", "name": "serial", "configured": settings.serial, "using": serial})
+    return serial
+
+
 def build(args: argparse.Namespace, settings: Settings):
     """The phone and the screen for this run: the real ones, or the fakes with `--fake`."""
     if args.fake:
         phone = FakePhone(guard=fake_guard())
         return phone, None
-    return AdbPhone(settings.adb, settings.serial), None
+    serial = resolve_serial(settings, emit_event=not getattr(args, "json", False))
+    return AdbPhone(settings.adb, serial), serial
 
 
 def screen_for(phone, settings: Settings):
+    """The screen for the phone we are actually talking to (`phone.serial` is the resolved one)."""
     if isinstance(phone, FakePhone):
         from .fake import FakeScreen
 
         return FakeScreen()
-    return U2Screen.connect(settings.serial)
+    return U2Screen.connect(phone.serial)
 
 
 def require_window() -> None:
@@ -133,6 +155,29 @@ def cmd_window(args: argparse.Namespace, settings: Settings) -> int:
     }
     emit(body) if args.json else print(f"{body['now']}  {body['describe']}")
     return EXIT_OK
+
+
+def cmd_connect(args: argparse.Namespace, settings: Settings) -> int:
+    """Find the phone again: the configured serial, mDNS (Wireless debugging), then the cable.
+
+    Transport only (adb connect / mdns), never a shell command, so it is safe to run at 05:50:
+    it wakes no app and changes nothing on the phone.
+    """
+    from .reconnect import Reconnector
+
+    reconnector = Reconnector(settings.adb)
+    serial = reconnector.reconnect(settings.serial, cable_fallback=not args.no_cable)
+    if serial:
+        emit({"t": "connected", "serial": serial, "state": reconnector.state_of(serial)})
+        if args.json:
+            pass
+        else:
+            print(f"connected: {serial}")
+        return EXIT_OK
+    services = reconnector.mdns_services()
+    emit({"t": "offline", "configured": settings.serial, "mdns": [vars(s) for s in services]})
+    print("the phone is not reachable; plug the USB cable in and run this again")
+    return EXIT_ERROR
 
 
 def cmd_lock(args: argparse.Namespace, settings: Settings) -> int:
@@ -503,6 +548,10 @@ def parser() -> argparse.ArgumentParser:
 
     w = sub.add_parser("window", help="is the robot inside 06:00-10:00 WIB?")
     w.set_defaults(func=cmd_window)
+
+    co = sub.add_parser("connect", help="find the phone after a reboot (mDNS, then the cable)")
+    co.add_argument("--no-cable", action="store_true", help="do not try the USB cable fallback")
+    co.set_defaults(func=cmd_connect)
 
     lk = sub.add_parser("lock", help="the shared phone lock")
     lk.add_argument("action", choices=("status", "take", "release"))
