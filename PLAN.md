@@ -110,8 +110,22 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   - **Honest note:** the signatures follow the plan's description of Instagram's screens. No Instagram account
     exists on the robot phone, so they are unchecked against the real app — the first real Instagram account
     (the throwaway) provides the fixtures, and `tests/test_fixtures.py` guards them after that.
-- **Step 6 next (YouTube)**: the Google sign-in (§5.6), the Shorts flow (§6.7), the "YouTube by phone" switch
-  (already in ClipMaker), then the 14-day test (§8.8).
+- **Step 6 (YouTube) — code DONE 2026-11-19, 02:20 WIB** ("one Short by the robot" needs a real sitting):
+  - the Shorts flow (`post/youtube.py`): open, check the avatar is the brand's channel, **+** → Create a
+    Short → the newest video (length check, **the trimmer keeps the full length**) → the title (ClipMaker's,
+    ≤ 100 chars) → Public + not made for kids → **Upload Short** (journal first, never twice) → the link →
+    the pinned comment when the campaign asks → engagement;
+  - the Google sign-in (`login/google.py`): Settings → Add account → Google, the Gmail password fetched only
+    while typed, Backup off on the services screen, the account read back from YouTube's avatar. **A code to
+    the brand's own Gmail is automatic; any other destination stops with NeedsHuman** (the plan's honest rule
+    about Google's unknown recovery), and every "couldn't sign you in" stops for 24 h, never a loop;
+  - 6 scripted tests; the scripted walk caught a double-Next and an avatar check that read the wrong sheet.
+  - **Honest note:** like Instagram, the signatures are the plan's description until the first real YouTube
+    sitting (Timmy's 14-day test, §8.8) provides the fixtures.
+  - What is left of step 6: the 14-day test itself (needs Timmy's Google sign-in on the phone + `musically`
+    is not on the phone yet, though YouTube does not need it).
+- **Steps 7-10 next**: G2G's YouTube in the owner user (step 7 — small now), sound + views polish (8),
+  lifecycle (9), moving real accounts in (10 — one per day, safest first).
 - **TikTok's US build (`musically`) is still not on the phone**: the space is ready except for it, so US brands'
   TikTok posts wait. The APKMirror download is the missing piece.
 - The throwaway account does not exist yet; the login paths (built, unit-tested) have not run on a real account.
