@@ -385,6 +385,87 @@ def cmd_leak(args: argparse.Namespace, settings: Settings) -> int:
     return EXIT_OK if result.ok or result.outcome == "dry_run" else EXIT_ERROR
 
 
+def cmd_brands(args: argparse.Namespace, settings: Settings) -> int:
+    """The robot's own registry: which brand lives in which space (PLAN section 7.1)."""
+    from .registry import Registry
+
+    registry = Registry(settings.db_path)
+    try:
+        if args.action == "add":
+            body = json.loads(Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read())
+            brand = registry.add_brand(
+                str(body["brand_id"]), str(body.get("name") or body["brand_id"]),
+                body.get("network") or {"home": "ID"}, body.get("accounts") or [],
+            )
+            emit({"t": "brand", "brand_id": brand.brand_id, "name": brand.name, "state": brand.state,
+                  "space_user": brand.space_user})
+            return EXIT_OK
+        for brand in registry.brands():
+            emit({"t": "brand", "brand_id": brand.brand_id, "name": brand.name, "state": brand.state,
+                  "space_user": brand.space_user, "home": brand.home})
+        return EXIT_OK
+    finally:
+        registry.close()
+
+
+def cmd_setup_next(args: argparse.Namespace, settings: Settings) -> int:
+    """Wait nothing: the next waiting brand gets the next free space, then setup and login run.
+
+    Step 9's piece: the registry decides who goes next; the space work itself is `provision`
+    (one space) plus `login` (one account), which this command calls in order.
+    """
+    from .registry import Registry
+
+    registry = Registry(settings.db_path)
+    try:
+        brand = registry.next_waiting()
+        if brand is None:
+            emit({"t": "info", "name": "nothing waiting"})
+            return EXIT_OK
+        emit({"t": "step", "name": "setup-next", "brand": brand.brand_id})
+        phone, _ = build(args, settings)
+        free = [u for u in phone.users() if u.id not in {s["user_id"] for s in registry.spaces()} and not u.owner]
+        busy = {s["brand_id"] for s in registry.spaces() if s["brand_id"]}
+        taken = {u.id for u in phone.users() if not u.owner}
+        spare = [u for u in phone.users() if not u.owner and u.id not in busy]
+        if spare:
+            space_user = spare[0].id
+            registry.assign(brand.brand_id, space_user, spare[0].name)
+        elif registry.free_slots(phone.max_users()) > 0:
+            space = Spaces(phone).create(args.space_name or f"space {brand.name[:12]}")
+            space_user = space.user_id
+            registry.assign(brand.brand_id, space_user, space.name)
+        else:
+            emit({"t": "info", "name": "no free space", "brand": brand.brand_id})
+            return EXIT_ERROR
+        emit({"t": "info", "name": "assigned", "brand": brand.brand_id, "user": space_user})
+        return EXIT_OK
+    finally:
+        registry.close()
+
+
+def cmd_release(args: argparse.Namespace, settings: Settings) -> int:
+    """A brand leaves the phone: log out is the user's, the wipe is the robot's (PLAN section 4.8)."""
+    from .registry import Registry
+
+    registry = Registry(settings.db_path)
+    try:
+        user_id = registry.release(args.brand)
+        if user_id is None:
+            emit({"t": "error", "reason": "no such brand, or it has no space"})
+            return EXIT_ERROR
+        emit({"t": "step", "name": "wipe", "user": user_id})
+        phone, _ = build(args, settings)
+        spaces = Spaces(phone)
+        if not args.no_wipe:
+            spaces.wipe(user_id)      # stop, then remove the user: new Android IDs for the next brand
+            registry.space_wiped(user_id)
+        emit({"t": "info", "name": "released", "brand": args.brand, "user": user_id, "wiped": not args.no_wipe})
+        return EXIT_OK
+    finally:
+        registry.close()
+
+
 def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
     phone, _ = build(args, settings)
     screen = screen_for(phone, settings)
@@ -703,6 +784,20 @@ def parser() -> argparse.ArgumentParser:
     si.add_argument("--file", default="", help="the sitting JSON; stdin when omitted")
     si.add_argument("--dry-run", action="store_true", help="walk every post up to its Post button, then stop")
     si.set_defaults(func=cmd_sitting)
+
+    bd = sub.add_parser("brand", help="the robot's own brand/space registry")
+    bd.add_argument("action", choices=("add", "list"))
+    bd.add_argument("--file", default="", help="the brand JSON (stdin when omitted)")
+    bd.set_defaults(func=cmd_brands)
+
+    sn = sub.add_parser("setup-next", help="give the next waiting brand a free space")
+    sn.add_argument("--space-name", default="")
+    sn.set_defaults(func=cmd_setup_next)
+
+    rl = sub.add_parser("release", help="a brand leaves the phone: wipe its space")
+    rl.add_argument("--brand", required=True)
+    rl.add_argument("--no-wipe", action="store_true", help="only free the registry entry")
+    rl.set_defaults(func=cmd_release)
 
     vw = sub.add_parser("views", help="read a post's views from the phone")
     vw.add_argument("--upload-id", required=True)
