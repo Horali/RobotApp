@@ -501,7 +501,41 @@ def cmd_screen(args: argparse.Namespace, settings: Settings) -> int:
         path = settings.shots_dir / "screen.png"
         screen.screenshot(path)
         print(f"screenshot: {path}")
+    if args.save_as:
+        from .screens import save_screen
+
+        # The phone is already in the right state (the user put the screen there); save it as-is.
+        path = _save_fixture(args.save_as, screen)
+        print(f"fixture: {path}")
     return EXIT_OK
+
+
+def _save_fixture(name: str, screen) -> Path:
+    """Write what the screen shows as a fixture the signature tests replay (read-only)."""
+    import json as _json
+
+    from robotapp.screens import FIXTURES
+
+    elements = screen.elements()
+    body = {
+        "name": name,
+        "size": list(screen.size()),
+        "elements": [
+            {
+                "text": e.text,
+                "desc": e.desc,
+                "resource_id": e.resource_id,
+                "bounds": list(e.bounds),
+                "clickable": e.clickable,
+                "enabled": e.enabled,
+            }
+            for e in elements
+        ],
+    }
+    FIXTURES.mkdir(parents=True, exist_ok=True)
+    path = FIXTURES / f"{name}.json"
+    path.write_text(_json.dumps(body, ensure_ascii=False, indent=1), encoding="utf-8")
+    return path
 
 
 def cmd_sitting(args: argparse.Namespace, settings: Settings) -> int:
@@ -626,6 +660,7 @@ def parser() -> argparse.ArgumentParser:
     sc = sub.add_parser("screen", help="what is on the phone now (for fixing signatures)")
     sc.add_argument("--user", type=int, default=None, help="switch into this user first")
     sc.add_argument("--shot", action="store_true", help="also save a screenshot to data/shots/screen.png")
+    sc.add_argument("--save-as", default="", help="also save the elements as a test fixture with this name")
     sc.add_argument("--limit", type=int, default=40)
     sc.set_defaults(func=cmd_screen)
     return p

@@ -1,0 +1,2245 @@
+{
+ "name": "tiktok-profile",
+ "size": [
+  1080,
+  2460
+ ],
+ "elements": [
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/navigation_bar_frame",
+   "bounds": [
+    150,
+    2340,
+    930,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/navigation_bar_view",
+   "bounds": [
+    150,
+    2340,
+    930,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/navigation_inflater",
+   "bounds": [
+    150,
+    2340,
+    930,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/horizontal",
+   "bounds": [
+    150,
+    2340,
+    930,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/nav_buttons",
+   "bounds": [
+    150,
+    2340,
+    930,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/ends_group",
+   "bounds": [
+    150,
+    2340,
+    930,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    2340,
+    135,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    150,
+    2340,
+    405,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Overview",
+   "resource_id": "com.android.systemui:id/recent_apps",
+   "bounds": [
+    150,
+    2340,
+    390,
+    2460
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    675,
+    2340,
+    930,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Back",
+   "resource_id": "com.android.systemui:id/back",
+   "bounds": [
+    690,
+    2340,
+    930,
+    2460
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    945,
+    2340,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/center_group",
+   "bounds": [
+    420,
+    2340,
+    660,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Home",
+   "resource_id": "com.android.systemui:id/home",
+   "bounds": [
+    420,
+    2340,
+    660,
+    2460
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar_launch_animation_container",
+   "bounds": [
+    0,
+    0,
+    1080,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar_container",
+   "bounds": [
+    0,
+    0,
+    1080,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar",
+   "bounds": [
+    12,
+    0,
+    1068,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar_contents",
+   "bounds": [
+    24,
+    0,
+    1056,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/left",
+   "bounds": [
+    60,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar_left_side",
+   "bounds": [
+    60,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "10:44 PM",
+   "desc": "10:44 PM",
+   "resource_id": "com.android.systemui:id/clock",
+   "bounds": [
+    60,
+    0,
+    224,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/notification_icon_area",
+   "bounds": [
+    224,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/notification_icon_area_inner",
+   "bounds": [
+    224,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/notificationIcons",
+   "bounds": [
+    224,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Zoom notification: Zoom Workplace",
+   "resource_id": "",
+   "bounds": [
+    224,
+    30,
+    272,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Android System notification: USB debugging connected",
+   "resource_id": "",
+   "bounds": [
+    272,
+    30,
+    320,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Gmail notification: 2 new messages",
+   "resource_id": "",
+   "bounds": [
+    320,
+    30,
+    368,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Google Play services notification: New sign-in on Windows",
+   "resource_id": "",
+   "bounds": [
+    368,
+    30,
+    416,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Telegram notification: ClipMaker: ClipMaker",
+   "resource_id": "",
+   "bounds": [
+    416,
+    30,
+    464,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Dual App notification: HIDE this? click to open permission",
+   "resource_id": "",
+   "bounds": [
+    437,
+    30,
+    468,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Connection Stabilizer Booster notification: ",
+   "resource_id": "",
+   "bounds": [
+    437,
+    30,
+    468,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "myIM3 notification: Anti-Spam Protection Aktif",
+   "resource_id": "",
+   "bounds": [
+    437,
+    30,
+    468,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/cutout_space_view",
+   "bounds": [
+    468,
+    0,
+    612,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/system_icon_area",
+   "bounds": [
+    612,
+    0,
+    1020,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/system_icons",
+   "bounds": [
+    612,
+    0,
+    1020,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/statusIcons",
+   "bounds": [
+    612,
+    0,
+    868,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Ringer silent.",
+   "resource_id": "",
+   "bounds": [
+    774,
+    21,
+    811,
+    87
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Wifi signal full.",
+   "resource_id": "com.android.systemui:id/wifi_combo",
+   "bounds": [
+    817,
+    21,
+    862,
+    87
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/wifi_group",
+   "bounds": [
+    820,
+    21,
+    862,
+    87
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    820,
+    33,
+    862,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/wifi_signal",
+   "bounds": [
+    820,
+    33,
+    862,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/inout_container",
+   "bounds": [
+    824,
+    33,
+    862,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/wifi_in",
+   "bounds": [
+    824,
+    33,
+    862,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/wifi_out",
+   "bounds": [
+    824,
+    33,
+    862,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    868,
+    0,
+    922,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "235",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/network_rate_view",
+   "bounds": [
+    874,
+    34,
+    916,
+    58
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "K/S",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/network_rate_unit_view",
+   "bounds": [
+    874,
+    54,
+    916,
+    74
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/battery",
+   "bounds": [
+    925,
+    0,
+    1020,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    925,
+    36,
+    993,
+    72
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    999,
+    0,
+    1020,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "android:id/content",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/va5",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/va8",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/jl3",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/viewpager",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/or6",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/yj_",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/oqq",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/yj_",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/tdb",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/pw0",
+   "bounds": [
+    0,
+    108,
+    1080,
+    264
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/pwv",
+   "bounds": [
+    0,
+    108,
+    1080,
+    264
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/px0",
+   "bounds": [
+    24,
+    108,
+    228,
+    264
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    24,
+    132,
+    126,
+    240
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/touchpoint_profile_icon",
+   "bounds": [
+    126,
+    132,
+    228,
+    240
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/pwq",
+   "bounds": [
+    732,
+    108,
+    1056,
+    264
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    732,
+    126,
+    852,
+    246
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/f42",
+   "bounds": [
+    732,
+    126,
+    852,
+    246
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/e6i",
+   "bounds": [
+    732,
+    126,
+    852,
+    246
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Profile views",
+   "resource_id": "com.ss.android.ugc.trill:id/ipc",
+   "bounds": [
+    756,
+    150,
+    828,
+    222
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/m7l",
+   "bounds": [
+    756,
+    150,
+    828,
+    222
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Add person",
+   "resource_id": "",
+   "bounds": [
+    852,
+    132,
+    954,
+    240
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Profile menu",
+   "resource_id": "",
+   "bounds": [
+    954,
+    132,
+    1056,
+    240
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/f42",
+   "bounds": [
+    0,
+    264,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/ud7",
+   "bounds": [
+    0,
+    264,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/vez",
+   "bounds": [
+    0,
+    264,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/tde",
+   "bounds": [
+    0,
+    264,
+    1080,
+    810
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    264,
+    1080,
+    672
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/tb0",
+   "bounds": [
+    36,
+    282,
+    1080,
+    672
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/tb2",
+   "bounds": [
+    36,
+    300,
+    720,
+    618
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    300,
+    612,
+    468
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    316,
+    612,
+    400
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    316,
+    612,
+    400
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "Hoops Debate1",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/tcy",
+   "bounds": [
+    36,
+    316,
+    612,
+    400
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    406,
+    407,
+    451
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "@gtwogchannelclips",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/t_3",
+   "bounds": [
+    36,
+    406,
+    407,
+    451
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    510,
+    720,
+    618
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    510,
+    197,
+    618
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "0",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/te5",
+   "bounds": [
+    36,
+    510,
+    197,
+    576
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Following",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/te4",
+   "bounds": [
+    36,
+    573,
+    197,
+    618
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    197,
+    510,
+    430,
+    618
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "0",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/te5",
+   "bounds": [
+    233,
+    510,
+    266,
+    573
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Followers",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/te4",
+   "bounds": [
+    233,
+    573,
+    394,
+    618
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    430,
+    510,
+    574,
+    618
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "0",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/te5",
+   "bounds": [
+    430,
+    510,
+    574,
+    576
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Likes",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/te4",
+   "bounds": [
+    430,
+    573,
+    574,
+    618
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/t_r",
+   "bounds": [
+    708,
+    282,
+    1080,
+    672
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/bp7",
+   "bounds": [
+    708,
+    282,
+    1080,
+    672
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Profile photo",
+   "resource_id": "com.ss.android.ugc.trill:id/bq4",
+   "bounds": [
+    708,
+    336,
+    1080,
+    672
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    756,
+    360,
+    1044,
+    648
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Create a Story",
+   "resource_id": "",
+   "bounds": [
+    931,
+    535,
+    1080,
+    672
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    971,
+    575,
+    1043,
+    647
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/uch",
+   "bounds": [
+    763,
+    294,
+    1037,
+    501
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "Whisper, whisper",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    777,
+    294,
+    1023,
+    444
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    708,
+    1044,
+    810
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    714,
+    1044,
+    810
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "nba + nfl hot takes. watching every game, arguing about all of it",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/ta3",
+   "bounds": [
+    36,
+    714,
+    1044,
+    810
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/ze3",
+   "bounds": [
+    48,
+    840,
+    1032,
+    960
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    48,
+    840,
+    1032,
+    960
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    48,
+    840,
+    294,
+    960
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Videos",
+   "resource_id": "",
+   "bounds": [
+    48,
+    840,
+    294,
+    960
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/p7n",
+   "bounds": [
+    78,
+    840,
+    264,
+    960
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/kp9",
+   "bounds": [
+    78,
+    840,
+    198,
+    960
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Posts",
+   "resource_id": "com.ss.android.ugc.trill:id/khr",
+   "bounds": [
+    132,
+    867,
+    198,
+    933
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/ybi",
+   "bounds": [
+    198,
+    840,
+    264,
+    960
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/aj0",
+   "bounds": [
+    198,
+    885,
+    228,
+    915
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    294,
+    840,
+    540,
+    960
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Private videos",
+   "resource_id": "",
+   "bounds": [
+    294,
+    840,
+    540,
+    960
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Lock",
+   "resource_id": "com.ss.android.ugc.trill:id/khr",
+   "bounds": [
+    384,
+    867,
+    450,
+    933
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    540,
+    840,
+    786,
+    960
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Favorites",
+   "resource_id": "",
+   "bounds": [
+    540,
+    840,
+    786,
+    960
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Add to Favorites",
+   "resource_id": "com.ss.android.ugc.trill:id/khr",
+   "bounds": [
+    630,
+    867,
+    696,
+    933
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    786,
+    840,
+    1032,
+    960
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Liked videos",
+   "resource_id": "",
+   "bounds": [
+    786,
+    840,
+    1032,
+    960
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Like",
+   "resource_id": "com.ss.android.ugc.trill:id/khr",
+   "bounds": [
+    876,
+    867,
+    942,
+    933
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    960,
+    1080,
+    962
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    962,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/vfl",
+   "bounds": [
+    0,
+    962,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/t_v",
+   "bounds": [
+    0,
+    962,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/lf1",
+   "bounds": [
+    0,
+    962,
+    1080,
+    1586
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/f84",
+   "bounds": [
+    0,
+    962,
+    1080,
+    1586
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/icr",
+   "bounds": [
+    0,
+    962,
+    1080,
+    1586
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/f42",
+   "bounds": [
+    0,
+    962,
+    358,
+    1439
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/cover",
+   "bounds": [
+    0,
+    962,
+    358,
+    1439
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/ism",
+   "bounds": [
+    0,
+    1271,
+    96,
+    1367
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/video_info_container",
+   "bounds": [
+    0,
+    1289,
+    358,
+    1439
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "0",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/tv_play_count",
+   "bounds": [
+    12,
+    1379,
+    358,
+    1427
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/f42",
+   "bounds": [
+    361,
+    962,
+    719,
+    1439
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/cover",
+   "bounds": [
+    361,
+    962,
+    719,
+    1439
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/ism",
+   "bounds": [
+    361,
+    1271,
+    457,
+    1367
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/video_info_container",
+   "bounds": [
+    361,
+    1289,
+    719,
+    1439
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "0",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/tv_play_count",
+   "bounds": [
+    373,
+    1379,
+    719,
+    1427
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/bv6",
+   "bounds": [
+    0,
+    0,
+    1080,
+    714
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/cph",
+   "bounds": [
+    0,
+    2192,
+    1080,
+    2193
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/oql",
+   "bounds": [
+    0,
+    2193,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Home",
+   "resource_id": "com.ss.android.ugc.trill:id/oqd",
+   "bounds": [
+    0,
+    2193,
+    216,
+    2340
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "Home",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    2284,
+    216,
+    2323
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    60,
+    2199,
+    156,
+    2295
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Shop",
+   "resource_id": "com.ss.android.ugc.trill:id/etc",
+   "bounds": [
+    216,
+    2193,
+    432,
+    2340
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    360,
+    2205,
+    384,
+    2229
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Shop",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    216,
+    2284,
+    432,
+    2323
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    276,
+    2199,
+    372,
+    2295
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Create",
+   "resource_id": "com.ss.android.ugc.trill:id/oq_",
+   "bounds": [
+    432,
+    2193,
+    648,
+    2340
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    468,
+    2194,
+    612,
+    2338
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    468,
+    2194,
+    612,
+    2338
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Inbox",
+   "resource_id": "com.ss.android.ugc.trill:id/oqe",
+   "bounds": [
+    648,
+    2193,
+    864,
+    2340
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    792,
+    2205,
+    816,
+    2229
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Inbox",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    648,
+    2284,
+    864,
+    2323
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    708,
+    2199,
+    804,
+    2295
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Profile",
+   "resource_id": "com.ss.android.ugc.trill:id/oqf",
+   "bounds": [
+    864,
+    2193,
+    1080,
+    2340
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "Profile",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    864,
+    2284,
+    1080,
+    2323
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    924,
+    2199,
+    1020,
+    2295
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/tpv",
+   "bounds": [
+    0,
+    0,
+    222,
+    348
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.ss.android.ugc.trill:id/a4c",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2340
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "android:id/navigationBarBackground",
+   "bounds": [
+    0,
+    2340,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  }
+ ]
+}

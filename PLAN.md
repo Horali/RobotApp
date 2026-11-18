@@ -69,10 +69,18 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   - Built `keeper.apk` by hand (javac → d8 → aapt2 → apksigner, no Gradle; `keeper/build.py`), installed in
     the owner user, `WRITE_SECURE_SETTINGS` granted, battery-allowlisted. 6 reconnect tests (fake adb binary),
     63 tests green.
-- **Step 3 next (safety rails + fake phone)** — partly done already (the journal, outcomes, signatures,
-  FakePhone tests and the scripted flow tests are in). Remaining: the password-leak grep test over real
-  output, and the screen-signature fixtures saved from the real apps.
-- Then step 4 (ClipMaker wiring — the sitting contract and a working post make it a small job now).
+- **Step 3 — DONE 2026-11-18, 22:45 WIB** (safety rails + fake phone; "tests green"):
+  - already in from step 1: the write-ahead journal (never press Post twice, enforced by the database), the
+    outcome types (`posted` / `failed_before_post` / `unsure_after_post`), screen signatures, FakePhone +
+    FakeScreen tests, and the scripted whole-flow tests;
+  - **the password-leak test:** a real login flow runs with a known fake password, then every output channel is
+    grepped — the journal database, the WAL, the log file, the events, the exception text. The password appears
+    in exactly one place: the typed characters (it was used, once);
+  - **signature fixtures:** three real screen dumps saved from the phone (feed, profile, editor; `robot screen
+    --save-as`, saved by `data/capture_fixtures.py`) and replayed by tests. When TikTok updates and a screen
+    changes, the fixture test says so on the laptop before the phone ever runs the flow again;
+  - **70 tests green.**
+- **Step 4 next (ClipMaker wiring)** — the sitting contract and a working post make it a small job now.
 - **TikTok's US build (`musically`) is still not on the phone**: the space is ready except for it, so US brands'
   TikTok posts wait. The APKMirror download is the missing piece.
 - The throwaway account does not exist yet; the login path (built, unit-tested) has not run on a real account.
