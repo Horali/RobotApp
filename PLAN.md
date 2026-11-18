@@ -5,7 +5,7 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-18, 21:58 WIB (builder session).
+Last updated: 2026-11-19, 03:10 WIB (builder session, unattended while the user slept).
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
@@ -124,11 +124,36 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
     sitting (Timmy's 14-day test, §8.8) provides the fixtures.
   - What is left of step 6: the 14-day test itself (needs Timmy's Google sign-in on the phone + `musically`
     is not on the phone yet, though YouTube does not need it).
-- **Steps 7-10 next**: G2G's YouTube in the owner user (step 7 — small now), sound + views polish (8),
-  lifecycle (9), moving real accounts in (10 — one per day, safest first).
-- **TikTok's US build (`musically`) is still not on the phone**: the space is ready except for it, so US brands'
-  TikTok posts wait. The APKMirror download is the missing piece.
-- The throwaway account does not exist yet; the login paths (built, unit-tested) have not run on a real account.
+- **Step 7 (G2G's YouTube) — code DONE 2026-11-19, 02:50 WIB**: a G2G sitting is wrapped
+  (`g2g.py`): its own leak check first (a VPN up in the owner user means nothing posts), **Do Not Disturb on
+  for the sitting and back to the user's setting after**, the owner apps stopped on the way out. 2 tests.
+- **Step 8 (sound + views) — code DONE 2026-11-19, 03:00 WIB**:
+  - `sound.py`: the trending-sound step for TikTok and Instagram, and it never lies — `False` means nothing was
+    added, so the post goes out without a sound unless the caller said it is required (then it stops before the
+    press). The added sound is dropped under the clip's own audio.
+  - `views.py` + `robot views`: the newest tile's play count from the account's own profile (1,234 / 1.2K /
+    3.4M, and the play triangle the tiles show). An unreadable number answers `None`, so ClipMaker asks the
+    user as today. 6 tests.
+- **Step 9 (lifecycle) — code DONE 2026-11-19, 03:08 WIB**: `data/robot.db` holds the registry (brands ↔
+  spaces, states of §7.1). A home brand is ready at once in the owner user and never wiped; a US brand waits,
+  takes a free space, and `robot release` puts its space to wiping, frees the slot after `pm remove-user` — so
+  **a graduated brand frees its space alone** (step 9's acceptance). `robot brand add/list`, `robot
+  setup-next`, `robot release`. 5 tests. **102 tests green.**
+- **What is left, honestly:**
+  - **step 10 (move the real accounts in)** — the robot's side is built; it is one login per day, safest first
+    (§5.5), and **the first real login is the next thing to run**: the throwaway is now **"vtuber Clips"**
+    (user said so 2026-11-19), on `us-ps-1-virginia`, its accounts already signed in in Chameleon. Its
+    Instagram login on the phone has **not** been attempted yet, on purpose: §5.5 puts new-device logins inside
+    the 06:00-10:00 window, and the build session was at 02:00-03:00. Nothing was touched.
+  - **TikTok's US build (`musically`)** is still not on the phone: US brands' TikTok posts wait.
+  - **`musically` and the throwaway's TikTok login**, then the 14-day YouTube test (step 6's remainder).
+- **For the next session, in order:** (1) 06:00-10:00: `robot connect`, `robot doctor`, then the throwaway's
+  Instagram login (`robot login instagram --user 11 --profile-id <vtuber instagram> --email <its Gmail>`); it
+  may ask for a 6-digit code — that is the one thing that needs the user. (2) Capture the Instagram fixtures
+  from the real screens (`robot screen --user 11 --save-as instagram-*`) so the Instagram signatures stop being
+  guesses. (3) The throwaway's TikTok is blocked on `musically`. (4) The 14-day YouTube test needs Timmy's
+  Google sign-in (a separate, checked-by-hand job, §5.6).
+
 
 **What you must do**
 - Nothing right now. When Chameleon is restarted, the platform-password route is live for the first login.
