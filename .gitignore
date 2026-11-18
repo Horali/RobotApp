@@ -32,3 +32,4 @@ keeper/local.properties
 .vscode/
 Thumbs.db
 .DS_Store
+tmp*/
