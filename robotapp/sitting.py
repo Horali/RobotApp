@@ -20,6 +20,7 @@ from .errors import RobotError
 from .journal import Journal
 from .media import find_media_uri, push_video
 from .post.base import FAILED, PostResult, PostSpec
+from .post.instagram import INSTAGRAM as INSTAGRAM_PACKAGE, InstagramPoster
 from .post.tiktok import TIKTOK_ID, TIKTOK_US, TikTokPoster
 from .secrets import Chameleon
 from .ui import Screen
@@ -126,8 +127,23 @@ def run(
             spec.media_uri = find_media_uri(phone, user, remote)
             emit({"t": "info", "name": "video pushed", "remote": remote, "media_uri": spec.media_uri})
 
-        package = TIKTOK_ID if user == 0 else TIKTOK_US
-        poster = TikTokPoster(phone, screen, journal, sitting.job_id, package=package, emit=emit, shots_dir=shots_dir)
+        if spec.platform == "tiktok":
+            package = TIKTOK_ID if user == 0 else TIKTOK_US
+            poster = TikTokPoster(phone, screen, journal, sitting.job_id, package=package, emit=emit, shots_dir=shots_dir)
+        elif spec.platform == "instagram":
+            poster = InstagramPoster(
+                phone, screen, journal, sitting.job_id, package=INSTAGRAM_PACKAGE, emit=emit, shots_dir=shots_dir
+            )
+        else:
+            result = PostResult(
+                spec.upload_id,
+                spec.platform,
+                FAILED,
+                reason=f"the {spec.platform} flow is not built yet (PLAN step 6)",
+            )
+            emit(result.as_event())
+            results.append(result)
+            continue
         result = poster.post(spec, dry_run=dry_run)
         emit(result.as_event())
         results.append(result)

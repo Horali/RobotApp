@@ -357,7 +357,7 @@ def cmd_vpn(args: argparse.Namespace, settings: Settings) -> int:
 
 def cmd_zone(args: argparse.Namespace, settings: Settings) -> int:
     phone, _ = build(args, settings)
-    # Going to New York freezes G2G's apps first, so they never see the jump (PLAN Â§4.6).
+    # Going to New York freezes G2G's apps first, so they never see the jump (PLAN Ã‚Â§4.6).
     zone = timezone.to_us(phone) if args.zone == "newyork" else timezone.to_jakarta(phone)
     emit({"t": "info", "name": "time zone", "zone": zone})
     return EXIT_OK
@@ -397,13 +397,23 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
     def code_provider() -> str:
         if args.code:
             return args.code
-        emit({"t": "needs", "kind": "email_code", "platform": "tiktok"})
+        emit({"t": "needs", "kind": "email_code", "platform": args.platform})
         print("Type the 6-digit code from the account's email and press Enter:", file=sys.stderr, flush=True)
         return sys.stdin.readline().strip()
 
-    from .login.tiktok import TikTokLogin
+    if args.platform == "tiktok":
+        from .login.tiktok import TikTokLogin
 
-    login = TikTokLogin(phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider)
+        login = TikTokLogin(phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider)
+    else:
+        from .login.instagram import InstagramLogin
+        from .post.instagram import INSTAGRAM as INSTAGRAM_PACKAGE
+
+        if not args.package:
+            args.package = INSTAGRAM_PACKAGE
+        login = InstagramLogin(
+            phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider
+        )
     try:
         result = login.login(args.profile_id, args.email, args.package)
     except NeedsHuman as exc:
@@ -451,10 +461,9 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
     caption, tags = split_caption(caption_text)
     if args.hashtags:
         tags = [t.strip() for t in args.hashtags.split(",") if t.strip()]
-    package = args.package or (TIKTOK_ID if args.user == 0 else TIKTOK_US)
     spec = PostSpec(
         upload_id=args.upload_id,
-        platform="tiktok",
+        platform=args.platform,
         video=args.video,
         length_s=length,
         caption=caption,
@@ -463,7 +472,15 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
         sound_required=args.sound_required,
         media_uri=media_uri,
     )
-    poster = TikTokPoster(phone, screen, journal, job_id, package=package, emit=emit, shots_dir=settings.shots_dir)
+    if args.platform == "tiktok":
+        package = args.package or (TIKTOK_ID if args.user == 0 else TIKTOK_US)
+        poster = TikTokPoster(phone, screen, journal, job_id, package=package, emit=emit, shots_dir=settings.shots_dir)
+    else:
+        from .post.instagram import INSTAGRAM as INSTAGRAM_PACKAGE, InstagramPoster
+
+        poster = InstagramPoster(
+            phone, screen, journal, job_id, package=INSTAGRAM_PACKAGE, emit=emit, shots_dir=settings.shots_dir
+        )
     try:
         result = poster.post(spec, dry_run=args.dry_run)
     except NeedsHuman as exc:
@@ -621,7 +638,7 @@ def parser() -> argparse.ArgumentParser:
     lk2.set_defaults(func=cmd_leak)
 
     lo = sub.add_parser("login", help="sign an account in")
-    lo.add_argument("platform", choices=("tiktok",))
+    lo.add_argument("platform", choices=("tiktok", "instagram"))
     lo.add_argument("--user", type=int, required=True)
     lo.add_argument("--profile-id", required=True)
     lo.add_argument("--email", required=True)
@@ -631,7 +648,7 @@ def parser() -> argparse.ArgumentParser:
     lo.set_defaults(func=cmd_login)
 
     po = sub.add_parser("post", help="post one clip")
-    po.add_argument("platform", choices=("tiktok",))
+    po.add_argument("platform", choices=("tiktok", "instagram"))
     po.add_argument("--user", type=int, required=True)
     po.add_argument("--video", type=Path, required=True)
     po.add_argument("--caption", default="")
