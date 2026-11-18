@@ -229,7 +229,8 @@ class PhoneLock:
 
     def _try_acquire(self, until: datetime | None) -> LockInfo | None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        end = until or window_bounds()[1]
+        # A lock taken after 10:00 must not be stale on the spot: allow at least half an hour from now.
+        end = until or max(window_bounds()[1], now_wib() + timedelta(minutes=30))
         info = LockInfo(self.holder, os.getpid(), now_wib().isoformat(timespec="seconds"), end.isoformat(timespec="seconds"))
         try:
             fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)

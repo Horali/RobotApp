@@ -166,7 +166,11 @@ class AdbPhone:
         return self.prop("persist.sys.timezone")
 
     def package_version(self, package: str) -> str | None:
-        out = self.shell(f"dumpsys package {package} | grep -m1 versionName")
+        """None when the app is not installed: `grep` finds nothing and adb exits 1, which is an answer too."""
+        try:
+            out = self.shell(f"dumpsys package {package} | grep -m1 versionName")
+        except AdbError:
+            return None
         m = re.search(r"versionName=(\S+)", out)
         return m.group(1) if m else None
 

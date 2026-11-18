@@ -51,6 +51,22 @@ def test_a_stale_lock_is_taken_over(tmp_path) -> None:
     assert info.holder == "robotapp"
 
 
+def test_a_lock_taken_after_the_window_is_not_stale_at_once(tmp_path, monkeypatch) -> None:
+    """Regression: the lock's `until` used to be today's 10:00, so a lock taken in the evening was born stale."""
+    from datetime import datetime as real_datetime
+
+    from robotapp import window as window_module
+
+    evening = real_datetime(2026, 11, 18, 20, 36, tzinfo=WIB)
+    monkeypatch.setattr(window_module, "now_wib", lambda: evening)
+    path = tmp_path / "phone.lock"
+    info = PhoneLock(path=path).acquire()
+    until = datetime.fromisoformat(info.until)
+    assert until > evening
+    with pytest.raises(LockHeld):
+        PhoneLock(holder="other-script", path=path).acquire(wait_s=0.1)
+
+
 def test_a_live_holder_is_not_taken_over(tmp_path) -> None:
     path = tmp_path / "phone.lock"
     future = (datetime.now(WIB) + timedelta(hours=1)).isoformat(timespec="seconds")

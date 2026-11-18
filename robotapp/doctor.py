@@ -35,6 +35,7 @@ class Report:
     timezone: str = ""
     users: list[AndroidUser] = field(default_factory=list)
     max_users: int = 0
+    current_user: int = 0
     window: str = ""
     apps: dict[str, str | None] = field(default_factory=dict)
     problems: list[str] = field(default_factory=list)
@@ -62,6 +63,7 @@ class Report:
             "timezone": self.timezone,
             "users": [{"id": u.id, "name": u.name, "running": u.running} for u in self.users],
             "max_users": self.max_users,
+            "current_user": self.current_user,
             "free_spaces": self.free_spaces,
             "window": self.window,
             "apps": self.apps,
@@ -86,6 +88,7 @@ def check(phone: Phone, apps: dict[str, str] | None = None, moment=None) -> Repo
         report.battery = phone.battery()
         report.users = phone.users()
         report.max_users = phone.max_users()
+        report.current_user = phone.current_user()
         for package in apps or SPACE_APPS:
             report.apps[package] = phone.package_version(package)
     except AdbError as exc:
@@ -124,6 +127,7 @@ def format_report(report: Report) -> str:
             f"({report.free_spaces} free): "
             + ", ".join(f"{u.id} {u.name}{'*' if u.running else ''}" for u in report.users)
         )
+        lines.append(f"in front   user {report.current_user}")
         for package, version in report.apps.items():
             lines.append(f"app        {package} {version or 'NOT INSTALLED'}")
     if report.problems:
