@@ -154,7 +154,7 @@ def test_the_flow_walks_tiktok_screens_and_stops_before_post(journal) -> None:
     assert screen.state == "post"  # the post screen, nothing pressed
     assert "Post" not in screen.taps
     assert screen.taps[:6] == ["Profile", "Create", "Upload", "Videos", "video thumbnail", "Next"]
-    assert screen.typed[0] == "a caption"
+    assert screen.typed[0] == "a caption #g2g"  # the whole caption in one paste, hashtag included
     assert journal.pressed("job-1", "u1") is False
     assert not journal.has("job-1", PRESSED, "u1")
 

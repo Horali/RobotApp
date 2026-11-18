@@ -34,6 +34,7 @@ class PostSpec:
     sound: str | None = None  # "trending" | None
     sound_required: bool = False
     pinned_comment: str = ""  # YouTube
+    media_uri: str | None = None  # content:// of the pushed clip, for a share intent
 
     @property
     def full_caption(self) -> str:

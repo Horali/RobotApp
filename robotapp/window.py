@@ -190,9 +190,10 @@ def _pid_alive(pid: int) -> bool:
 class PhoneLock:
     """The laptop-wide lock file. `holder` is what other scripts see; `until` is when it goes stale."""
 
-    def __init__(self, holder: str = "robotapp", path: Path | None = None) -> None:
+    def __init__(self, holder: str = "robotapp", path: Path | None = None, fallback: Path | None = None) -> None:
         self.holder = holder
         self.path = path or default_lock_path()
+        self._fallback = fallback
 
     # -- reading -------------------------------------------------------------------------------------
     def read(self) -> LockInfo | None:
@@ -211,7 +212,8 @@ class PhoneLock:
             return True
         if until.tzinfo is None:
             until = until.replace(tzinfo=WIB)
-        return until <= now_wib() or (info.holder != self.holder and not _pid_alive(info.pid))
+        # A lock whose process is gone is stale whoever took it: a killed job must not block the next one.
+        return until <= now_wib() or not _pid_alive(info.pid)
 
     # -- taking and giving back ----------------------------------------------------------------------
     def acquire(self, until: datetime | None = None, wait_s: float = 0.0) -> LockInfo:
@@ -228,24 +230,38 @@ class PhoneLock:
             time.sleep(0.5)
 
     def _try_acquire(self, until: datetime | None) -> LockInfo | None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
         # A lock taken after 10:00 must not be stale on the spot: allow at least half an hour from now.
         end = until or max(window_bounds()[1], now_wib() + timedelta(minutes=30))
         info = LockInfo(self.holder, os.getpid(), now_wib().isoformat(timespec="seconds"), end.isoformat(timespec="seconds"))
-        try:
-            fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            current = self.read()
-            if not self.is_stale(current):
-                return None
-            # Stale: replace it in one step (write a temp file, then move it over the old one).
-            tmp = self.path.parent / f"{self.path.name}.{os.getpid()}.tmp"
-            tmp.write_text(info.to_json(), encoding="utf-8")
-            os.replace(tmp, self.path)
-            return info
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(info.to_json())
-        return info
+        for attempt in (0, 1):
+            try:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                except FileExistsError:
+                    current = self.read()
+                    if not self.is_stale(current):
+                        return None
+                    # Stale: replace it in one step (write a temp file, then move it over the old one).
+                    tmp = self.path.parent / f"{self.path.name}.{os.getpid()}.tmp"
+                    tmp.write_text(info.to_json(), encoding="utf-8")
+                    os.replace(tmp, self.path)
+                    return info
+                with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                    fh.write(info.to_json())
+                return info
+            except PermissionError:
+                # A restricted process (a sandbox, a policy) may not write outside its own folder: use the
+                # fallback rather than refusing to work, and say so.
+                if attempt == 1 or self._fallback is None:
+                    raise
+                import logging
+
+                logging.getLogger("robotapp").warning(
+                    "cannot write the phone lock at %s; using %s instead", self.path, self._fallback
+                )
+                self.path = self._fallback
+        return None
 
     def release(self) -> bool:
         """Give the lock back. Only the holder may release it; returns False when it was not ours."""

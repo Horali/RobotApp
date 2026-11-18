@@ -1,4 +1,4 @@
-"""The `robot` command (PLAN Ã‚Â§8.1, Ã‚Â§8.2).
+﻿"""The `robot` command (PLAN section 8.1, section 8.2).
 
 One command, JSON events on stdout, human logs on stderr, so ClipMaker can start it and read lines. In step 1 it
 is run by hand:
@@ -30,7 +30,7 @@ from .errors import NeedsCode, NeedsHuman, RobotError
 from .fake import FakePhone, fake_guard
 from .journal import Journal, write_status
 from .log import setup
-from .media import push_video, video_length
+from .media import find_media_uri, push_video, video_length
 from .post.base import FAILED, PostResult, PostSpec, split_caption
 from .post.tiktok import TIKTOK_ID, TIKTOK_US, TikTokPoster
 from .secrets import Chameleon, ChameleonError
@@ -103,7 +103,7 @@ def enter_space(phone, user: int) -> None:
 
 
 def leave_space(phone) -> None:
-    """Leave the phone the way other scripts expect it (Â§9): the owner user in front."""
+    """Leave the phone the way other scripts expect it ( section 9): the owner user in front."""
     try:
         if phone.current_user() != 0:
             phone.switch_user(0)
@@ -136,7 +136,7 @@ def cmd_window(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def cmd_lock(args: argparse.Namespace, settings: Settings) -> int:
-    lock = PhoneLock()
+    lock = PhoneLock(fallback=settings.data_dir / "phone.lock")
     if args.action == "status":
         info = lock.read()
         if info is None:
@@ -153,7 +153,7 @@ def cmd_lock(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
-    """Ã‚Â§4.1 / Ã‚Â§4.2: clean the phone, create one US space, put the apps and the VPN in, check for leaks."""
+    """ section 4.1 / section 4.2: clean the phone, create one US space, put the apps and the VPN in, check for leaks."""
     phone, _ = build(args, settings)
     spaces = Spaces(phone)
     chameleon = Chameleon(settings.chameleon_url, settings.chameleon_token)
@@ -213,31 +213,131 @@ def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
     enter_space(phone, space_user)
 
     if args.proxy_id:
-        emit({"t": "step", "name": "vpn"})
-        proxy_body = chameleon.proxy(args.proxy_id)
-        proxy = Proxy(
-            host=str(proxy_body.get("host")),
-            port=int(proxy_body.get("port") or 0),
-            username=str(proxy_body.get("username") or ""),
-            password=proxy_body.get("password"),
-            protocol=str(proxy_body.get("protocol") or "socks5"),
-        )
-        config = build_config(proxy)
-        with serve_once(config) as (url, served):
-            import_profile(phone, url, space_user)
-            emit({"t": "info", "name": "profile import opened", "served": served["done"]})
-        state = always_on(phone, space_user)
-        emit({"t": "info", "name": "always-on", **state})
+        screen = screen_for(phone, settings)
+        setup_vpn(phone, screen, chameleon, settings, space_user, args.proxy_id, emit)
+    else:
+        screen = None
+
+    if args.zone:
+        emit({"t": "step", "name": "time zone"})
+        emit({"t": "info", "name": "time zone", "zone": timezone.set_zone(phone, args.zone)})
 
     emit({"t": "step", "name": "leak check"})
-    screen = screen_for(phone, settings)
+    screen = screen or screen_for(phone, settings)
     from .leakcheck import check_us
-
     result = check_us(phone, screen, space_user, expected_ip=args.expected_ip, shots_dir=settings.shots_dir)
     emit({"t": "leakcheck", **result.as_dict()})
     emit({"t": "info", "name": "space ready", "user": space_user, "ok": result.ok})
     leave_space(phone)
-    return EXIT_OK if result.ok else EXIT_ERROR
+    return EXIT_OK if result.ok or result.outcome == "dry_run" else EXIT_ERROR
+
+
+def setup_vpn(phone, screen, chameleon, settings, user: int, proxy_id: str, emit, wait_s: float = 90.0) -> dict:
+    """Write the sing-box profile from Chameleon's proxy, get it onto the phone, lock the space to it.
+
+    Order matters: lockdown off first (it would block the download), then the import, then wait for the tunnel,
+    then always-on + lockdown. Returns the VPN state the phone reports.
+    """
+    from .vpn import always_on, clear_lockdown, serve_once, sfa_import, vpn_state
+
+    emit({"t": "step", "name": "vpn"})
+    proxy_body = chameleon.proxy(proxy_id)
+    proxy = Proxy(
+        host=str(proxy_body.get("host")),
+        port=int(proxy_body.get("port") or 0),
+        username=str(proxy_body.get("username") or ""),
+        password=proxy_body.get("password"),
+        protocol=str(proxy_body.get("protocol") or "socks5"),
+    )
+    clear_lockdown(phone, user)
+    config = build_config(proxy)
+    phone_host = settings.serial.split(":")[0]
+    with serve_once(config, phone_host=phone_host) as (url, served):
+        try:
+            sfa_import(phone, screen, url, user, emit)
+        except RuntimeError as exc:
+            emit({"t": "error", "reason": str(exc)})
+            return {"up": False, "reason": str(exc)}
+        for _ in range(20):
+            if served["done"]:
+                break
+            time.sleep(1.0)
+        emit({"t": "info", "name": "profile import", "fetched": served["done"], "url_host": url.split("/")[2]})
+        if not served["done"]:
+            return {"up": False, "reason": "the phone did not fetch the profile (SFA would not open the link?)"}
+
+    state: dict = {}
+    for _ in range(int(wait_s)):
+        state = vpn_state(phone, user)
+        if state["up"]:
+            break
+        if screen is not None and _ > 2:
+            _tap_start_if_present(screen, emit)
+        time.sleep(1.0)
+    if not state.get("up"):
+        emit({"t": "info", "name": "vpn not up", "detail": state.get("detail")})
+        return state
+    always_on(phone, user)
+    state = vpn_state(phone, user)
+    emit({"t": "info", "name": "vpn locked", **{k: state[k] for k in ("up", "always_on_app", "lockdown")}})
+    return state
+
+
+def _tap_start_if_present(screen, emit) -> None:
+    """SFA's big button is the only tap the robot needs on this app; names differ between versions."""
+    from .ui import find, find_exact
+
+    elements = screen.elements()
+    for label in ("Start", "Connect", "Turn on", "Start service"):
+        button = find_exact(elements, label) or find(elements, label)
+        if button is not None:
+            screen.tap(button)
+            emit({"t": "info", "name": "tapped", "label": label})
+            return
+
+
+def cmd_vpn(args: argparse.Namespace, settings: Settings) -> int:
+    """(Re)build the VPN for one space: clear lockdown, import the profile, wait, then lock it down."""
+    phone, _ = build(args, settings)
+    enter_space(phone, args.user)
+    screen = screen_for(phone, settings)
+    chameleon = Chameleon(settings.chameleon_url, settings.chameleon_token)
+    try:
+        state = setup_vpn(phone, screen, chameleon, settings, args.user, args.proxy_id, emit)
+    finally:
+        leave_space(phone)
+    emit({"t": "vpn", **state})
+    return EXIT_OK if state.get("up") else EXIT_ERROR
+
+
+def cmd_zone(args: argparse.Namespace, settings: Settings) -> int:
+    phone, _ = build(args, settings)
+    # Going to New York freezes G2G's apps first, so they never see the jump (PLAN Â§4.6).
+    zone = timezone.to_us(phone) if args.zone == "newyork" else timezone.to_jakarta(phone)
+    emit({"t": "info", "name": "time zone", "zone": zone})
+    return EXIT_OK
+
+
+def cmd_leak(args: argparse.Namespace, settings: Settings) -> int:
+    """The leak check on its own: VPN up and locked, the exit in the US, the right zone, no SIM."""
+    from .leakcheck import check_g2g, check_us
+    from .vpn import always_on
+
+    phone, _ = build(args, settings)
+    enter_space(phone, args.user)
+    screen = screen_for(phone, settings)
+    try:
+        if args.user == 0:
+            result = check_g2g(phone, screen, settings.shots_dir)
+        else:
+            if not args.no_lock:
+                state = always_on(phone, args.user)
+                emit({"t": "info", "name": "always-on", **state})
+            result = check_us(phone, screen, args.user, expected_ip=args.expected_ip or None, shots_dir=settings.shots_dir)
+    finally:
+        leave_space(phone)
+    emit({"t": "leakcheck", **result.as_dict()})
+    return EXIT_OK if result.ok or result.outcome == "dry_run" else EXIT_ERROR
 
 
 def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
@@ -297,7 +397,8 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
 
     length = args.length or video_length(args.video)
     remote = push_video(phone, args.video, args.user)
-    emit({"t": "info", "name": "video pushed", "remote": remote, "length_s": length})
+    media_uri = find_media_uri(phone, args.user, remote)
+    emit({"t": "info", "name": "video pushed", "remote": remote, "length_s": length, "media_uri": media_uri})
 
     caption_text = args.caption
     if args.caption_file:
@@ -315,6 +416,7 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
         hashtags=tags,
         sound=args.sound,
         sound_required=args.sound_required,
+        media_uri=media_uri,
     )
     poster = TikTokPoster(phone, screen, journal, job_id, package=package, emit=emit, shots_dir=settings.shots_dir)
     try:
@@ -326,15 +428,17 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
     journal.set_state(job_id, "done" if result.ok else result.outcome)
     emit(result.as_event())
     leave_space(phone)
-    return EXIT_OK if result.ok else EXIT_ERROR
+    return EXIT_OK if result.ok or result.outcome == "dry_run" else EXIT_ERROR
 
 
 def cmd_screen(args: argparse.Namespace, settings: Settings) -> int:
     """What is on the phone now: the texts uiautomator2 can see (short), and optionally a screenshot.
 
-    This is the tool for writing and fixing a step's signature on a real app version (Â§6.2).
+    This is the tool for writing and fixing a step's signature on a real app version ( section 6.2).
     """
     phone, _ = build(args, settings)
+    if getattr(args, "user", None) is not None:
+        enter_space(phone, args.user)
     screen = screen_for(phone, settings)
     elements = screen.elements()
     rows = [
@@ -356,7 +460,7 @@ def cmd_screen(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def cmd_sitting(args: argparse.Namespace, settings: Settings) -> int:
-    """One brand's sitting, from the JSON contract in PLAN Â§8.2 (a file, or stdin)."""
+    """One brand's sitting, from the JSON contract in PLAN section 8.2 (a file, or stdin)."""
     from .sitting import Sitting, run as run_sitting
 
     body = json.loads(Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read())
@@ -415,7 +519,23 @@ def parser() -> argparse.ArgumentParser:
     pr.add_argument("--sfa-apk", default="", help="sing-box APK to install once (F-Droid, developer-signed)")
     pr.add_argument("--sfa-sha256", default="")
     pr.add_argument("--expected-ip", default="")
+    pr.add_argument("--zone", default="", help="switch the phone's time zone before the leak check, e.g. America/New_York")
     pr.set_defaults(func=cmd_provision)
+
+    vp = sub.add_parser("vpn", help="(re)build one space's VPN: import the profile, wait, lock it down")
+    vp.add_argument("--user", type=int, required=True)
+    vp.add_argument("--proxy-id", required=True)
+    vp.set_defaults(func=cmd_vpn)
+
+    zn = sub.add_parser("zone", help="switch the phone's time zone")
+    zn.add_argument("zone", choices=("jakarta", "newyork"))
+    zn.set_defaults(func=cmd_zone)
+
+    lk2 = sub.add_parser("leak", help="the leak check for one space (or the owner user)")
+    lk2.add_argument("--user", type=int, default=0)
+    lk2.add_argument("--expected-ip", default="")
+    lk2.add_argument("--no-lock", action="store_true", help="do not set always-on + lockdown first")
+    lk2.set_defaults(func=cmd_leak)
 
     lo = sub.add_parser("login", help="sign an account in")
     lo.add_argument("platform", choices=("tiktok",))
@@ -445,7 +565,7 @@ def parser() -> argparse.ArgumentParser:
     po.add_argument("--job", default="")
     po.set_defaults(func=cmd_post, leakcheck=True)
 
-    si = sub.add_parser("sitting", help="one brand's sitting (JSON from PLAN Â§8.2)")
+    si = sub.add_parser("sitting", help="one brand's sitting (JSON from PLAN section 8.2)")
     si.add_argument("--file", default="", help="the sitting JSON; stdin when omitted")
     si.add_argument("--dry-run", action="store_true", help="walk every post up to its Post button, then stop")
     si.set_defaults(func=cmd_sitting)
@@ -455,6 +575,7 @@ def parser() -> argparse.ArgumentParser:
     st.set_defaults(func=cmd_status)
 
     sc = sub.add_parser("screen", help="what is on the phone now (for fixing signatures)")
+    sc.add_argument("--user", type=int, default=None, help="switch into this user first")
     sc.add_argument("--shot", action="store_true", help="also save a screenshot to data/shots/screen.png")
     sc.add_argument("--limit", type=int, default=40)
     sc.set_defaults(func=cmd_screen)
@@ -467,7 +588,7 @@ def main(argv: list[str] | None = None) -> int:
     settings.ensure_dirs()
     setup(settings.logs_dir)
 
-    if args.command in ("doctor", "provision", "login", "post", "screen", "sitting"):
+    if args.command in ("doctor", "provision", "login", "post", "screen", "sitting", "vpn", "zone", "leak"):
         try:
             require_window()
         except OutsideWindow as exc:
@@ -475,8 +596,8 @@ def main(argv: list[str] | None = None) -> int:
             emit({"t": "error", "reason": str(exc)})
             return EXIT_OUTSIDE
 
-    lock = PhoneLock()
-    needs_lock = args.command in ("provision", "login", "post", "screen", "sitting")
+    lock = PhoneLock(fallback=settings.data_dir / "phone.lock")
+    needs_lock = args.command in ("provision", "login", "post", "screen", "sitting", "vpn", "zone", "leak")
     if needs_lock:
         try:
             lock.acquire(wait_s=60)

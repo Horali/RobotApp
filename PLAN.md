@@ -5,7 +5,7 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-18, 03:20 WIB (builder session).
+Last updated: 2026-11-18, 21:58 WIB (builder session).
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
@@ -25,25 +25,47 @@ Last updated: 2026-11-18, 03:20 WIB (builder session).
   is typed and cannot be printed), spaces, time-zone switching, sing-box config/import/always-on, the leak check,
   pushing a clip into a space's gallery, the TikTok login and post flows, engagement, and `robot sitting` (the
   §8.2 JSON contract, so ClipMaker can be written against it already). **56 tests pass** against
-  `FakePhone`/`FakeScreen` — including a scripted walk of the whole post and login flows, which caught a real bug
-  (the CAPTCHA signature matched TikTok's "Verify it's you" code screen).
-- **Prepared for the phone run:** the sing-box APK (F-Droid 1.14.4, certificate checked) is downloaded to
-  `data/apk/`; `.env` holds Chameleon's token; the two proxies are known to be **HTTP** (port 50100); the queued
-  G2G TikTok clip, its caption and its exact length (61.6 s) are in `data/g2g-sitting.json`; the commands are in
-  [`docs/step1-runbook.md`](docs/step1-runbook.md).
+  `FakePhone`/`FakeScreen` — including a scripted walk of the whole post and login flows.
+- **STEP 1 RAN ON THE PHONE AND WORKED. 2026-11-18, 20:37-21:56 WIB** (the user allowed the phone outside the
+  window while building: `ROBOTAPP_BUILD_MODE=1`, off by default, logged loudly). What was proven, in order:
+  - the auto-clicker uninstalled; **users 10 ("Brand") and 999 ("Ruang Ganda") deleted** — `pm remove-user 999`
+    was *not* refused;
+  - **one US space = user 11** ("US 1"), with Instagram, YouTube, Chrome and sing-box installed, media
+    permissions granted, location/contacts never;
+  - **sing-box (SFA 1.14.4) imported the profile** written from the Virginia proxy and **the tunnel came up**;
+    always-on + lockdown set;
+  - **the leak check passed**: exit IP `208.214.162.185`, `loc=US`, VPN locked, New York time, no SIM, location
+    off (~90 s including Chrome's first run);
+  - **uiautomator2 reads and taps a secondary user's screen** — yes, the "unverified" item of §6.2; it needed
+    `am switch-user` first (a space's UI only exists while that user is in front);
+  - **G2G's queued TikTok clip was posted by the robot** from `trill` in the owner user: handle read
+    (`@gtwogchannelclips`), caption written and read back, Post pressed **once** (journal), upload confirmed,
+    **link `https://vt.tiktok.com/ZSp7oooX8/`**, 3.3 min of watch-only engagement;
+  - **the post is in ClipMaker as posted**: `/api/phone-posted` answered `{"ok": true, "url": …}` and scheduled
+    the 24 h check. (The row needed `sent_at` first, set with `data/claim_phone_post.js`; step 4 does that in
+    ClipMaker's own code.)
+  - Measured: connect + doctor ~1 min; clean + space + apps + SFA + VPN ~4 min; leak check ~1.5 min; one post
+    from "start" to link ~8 min (including the upload wait); engagement 3.3 min. Well inside 06:00-10:00.
+
+**Fixed on the way (all committed):** SFA 1.14 rejects the old DNS/`block` formats (new config); SFA needs its
+update offer dismissed, its "Create" tapped and its profile started; the laptop's hotspot address was served
+instead of its Wi-Fi address; `monkey --user` does not exist (resolve the activity instead); the camera's upload
+tile is drawn but absent from the accessibility tree, so the **share intent** is the route (tap "Video" → the same
+editor); a substring tap on "Profile" opened the *video author's* profile (now an exact bottom-bar tap); the
+caption goes in one paste and is read back; TikTok's location prompt is cleared via "Open settings" + Back.
 
 **Next**
-- **Step 1 on the real phone, inside 06:00-10:00 WIB** (§11): `robot doctor`; uninstall the auto-clicker; delete
-  users 10 and 999; create one US space; install SFA and the apps; SFA profile from the Virginia proxy +
-  always-on + lockdown; the leak check; prove uiautomator2 in a secondary user; then post G2G's queued TikTok clip
-  from the owner user (`trill`), read the link, engage, and mark the post in ClipMaker.
-  **The exact commands are in [`docs/step1-runbook.md`](docs/step1-runbook.md).**
-- Still to do for the US space: TikTok's US build (`musically`) is not on the phone yet. The space works without
-  it; US brands' TikTok posts wait for it.
+- **Step 2 (Wi-Fi adb that survives a reboot):** the Keeper app, Wireless debugging pairing, mDNS, watchdog.
+  Today the phone still needs `adb connect` (it was already up, on the cable as well).
+- Then step 3 (safety rails + FakePhone tests are partly done), step 4 (ClipMaker wiring — the sitting contract
+  and a working post make it a small job now).
+- **TikTok's US build (`musically`) is still not on the phone**: the space is ready except for it, so US brands'
+  TikTok posts wait. The APKMirror download is the missing piece.
+- The throwaway account does not exist yet; the login path (built, unit-tested) has not run on a real account.
 
 **What you must do**
-- Nothing right now. The real-phone part runs after 06:00; you can watch in scrcpy.
-- Before the first real login (not needed for the G2G post): restart Chameleon so the new route is live.
+- Nothing right now. When Chameleon is restarted, the platform-password route is live for the first login.
+- The G2G post is live: https://vt.tiktok.com/ZSp7oooX8/ (ClipMaker already has it).
 
 
 **Firm rule (user, 2026-11-18): the robot touches the phone only from 06:00 to 10:00 your time (WIB).** Every

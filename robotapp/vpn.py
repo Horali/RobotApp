@@ -41,8 +41,10 @@ class Proxy:
 def build_config(proxy: Proxy, dns_server: str = "1.1.1.1") -> dict:
     """A strict, leak-free profile: all traffic through the proxy, DNS through it, QUIC blocked.
 
-    Proxy-Seller's records in Chameleon are HTTP proxies (port 50100); a SOCKS5 record is handled too, because
-    the plan assumed 50101. Either way the outbound is the only way out.
+    The format is sing-box 1.14's (the version SFA ships): DNS servers carry `type`/`server`/`server_port`
+    because the legacy `address` form is rejected, and a blocked protocol is a route action (`reject`) because
+    the `block` outbound no longer exists. A config this robot writes must be accepted by the installed app:
+    the first version of this function was refused with "legacy DNS server formats are deprecated".
     """
     if proxy.protocol.lower().startswith("socks"):
         outbound: dict[str, object] = {
@@ -61,7 +63,9 @@ def build_config(proxy: Proxy, dns_server: str = "1.1.1.1") -> dict:
     return {
         "log": {"level": "warn", "timestamp": True},
         "dns": {
-            "servers": [{"tag": "proxy-dns", "address": f"tcp://{dns_server}", "detour": "proxy"}],
+            "servers": [
+                {"type": "tcp", "tag": "proxy-dns", "server": dns_server, "server_port": 53, "detour": "proxy"}
+            ],
             "final": "proxy-dns",
             "strategy": "ipv4_only",
         },
@@ -70,25 +74,37 @@ def build_config(proxy: Proxy, dns_server: str = "1.1.1.1") -> dict:
                 "type": "tun",
                 "tag": "tun-in",
                 "address": ["172.19.0.1/30"],
-                "mtu": 9000,
                 "auto_route": True,
                 "strict_route": True,
                 "stack": "system",
             }
         ],
-        "outbounds": [
-            outbound,
-            {"type": "block", "tag": "block"},
-        ],
+        "outbounds": [outbound],
         "route": {
-            "rules": [{"protocol": "quic", "outbound": "block"}],
+            "rules": [{"protocol": "quic", "action": "reject"}],
             "final": "proxy",
             "auto_detect_interface": True,
         },
     }
 
 
-def lan_ip() -> str:
+def lan_ip(phone_host: str = "") -> str:
+    """The laptop's address on the phone's network.
+
+    A laptop can have several (here: a Wi-Fi address and a hotspot adapter's 192.168.137.1). The phone can only
+    reach the adapter that shares its subnet, so pick that one; fall back to the default route otherwise.
+    """
+    prefix = ".".join(phone_host.split(".")[:3]) + "." if phone_host.count(".") == 3 else ""
+    try:
+        addresses = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")]
+    except OSError:
+        addresses = []
+    if prefix:
+        for ip in addresses:
+            if ip.startswith(prefix):
+                return ip
+    if addresses:
+        return addresses[0]
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         sock.connect((LAN_IP_HINT, 80))
@@ -98,8 +114,8 @@ def lan_ip() -> str:
 
 
 @contextmanager
-def serve_once(config: dict, seconds: float = 60.0):
-    """Serve the config at a random one-time path on the home network, then stop and forget it."""
+def serve_once(config: dict, seconds: float = 60.0, phone_host: str = ""):
+    """Serve the config at a random one-time path on the phone's network, then stop and forget it."""
     token = py_secrets.token_urlsafe(18)
     body = json.dumps(config).encode("utf-8")
     served = {"done": False}
@@ -123,7 +139,7 @@ def serve_once(config: dict, seconds: float = 60.0):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        url = f"http://{lan_ip()}:{server.server_address[1]}/{token}/config.json"
+        url = f"http://{lan_ip(phone_host)}:{server.server_address[1]}/{token}/config.json"
         yield url, served
     finally:
         server.shutdown()
@@ -137,7 +153,48 @@ def import_link(url: str) -> str:
 
 def import_profile(phone: Phone, url: str, user: int) -> None:
     link = import_link(url)
-    phone.shell(f'am start --user {user} -a android.intent.action.VIEW -d "{link}"', timeout=30)
+    phone.shell(
+        f'am start --user {user} -a android.intent.action.VIEW -c android.intent.category.BROWSABLE '
+        f'-d "{link}" -p {SFA_PACKAGE}',
+        timeout=30,
+    )
+
+
+def sfa_import(phone: Phone, screen, url: str, user: int, emit=lambda event: None) -> bool:
+    """Open the import link and walk SFA's three screens: the update offer, the confirm, the new profile.
+
+    SFA 1.14 opens "New Profile" pre-filled and needs its "Create" tapped; before that it offers an automatic
+    update check. A config it refuses shows an "Error" dialog with the reason, which is worth surfacing verbatim.
+    """
+    import time
+
+    from .ui import find, find_exact
+
+    phone.force_stop(SFA_PACKAGE, user)
+    time.sleep(1.0)
+    import_profile(phone, url, user)
+    seen: set[str] = set()
+    for _ in range(40):
+        time.sleep(1.0)
+        elements = screen.elements()
+        text = " ".join(e.text + " " + e.desc for e in elements)
+        if "decode config" in text or "parse config" in text:
+            raise RuntimeError(f"sing-box refused the profile: {text.strip()[:300]}")
+        tapped = False
+        for label in ("No, thanks", "OK", "Create", "Allow", "Done"):
+            button = find_exact(elements, label) or find(elements, label)
+            if button is not None:
+                if label not in seen:
+                    emit({"t": "info", "name": "sfa", "tapped": label})
+                    seen.add(label)
+                screen.tap(button)
+                tapped = True
+                break
+        if tapped:
+            continue
+        if find(elements, "Profiles") is not None or find(elements, "Dashboard") is not None:
+            return True
+    return False
 
 
 def always_on(phone: Phone, user: int, package: str = SFA_PACKAGE) -> dict[str, str]:
@@ -151,13 +208,26 @@ def always_on(phone: Phone, user: int, package: str = SFA_PACKAGE) -> dict[str, 
     }
 
 
+def clear_lockdown(phone: Phone, user: int) -> None:
+    """Before importing a profile there must be no lockdown: it would block the very download it needs.
+
+    The always-on app is left in place, so the system starts SFA by itself once the profile is there.
+    """
+    try:
+        phone.settings_put("secure", "always_on_vpn_lockdown", "0", user)
+    except Exception:  # noqa: BLE001 - nothing to clear is fine
+        pass
+
+
 def vpn_state(phone: Phone, user: int) -> dict[str, object]:
     """What the phone says about the VPN for that user: up, which app, and whether lockdown is on."""
-    connectivity = phone.shell("dumpsys connectivity | grep -i -m4 vpn")
+    connectivity = phone.shell("dumpsys connectivity | grep -i -m6 -E 'VPN CONNECTED|TRANSPORT_VPN|VpnNetworkProvider'")
+    # "VpnNetworkProvider" alone is a system network provider, not our tunnel: only a connected VPN counts.
+    up = "VPN CONNECTED" in connectivity or "TRANSPORT_VPN" in connectivity
     app = phone.settings_get("secure", "always_on_vpn_app", user).strip()
     lockdown = phone.settings_get("secure", "always_on_vpn_lockdown", user).strip()
     return {
-        "up": "VPN" in connectivity.upper(),
+        "up": up,
         "always_on_app": app,
         "lockdown": lockdown == "1",
         "detail": " ".join(connectivity.split())[:200],

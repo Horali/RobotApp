@@ -12,7 +12,7 @@ import time
 from datetime import datetime
 
 from .adb import Phone
-from .window import WIB, in_window
+from .window import WIB, build_mode, in_window
 
 
 def engage(phone: Phone, minutes: tuple[float, float] = (3.0, 5.0), stop_at: datetime | None = None) -> float:
@@ -22,7 +22,7 @@ def engage(phone: Phone, minutes: tuple[float, float] = (3.0, 5.0), stop_at: dat
     width, height = _size(phone)
     while time.monotonic() - started < target:
         now = datetime.now(WIB)
-        if not in_window(now) or (stop_at and now >= stop_at):
+        if (not in_window(now) and not build_mode()) or (stop_at and now >= stop_at):
             break  # the window is a hard stop, engagement included (§7.2)
         # A video is watched for 60-100 % of its length, then an uneven swipe.
         time.sleep(random.uniform(6.0, 18.0))

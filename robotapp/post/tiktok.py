@@ -37,6 +37,7 @@ POST_SCREEN = Signature("tiktok post screen", any_of=("Add description", "Who ca
 UPLOADED = Signature("tiktok uploaded", any_of=("Video uploaded", "Your video is being uploaded", "Uploading", "Posting"))
 PROFILE = Signature("tiktok profile", any_of=("Edit profile", "Followers", "Following"))
 SHARE_SHEET = Signature("tiktok share sheet", any_of=("Copy link", "Share to", "Save video", "Duet"))
+SHARE_ON_TIKTOK = Signature("tiktok share from another app", any_of=("Share on TikTok", "Share to TikTok"))
 
 
 class TikTokPoster:
@@ -68,16 +69,10 @@ class TikTokPoster:
             self._step(2, "check handle")
             self.handle = self._handle()
             result.handle = self.handle
-            self._step(3, "create")
-            self._tap_desc("Create")
-            wait_for(self.screen, CAMERA, 30)
-            self._step(4, "upload")
-            self._tap_exact("Upload")
-            wait_for(self.screen, GALLERY, 30)
-            self._step(5, "pick video")
-            self._pick_video(spec)
-            wait_for(self.screen, EDITOR, 45)
-            self._step(6, "editor")
+            self._step(3, "pick video")
+            self._open_editor(spec)
+            wait_for(self.screen, EDITOR, 60)
+            self._step(4, "editor")
             self._add_sound_if_asked(spec)
             self._tap_exact("Next")
             wait_for(self.screen, POST_SCREEN, 45)
@@ -158,9 +153,55 @@ class TikTokPoster:
     # -- steps -------------------------------------------------------------------------------------
     def _open(self) -> None:
         self.phone.force_stop(self.package)
+        time.sleep(1.0)
         self.phone.start_app(self.package)
-        elements = wait_for(self.screen, HOME, 45)
-        self._dismiss_popups(elements)
+        time.sleep(6.0)  # TikTok's splash lasts several seconds; reading before that gives a stale screen
+        stable = 0
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline:
+            elements = self.screen.elements()
+            if HOME.matches(elements) and self._in_front():
+                stable += 1
+                if stable >= 2:
+                    self._dismiss_popups(elements)
+                    return
+            else:
+                stable = 0
+                self._clear_dialog(elements)
+            time.sleep(1.5)
+        self._shot("tiktok-open")
+        raise ScreenTimeout("TikTok did not reach its home screen in 60 s")
+
+    def _in_front(self) -> bool:
+        """Guard against a stale hierarchy: the window in focus must be TikTok's."""
+        try:
+            focus = self.phone.shell("dumpsys window | grep -m1 mCurrentFocus", timeout=20)
+        except Exception:  # noqa: BLE001 - if the phone cannot say, trust the screen text
+            return True
+        if not focus.strip():  # a phone (or a fake) that does not answer is not a reason to fail
+            return True
+        return self.package in focus or "mCurrentFocus=null" in focus
+
+    def _clear_dialog(self, elements: list[Element]) -> bool:
+        """TikTok's own prompts, and Android's. Returns True when something was dismissed.
+
+        The location prompt ("Allow precise location") only offers Allow / Open settings: the robot opens the
+        app's settings page and comes back, which keeps location off and the app usable.
+        """
+        text = " ".join(e.text for e in elements)
+        if "Allow precise location" in text:
+            button = find_exact(elements, "Open settings")
+            if button is not None:
+                self.screen.tap(button)
+                time.sleep(2.0)
+                self.screen.press_back()
+                return True
+        for label in ("Not now", "Skip", "Later", "Cancel", "Don't allow", "Dismiss"):
+            button = find_exact(elements, label)
+            if button is not None:
+                self.screen.tap(button)
+                return True
+        return False
 
     def _dismiss_popups(self, elements: list[Element]) -> None:
         for label in ("Not now", "Skip", "Later", "Cancel", "Don't allow", "Dismiss"):
@@ -173,7 +214,7 @@ class TikTokPoster:
     def _handle(self) -> str | None:
         """The handle on the Profile tab, so a wrong account is caught before anything is posted."""
         try:
-            self._tap_desc("Profile")
+            self._tap_nav("Profile")
             elements = wait_for(self.screen, PROFILE, 20)
         except ScreenTimeout:
             return None
@@ -181,6 +222,70 @@ class TikTokPoster:
             if element.text.startswith("@"):
                 return element.text.strip()
         return None
+
+    def _tap_nav(self, label: str) -> bool:
+        """Tap a bottom-bar item by its exact label.
+
+        A substring search is wrong here: the feed's overlay says "Officialicarus profile", and tapping that
+        opens the video author's profile instead of your own (which is how step 2 went wrong the first time).
+        """
+        width, height = self.screen.size()
+        for element in self.screen.elements():
+            if element.enabled and element.says(label) and element.bounds[1] >= height * 0.85:
+                self.screen.tap(element)
+                return True
+        return False
+
+    def _open_editor(self, spec: PostSpec) -> None:
+        """Get the clip into TikTok's editor.
+
+        The share intent is the reliable route on this build (trill 47.8.3): the camera's upload tile is drawn
+        but not exposed to the accessibility tree, so `input tap` on it does nothing. The share sheet shows the
+        clip with its own Video button and lands in the same editor. The camera route stays as the fallback for
+        a build where the share activity is missing.
+        """
+        if spec.media_uri and self._share_video(spec):
+            return
+        self._step(3, "create")
+        if not self._tap_nav("Create"):
+            self._tap_desc("Create")
+        wait_for(self.screen, CAMERA, 30)
+        self._open_gallery()
+        wait_for(self.screen, GALLERY, 30)
+        self._pick_video(spec)
+
+    def _share_video(self, spec: PostSpec) -> bool:
+        """Send the clip to TikTok's share activity; tap its Video button. False when that path is not there."""
+        user = self.phone.current_user()
+        self.phone.force_stop(self.package)
+        time.sleep(0.5)
+        self.phone.shell(
+            f'am start --user {user} -a android.intent.action.SEND -t video/mp4 '
+            f"--eu android.intent.extra.STREAM {spec.media_uri} "
+            f"-n {self.package}/com.ss.android.ugc.aweme.share.SystemShareActivity",
+            timeout=30,
+        )
+        try:
+            elements = wait_for(self.screen, SHARE_ON_TIKTOK, 25)
+        except ScreenTimeout:
+            log.warning("tiktok: the share sheet did not appear; trying the camera's gallery")
+            return False
+        button = find_exact(elements, "Video") or find(elements, "Video")
+        if button is None:
+            return False
+        self.screen.tap(button)
+        return True
+
+    def _open_gallery(self) -> None:
+        """The camera's gallery entry: usually an 'Upload' label, else the square at the bottom left."""
+        elements = self.screen.elements()
+        for label in ("Upload", "Gallery", "Uploads"):
+            button = find_exact(elements, label) or find(elements, label)
+            if button is not None:
+                self.screen.tap(button)
+                return
+        width, height = self.screen.size()
+        self.phone.tap(int(width * 0.10), int(height * 0.72))
 
     def _pick_video(self, spec: PostSpec) -> None:
         elements = self.screen.elements()
@@ -230,23 +335,45 @@ class TikTokPoster:
         log.info("tiktok: posting without an added sound (the sound step comes later)")
 
     def _write_caption(self, spec: PostSpec) -> None:
+        """One paste of the whole caption, then read it back.
+
+        Typing the hashtags one by one and picking TikTok's suggestions looked realistic but went wrong here:
+        the field ended up missing its first line. A single set_text is exact, keeps the line breaks and the
+        emoji, and is what a paste does anyway. The field is read back, so a half-written caption cannot post.
+        """
         elements = self.screen.elements()
-        field = find(elements, "Add description") or find(elements, "Describe your video") or find(elements, "caption")
+        field = (
+            find(elements, "Add description")
+            or find(elements, "Describe your video")
+            or find(elements, "caption")
+            or find(elements, "description")
+        )
         if field is None:
             raise RuntimeError("the caption field is not on the post screen")
         self.screen.tap(field)
         time.sleep(0.8)
-        if spec.caption:
-            self.screen.set_text(spec.caption)  # paste-like: newlines and emoji survive
-        for tag in spec.hashtags:
-            if not tag:
-                continue
-            self.screen.type_text(" " + tag, min_ms=60, max_ms=140)
-            time.sleep(1.2)  # let TikTok's suggestion list appear
-            suggestion = self._hashtag_suggestion(tag)
-            if suggestion is not None:
-                self.screen.tap(suggestion)
-            time.sleep(0.6)
+        wanted = spec.full_caption
+        flat_wanted = wanted.replace("\n", "").replace("\r", "").lower()
+        head, tail = flat_wanted[:20], flat_wanted[-20:]
+        for attempt in (0, 1):
+            try:
+                self.screen.clear_field()
+            except Exception:  # noqa: BLE001 - an empty field may refuse a clear
+                pass
+            self.screen.set_text(wanted)
+            time.sleep(1.0)
+            actual = (self.screen.focused_text() or "").strip()
+            flat_actual = actual.replace("\n", "").replace("\r", "").lower()
+            # The box scrolls to the end while the keyboard is up, so only its tail may be readable.
+            if actual and (head in flat_actual or tail in flat_actual):
+                return
+            if not actual:
+                # Some fields report no text while focused; the screen's own text is the fallback check.
+                page = " ".join(e.text for e in self.screen.elements()).replace("\n", "").lower()
+                if head in page or tail in page:
+                    return
+            log.warning("tiktok: the caption did not stick (attempt %d): %r", attempt + 1, actual[:60])
+        raise RuntimeError("the caption could not be written into the post screen")
 
     def _hashtag_suggestion(self, tag: str) -> Element | None:
         wanted = tag.lstrip("#").lower()
@@ -284,17 +411,44 @@ class TikTokPoster:
         raise RuntimeError("the upload overlay did not finish")
 
     def _read_link(self) -> str | None:
-        """Profile → newest video → Share → Copy link, then read the clipboard (§6.4 step 11)."""
-        self._tap_desc("Profile")
+        """Profile → newest video → Share → Copy link, then read the clipboard (§6.4 step 11).
+
+        Measured on trill 47.8.3: the profile's first tile sits at about (16 %, 40 %) of the screen; the share
+        arrow carries the description "Share video. N shares"; the share sheet's "Copy link" is the first entry.
+        """
+        if not self._tap_nav("Profile"):
+            self._tap_desc("Profile")
         wait_for(self.screen, PROFILE, 20)
-        width, height = self._window()
-        self.phone.tap(int(width * 0.17), int(height * 0.30))  # newest tile, top-left of the grid
-        time.sleep(3.0)
-        self._tap_desc("Share")
+        time.sleep(1.5)
+        width, height = self.screen.size()
+        self.phone.tap(int(width * 0.16), int(height * 0.40))  # newest tile, top-left of the grid
+        time.sleep(3.5)
+        if not self._tap_share():
+            self._shot("tiktok-share")
+            raise RuntimeError("the Share button is not on the video")
         wait_for(self.screen, SHARE_SHEET, 20)
-        self._tap_exact("Copy link")
-        time.sleep(1.0)
+        for attempt in range(3):
+            button = find(self.screen.elements(), "Copy link")
+            if button is not None:
+                self.screen.tap(button)
+                break
+            time.sleep(1.0)
+        else:
+            raise RuntimeError("'Copy link' is not in the share sheet")
+        time.sleep(1.5)
         return self._clipboard()
+
+    def _tap_share(self) -> bool:
+        """The share arrow on a video: its label is "Share video. 1,338 shares", so match on the prefix."""
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            for element in self.screen.elements():
+                label = (element.desc or element.text or "").strip().lower()
+                if label == "share" or label.startswith("share video"):
+                    self.screen.tap(element)
+                    return True
+            time.sleep(1.0)
+        return False
 
     def _clipboard(self) -> str | None:
         value = self.screen.clipboard()
@@ -325,19 +479,26 @@ class TikTokPoster:
             return None
 
     # -- small helpers -----------------------------------------------------------------------------
-    def _tap_desc(self, desc: str) -> None:
-        elements = self.screen.elements()
-        button = find(elements, desc)
-        if button is None:
-            raise RuntimeError(f"'{desc}' is not on screen")
-        self.screen.tap(button)
+    def _tap_desc(self, desc: str, timeout_s: float = 20.0) -> None:
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            button = find(self.screen.elements(), desc)
+            if button is not None:
+                self.screen.tap(button)
+                return
+            time.sleep(1.0)
+        raise RuntimeError(f"'{desc}' is not on screen")
 
-    def _tap_exact(self, label: str) -> None:
-        elements = self.screen.elements()
-        button = find_exact(elements, label)
-        if button is None:
-            raise RuntimeError(f"the '{label}' button is not on screen")
-        self.screen.tap(button)
+    def _tap_exact(self, label: str, timeout_s: float = 20.0) -> None:
+        """Wait for a button before tapping it: TikTok's screens animate in, and a single read is too early."""
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            button = find_exact(self.screen.elements(), label)
+            if button is not None:
+                self.screen.tap(button)
+                return
+            time.sleep(1.0)
+        raise RuntimeError(f"the '{label}' button is not on screen")
 
     def _window(self) -> tuple[int, int]:
         return self.screen.size()

@@ -208,10 +208,13 @@ class AdbPhone:
         return self.shell(f"am force-stop --user {user} {package}").strip()
 
     def start_app(self, package: str, user: int = 0) -> str:
+        """Launch an app in a user. `monkey` has no --user on this build, so resolve the activity and `am start`."""
         self.guard.check("open an app")
-        return self.shell(
-            f"monkey -p {package} -c android.intent.category.LAUNCHER --user {user} 1", timeout=30
-        ).strip()
+        out = self.shell(f"cmd package resolve-activity --brief --user {user} {package}", timeout=30)
+        component = next((line.strip() for line in out.splitlines() if "/" in line and " " not in line.strip()), "")
+        if component:
+            return self.shell(f"am start --user {user} -n {component}", timeout=30).strip()
+        return self.shell(f"monkey -p {package} -c android.intent.category.LAUNCHER 1", timeout=30).strip()
 
     def install_existing(self, package: str, user: int) -> str:
         self.guard.check("install an app into a user")
@@ -256,8 +259,9 @@ class AdbPhone:
         self.guard.check("swipe the screen")
         self.shell(f"input swipe {x1} {y1} {x2} {y2} {ms}")
 
-    def scan_media(self, remote_path: str) -> str:
+    def scan_media(self, remote_path: str, timeout: int = 10) -> str:
+        """Ask the media scanner to index a file. On some builds the broadcast never returns: short timeout."""
         self.guard.check("index a video")
         return self.shell(
-            f"am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://{remote_path}"
+            f"am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://{remote_path}", timeout=timeout
         ).strip()

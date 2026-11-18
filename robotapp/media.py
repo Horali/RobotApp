@@ -8,6 +8,7 @@ today's time make it the newest video in the gallery, which is what the post flo
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from datetime import datetime
@@ -64,8 +65,34 @@ def push_video(phone: Phone, local: Path, user_id: int, name: str | None = None)
     phone.shell(f"mkdir -p {remote_dir}")
     remote = f"{remote_dir}/{remote_name}"
     phone.push(local, remote)
-    phone.scan_media(remote)
+    # `adb push` keeps the laptop file's date; the gallery sorts by date, so make it "just now".
+    try:
+        phone.shell(f"touch {remote}", timeout=15)
+    except Exception:  # noqa: BLE001 - the name already carries today's time
+        pass
+    try:
+        phone.scan_media(remote)
+    except Exception:  # noqa: BLE001 - the push already indexes it on this phone; the broadcast can hang
+        pass
     return remote
+
+
+def find_media_uri(phone: Phone, user_id: int, remote: str) -> str | None:
+    """The MediaStore URI of a pushed clip, for a share intent.
+
+    A `file://` URI is refused by apps targeting Android N+, so the robot hands TikTok a `content://` one.
+    """
+    name = Path(remote).name
+    query = (
+        f"content query --user {user_id} --uri content://media/external/video/media "
+        f"--projection _id:_display_name --where \"_display_name='{name}'\""
+    )
+    try:
+        out = phone.shell(query, timeout=30)
+    except Exception:  # noqa: BLE001 - the caller falls back to the gallery path
+        return None
+    match = re.search(r"_id=(\d+)", out)
+    return f"content://media/external/video/media/{match.group(1)}" if match else None
 
 
 def gallery_has(phone: Phone, user_id: int, remote: str) -> bool:

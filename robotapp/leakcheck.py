@@ -25,8 +25,16 @@ WEBRTC_URL = "https://browserleaks.com/webrtc"
 
 CHROME_FIRST_RUN = Signature(
     "chrome first run",
-    any_of=("Accept & continue", "Use without an account", "No thanks", "Welcome to Chrome"),
+    any_of=(
+        "Accept & continue",
+        "Use without an account",
+        "No thanks",
+        "Welcome to Chrome",
+        "Make Chrome your own",
+        "Stay signed out",
+    ),
 )
+CHROME_INTRO_LABELS = ("Stay signed out", "Accept & continue", "Use without an account", "No thanks", "Got it", "Not now")
 
 
 @dataclass
@@ -57,7 +65,7 @@ def dismiss_chrome_intro(screen: Screen, timeout_s: float = 6.0) -> int:
             elements = wait_for(screen, CHROME_FIRST_RUN, timeout_s=timeout_s)
         except Exception:  # noqa: BLE001 - no intro is the normal case after the first time
             return dismissed
-        for label in ("Accept & continue", "Use without an account", "No thanks", "Got it"):
+        for label in CHROME_INTRO_LABELS:
             button = find(elements, label)
             if button is not None:
                 screen.tap(button)

@@ -18,7 +18,7 @@ from pathlib import Path
 from .adb import Phone
 from .errors import RobotError
 from .journal import Journal
-from .media import push_video
+from .media import find_media_uri, push_video
 from .post.base import FAILED, PostResult, PostSpec
 from .post.tiktok import TIKTOK_ID, TIKTOK_US, TikTokPoster
 from .secrets import Chameleon
@@ -99,7 +99,7 @@ def run(
 
     for index, spec in enumerate(sitting.posts, start=1):
         emit({"t": "step", "job": sitting.job_id, "post": spec.upload_id, "n": index, "of": len(sitting.posts), "name": "start"})
-        if not post_allowed():
+        if not post_allowed() and not build_mode():
             result = PostResult(spec.upload_id, spec.platform, FAILED, reason="past 09:55 WIB: no post today")
             emit(result.as_event())
             results.append(result)
@@ -122,8 +122,9 @@ def run(
             continue
 
         if spec.video and spec.video.exists() and str(spec.video) not in pushed:
-            pushed[str(spec.video)] = push_video(phone, spec.video, user)
-            emit({"t": "info", "name": "video pushed", "remote": pushed[str(spec.video)]})
+            remote = pushed[str(spec.video)] = push_video(phone, spec.video, user)
+            spec.media_uri = find_media_uri(phone, user, remote)
+            emit({"t": "info", "name": "video pushed", "remote": remote, "media_uri": spec.media_uri})
 
         package = TIKTOK_ID if user == 0 else TIKTOK_US
         poster = TikTokPoster(phone, screen, journal, sitting.job_id, package=package, emit=emit, shots_dir=shots_dir)
