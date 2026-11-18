@@ -80,7 +80,29 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
     --save-as`, saved by `data/capture_fixtures.py`) and replayed by tests. When TikTok updates and a screen
     changes, the fixture test says so on the laptop before the phone ever runs the flow again;
   - **70 tests green.**
-- **Step 4 next (ClipMaker wiring)** — the sitting contract and a working post make it a small job now.
+- **Step 4 — DONE 2026-11-19, 00:25 WIB** (ClipMaker wiring; "an opted-in brand's sitting posts by robot; any
+  failure lands in Telegram as today"):
+  - **`tools/phone_robot.py`**: one brand's due rows become one sitting (Instagram → TikTok → YouTube), the
+    real RobotApp runs as a subprocess (`robot sitting`), and each `done` event marks its row through
+    `phone_posts.mark_posted` — the same checks a pasted link goes through. A failure before Post **unclaims
+    the row**, so Telegram sends it as today; anything the robot cannot answer stops it safely before it
+    presses anything (stdin closes: no answer can follow).
+  - **The switch is double**: `CLIPMAKER_PHONE_ROBOT=1` in `.env` (off by default) **plus** per-brand opt-in in
+    `data/phone_robot.json` (`{"brands": {"<id>": {"robot": true, "youtube_by_phone": false}}}`). A brand not
+    opted in, the robot missing, or its `robot doctor` unhappy → Telegram exactly as today. `approve.phone_tick`
+    tries the robot first; a robot error can never stop the Telegram path.
+  - **The §8.4 ClipMaker changes are all in**: the 30-min gap is **per brand** (a brand's own apps post back to
+    back in one sitting); a home brand's rows ride the robot's 06:00-10:00 WIB window instead of the New York
+    evening; a robot views reading counts from **23 h 30 min** (Telegram keeps the full 24 h);
+    `check_link` accepts `youtube.com/shorts/<id>` / `youtu.be/<id>`; `post_mode` makes YouTube `phone` **only**
+    for a brand with `youtube_by_phone` on; the hand-post steps text covers YouTube; the Phone page shows
+    "🤖 the robot is posting this now (step N of 12)" from `status.json`.
+  - **Tests: 31 pass** across `test_phone_posts`, `test_phone_robot`, `test_phone_robot_line`, `test_phone_mode`,
+    `test_campaign_posts` — including an **integration test that runs the real RobotApp subprocess in `--fake`
+    mode** through the whole pipe (its window guard refused at 00:12 WIB, exit 3, and the row came back
+    unclaimed for Telegram — exactly the safety property). One existing test was updated to the new per-brand
+    rule, which is what §8.4 ordered.
+- **Step 5 next (Instagram)**: the Reel flow (§6.5) and its login (§5.3).
 - **TikTok's US build (`musically`) is still not on the phone**: the space is ready except for it, so US brands'
   TikTok posts wait. The APKMirror download is the missing piece.
 - The throwaway account does not exist yet; the login path (built, unit-tested) has not run on a real account.
