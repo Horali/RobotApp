@@ -61,6 +61,7 @@ class InstagramPoster:
         self.emit = emit or (lambda event: None)
         self.shots_dir = shots_dir
         self.handle: str | None = None
+        self.sound_added = False
 
     # -- the whole post ----------------------------------------------------------------------------
     def post(self, spec: PostSpec, dry_run: bool = False) -> PostResult:
@@ -79,6 +80,7 @@ class InstagramPoster:
             wait_for(self.screen, GALLERY, 30)
             self._pick_video(spec)
             self._step(5, "editor")
+            self._add_sound_if_asked(spec)
             # Some builds show an editor with a Next button; others land on the caption screen at once.
             elements = wait_for(self.screen, _EDITOR_OR_CAPTION, 60)
             if find_exact(elements, "Next") is not None:
@@ -133,6 +135,7 @@ class InstagramPoster:
         except Exception as exc:  # noqa: BLE001 - the post is out; the link can be asked for
             result.reason = f"posted, link not readable: {exc}"
             log.warning("instagram: %s", result.reason)
+        result.sound = "trending" if self.sound_added else None
         self.journal.mark(self.job_id, POSTED, spec.upload_id, spec.platform, {"url": result.url})
         if not result.url:
             result.outcome = UNSURE
@@ -148,6 +151,21 @@ class InstagramPoster:
         return result
 
     # -- steps -------------------------------------------------------------------------------------
+    def _add_sound_if_asked(self, spec: PostSpec) -> None:
+        """Section 6.6: trending audio from the editor; if it fails, post without it."""
+        if spec.sound != "trending":
+            return
+        from .. import sound
+
+        added = sound.add_sound(self.screen, "instagram")
+        self.sound_added = added
+        if added:
+            log.info("instagram: trending audio added")
+            return
+        if spec.sound_required:
+            raise RuntimeError("trending audio is required but could not be added")
+        log.warning("instagram: no audio could be added; posting without it")
+
     def _open(self) -> None:
         self.phone.force_stop(self.package)
         time.sleep(1.0)

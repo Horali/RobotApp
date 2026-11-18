@@ -59,6 +59,7 @@ class TikTokPoster:
         self.emit = emit or (lambda event: None)
         self.shots_dir = shots_dir
         self.handle: str | None = None
+        self.sound_added = False
 
     # -- the whole post ----------------------------------------------------------------------------
     def post(self, spec: PostSpec, dry_run: bool = False) -> PostResult:
@@ -128,6 +129,7 @@ class TikTokPoster:
         except Exception as exc:  # noqa: BLE001 - the post is out; the link can be asked for
             result.reason = f"posted, link not readable: {exc}"
             log.warning("tiktok: %s", result.reason)
+        result.sound = "trending" if self.sound_added else None
         self.journal.mark(self.job_id, POSTED, spec.upload_id, spec.platform, {"url": result.url})
         if not result.url:
             result.outcome = UNSURE
@@ -327,12 +329,19 @@ class TikTokPoster:
         return grid[0]
 
     def _add_sound_if_asked(self, spec: PostSpec) -> None:
-        """§6.6: the most fragile step. For step 1 the post goes out without an added sound."""
+        """Section 6.6: try a trending sound; if it fails, post without one (unless it is required)."""
         if spec.sound != "trending":
             return
+        from .. import sound
+
+        added = sound.add_sound(self.screen, "tiktok")
+        self.sound_added = added
+        if added:
+            log.info("tiktok: a trending sound was added")
+            return
         if spec.sound_required:
-            raise RuntimeError("a trending sound is required but the sound step is not built yet")
-        log.info("tiktok: posting without an added sound (the sound step comes later)")
+            raise RuntimeError("a trending sound is required but could not be added")
+        log.warning("tiktok: no sound could be added; posting without one")
 
     def _write_caption(self, spec: PostSpec) -> None:
         """One paste of the whole caption, then read it back.

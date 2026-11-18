@@ -592,6 +592,24 @@ def cmd_sitting(args: argparse.Namespace, settings: Settings) -> int:
     return EXIT_OK if all(r.ok or r.outcome == "dry_run" for r in results) else EXIT_ERROR
 
 
+def cmd_views(args: argparse.Namespace, settings: Settings) -> int:
+    """Read a post's views from its own profile (PLAN section 6.8): the newest tile's play count."""
+    from .views import read_views
+
+    phone, _ = build(args, settings)
+    screen = screen_for(phone, settings)
+    enter_space(phone, args.user)
+    try:
+        views = read_views(phone, screen, args.platform, args.user)
+    finally:
+        leave_space(phone)
+    if views is None:
+        emit({"t": "views", "upload_id": args.upload_id, "views": None, "reason": "could not read the number"})
+        return EXIT_ERROR
+    emit({"t": "views", "upload_id": args.upload_id, "platform": args.platform, "views": views})
+    return EXIT_OK
+
+
 def cmd_status(args: argparse.Namespace, settings: Settings) -> int:
     journal = Journal(settings.db_path)
     job = journal.job(args.job) if args.job else None
@@ -685,6 +703,12 @@ def parser() -> argparse.ArgumentParser:
     si.add_argument("--file", default="", help="the sitting JSON; stdin when omitted")
     si.add_argument("--dry-run", action="store_true", help="walk every post up to its Post button, then stop")
     si.set_defaults(func=cmd_sitting)
+
+    vw = sub.add_parser("views", help="read a post's views from the phone")
+    vw.add_argument("--upload-id", required=True)
+    vw.add_argument("--platform", choices=("tiktok", "instagram"), required=True)
+    vw.add_argument("--user", type=int, default=0)
+    vw.set_defaults(func=cmd_views)
 
     st = sub.add_parser("status", help="what happened to a job")
     st.add_argument("job")
