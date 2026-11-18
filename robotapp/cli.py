@@ -1,4 +1,4 @@
-"""The `robot` command (PLAN section 8.1, section 8.2).
+﻿"""The `robot` command (PLAN section 8.1, section 8.2).
 
 One command, JSON events on stdout, human logs on stderr, so ClipMaker can start it and read lines. In step 1 it
 is run by hand:
@@ -357,7 +357,7 @@ def cmd_vpn(args: argparse.Namespace, settings: Settings) -> int:
 
 def cmd_zone(args: argparse.Namespace, settings: Settings) -> int:
     phone, _ = build(args, settings)
-    # Going to New York freezes G2G's apps first, so they never see the jump (PLAN Ã‚Â§4.6).
+    # Going to New York freezes G2G's apps first, so they never see the jump (PLAN Ãƒâ€šÃ‚Â§4.6).
     zone = timezone.to_us(phone) if args.zone == "newyork" else timezone.to_jakarta(phone)
     emit({"t": "info", "name": "time zone", "zone": zone})
     return EXIT_OK
@@ -475,11 +475,17 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
     if args.platform == "tiktok":
         package = args.package or (TIKTOK_ID if args.user == 0 else TIKTOK_US)
         poster = TikTokPoster(phone, screen, journal, job_id, package=package, emit=emit, shots_dir=settings.shots_dir)
-    else:
+    elif args.platform == "instagram":
         from .post.instagram import INSTAGRAM as INSTAGRAM_PACKAGE, InstagramPoster
 
         poster = InstagramPoster(
-            phone, screen, journal, job_id, package=INSTAGRAM_PACKAGE, emit=emit, shots_dir=settings.shots_dir
+            phone, screen, journal, job_id, package=args.package or INSTAGRAM_PACKAGE, emit=emit, shots_dir=settings.shots_dir
+        )
+    else:
+        from .post.youtube import YOUTUBE as YOUTUBE_PACKAGE, YouTubePoster
+
+        poster = YouTubePoster(
+            phone, screen, journal, job_id, package=args.package or YOUTUBE_PACKAGE, emit=emit, shots_dir=settings.shots_dir
         )
     try:
         result = poster.post(spec, dry_run=args.dry_run)
@@ -638,7 +644,7 @@ def parser() -> argparse.ArgumentParser:
     lk2.set_defaults(func=cmd_leak)
 
     lo = sub.add_parser("login", help="sign an account in")
-    lo.add_argument("platform", choices=("tiktok", "instagram"))
+    lo.add_argument("platform", choices=("tiktok", "instagram", "youtube"))
     lo.add_argument("--user", type=int, required=True)
     lo.add_argument("--profile-id", required=True)
     lo.add_argument("--email", required=True)
@@ -648,7 +654,7 @@ def parser() -> argparse.ArgumentParser:
     lo.set_defaults(func=cmd_login)
 
     po = sub.add_parser("post", help="post one clip")
-    po.add_argument("platform", choices=("tiktok", "instagram"))
+    po.add_argument("platform", choices=("tiktok", "instagram", "youtube"))
     po.add_argument("--user", type=int, required=True)
     po.add_argument("--video", type=Path, required=True)
     po.add_argument("--caption", default="")

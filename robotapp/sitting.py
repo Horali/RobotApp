@@ -22,6 +22,7 @@ from .media import find_media_uri, push_video
 from .post.base import FAILED, PostResult, PostSpec
 from .post.instagram import INSTAGRAM as INSTAGRAM_PACKAGE, InstagramPoster
 from .post.tiktok import TIKTOK_ID, TIKTOK_US, TikTokPoster
+from .post.youtube import YOUTUBE as YOUTUBE_PACKAGE, YouTubePoster
 from .secrets import Chameleon
 from .ui import Screen
 from .window import WIB, build_mode, post_allowed
@@ -134,12 +135,16 @@ def run(
             poster = InstagramPoster(
                 phone, screen, journal, sitting.job_id, package=INSTAGRAM_PACKAGE, emit=emit, shots_dir=shots_dir
             )
+        elif spec.platform == "youtube":
+            poster = YouTubePoster(
+                phone, screen, journal, sitting.job_id, package=YOUTUBE_PACKAGE, emit=emit, shots_dir=shots_dir
+            )
         else:
             result = PostResult(
                 spec.upload_id,
                 spec.platform,
                 FAILED,
-                reason=f"the {spec.platform} flow is not built yet (PLAN step 6)",
+                reason=f"the {spec.platform} flow is not built yet",
             )
             emit(result.as_event())
             results.append(result)
