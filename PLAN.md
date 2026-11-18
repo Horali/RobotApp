@@ -102,10 +102,19 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
     mode** through the whole pipe (its window guard refused at 00:12 WIB, exit 3, and the row came back
     unclaimed for Telegram — exactly the safety property). One existing test was updated to the new per-brand
     rule, which is what §8.4 ordered.
-- **Step 5 next (Instagram)**: the Reel flow (§6.5) and its login (§5.3).
+- **Step 5 (Instagram) — code DONE 2026-11-19, 01:10 WIB** ("one Reel by the robot" still needs a real account):
+  - the Reel flow (`post/instagram.py`) and the login (`login/instagram.py`), both walked on a scripted screen
+    (6 tests). The scripted walk caught three real bugs before any phone saw them: the home signature matched
+    "Search" (on every screen's nav bar), a profile's own "Reels" tab matched "Reel", and a double Next tap.
+  - `sitting` posts Instagram now (TikTok and Instagram both built); `robot post/login instagram` work.
+  - **Honest note:** the signatures follow the plan's description of Instagram's screens. No Instagram account
+    exists on the robot phone, so they are unchecked against the real app — the first real Instagram account
+    (the throwaway) provides the fixtures, and `tests/test_fixtures.py` guards them after that.
+- **Step 6 next (YouTube)**: the Google sign-in (§5.6), the Shorts flow (§6.7), the "YouTube by phone" switch
+  (already in ClipMaker), then the 14-day test (§8.8).
 - **TikTok's US build (`musically`) is still not on the phone**: the space is ready except for it, so US brands'
   TikTok posts wait. The APKMirror download is the missing piece.
-- The throwaway account does not exist yet; the login path (built, unit-tested) has not run on a real account.
+- The throwaway account does not exist yet; the login paths (built, unit-tested) have not run on a real account.
 
 **What you must do**
 - Nothing right now. When Chameleon is restarted, the platform-password route is live for the first login.
@@ -1047,6 +1056,13 @@ Still open (small, none blocks step 1):
 
 ### 13.2 Decided by the builder (no user question needed)
 
+- **2026-11-19, HARD RULE (user, after a near-miss): "GTA 6 Clips Clips" is a REAL brand, never the
+  throwaway.** It appeared in ClipMaker (new, warming, both passwords saved in Chameleon) and the builder
+  wrongly assumed it was the test brand. **No account, login or post of GTA 6 Clips may ever be used to test
+  the robot.** Only read-only database looks were made before the correction; nothing was touched.
+- **No throwaway account exists yet** (§5.5's throwaway would be a brand-new test brand made in Chameleon).
+  The first real login waits until the user names or creates one. Until then the robot tests only against the
+  FakePhone/fixtures, and any real post is a queued row of a brand the user has approved for it.
 - **2026-11-18, P1:** the platform-password route lives in the **daemon** and reads the file the main process
   already writes, instead of moving the store into the daemon. Smallest change, one storage format, and the
   daemon already has a decrypt channel to the main process. Route name and query as in §5.1.
