@@ -1,4 +1,4 @@
-﻿"""The `robot` command (PLAN section 8.1, section 8.2).
+"""The `robot` command (PLAN section 8.1, section 8.2).
 
 One command, JSON events on stdout, human logs on stderr, so ClipMaker can start it and read lines. In step 1 it
 is run by hand:
@@ -562,7 +562,11 @@ def _save_fixture(name: str, screen) -> Path:
 
 
 def cmd_sitting(args: argparse.Namespace, settings: Settings) -> int:
-    """One brand's sitting, from the JSON contract in PLAN section 8.2 (a file, or stdin)."""
+    """One brand's sitting, from the JSON contract in PLAN section 8.2 (a file, or stdin).
+
+    A sitting with ``"user": 0`` is G2G's: the owner user, no VPN ever, DND during the sitting.
+    """
+    from .g2g import G2GSitting
     from .sitting import Sitting, run as run_sitting
 
     body = json.loads(Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read())
@@ -574,12 +578,18 @@ def cmd_sitting(args: argparse.Namespace, settings: Settings) -> int:
     if sitting.user is not None:
         enter_space(phone, sitting.user)
     try:
-        results = run_sitting(
-            sitting, phone, screen, journal, chameleon, emit, shots_dir=settings.shots_dir, dry_run=args.dry_run
-        )
+        if sitting.user == 0:
+            leak, results = G2GSitting(
+                phone, screen, journal, chameleon, emit=emit, shots_dir=settings.shots_dir
+            ).run(sitting, dry_run=args.dry_run)
+        else:
+            results = run_sitting(
+                sitting, phone, screen, journal, chameleon, emit, shots_dir=settings.shots_dir,
+                dry_run=args.dry_run,
+            )
     finally:
         leave_space(phone)
-    return EXIT_OK if all(r.ok for r in results) else EXIT_ERROR
+    return EXIT_OK if all(r.ok or r.outcome == "dry_run" for r in results) else EXIT_ERROR
 
 
 def cmd_status(args: argparse.Namespace, settings: Settings) -> int:
