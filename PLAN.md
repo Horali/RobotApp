@@ -139,7 +139,28 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   takes a free space, and `robot release` puts its space to wiping, frees the slot after `pm remove-user` — so
   **a graduated brand frees its space alone** (step 9's acceptance). `robot brand add/list`, `robot
   setup-next`, `robot release`. 5 tests. **102 tests green.**
-- **What is left, honestly:**
+- **STEP 10 STARTED — the first real login ran. 2026-11-19, 11:26-11:40 WIB.** The throwaway is
+  **vtubers Clips** (user, 2026-11-19; `us-ps-1-virginia`), and its **Instagram account is now signed in on the
+  robot phone**, in the Virginia space (user 11):
+  - handle read from the app: **@vtubersclips90** ("vtubers Clips", 0 posts, 0 followers);
+  - the leak check before it: exit `208.214.162.185`, `loc=US`, VPN locked — the login went through the Virginia
+    proxy, as §5.5 requires ("only the device changes, never the IP");
+  - Instagram asked for a confirmation (approve on another device / an SMS code to +…71) — the plan's §5.4
+    case. The robot stopped and reported it; **the user took the code** and the login completed;
+  - the real screens are now fixtures: `instagram-home`, `instagram-profile`, and the signature test replays
+    them, so the Instagram signatures are no longer guesses.
+  - **Four bugs the fake phone could not have found, all fixed** (commit `f0d0999`): the IME is not enabled in
+    a fresh space (so `send_keys` typed nothing and the first attempt submitted an empty form — now everything
+    goes through the field's own setText, the password one character at a time); Instagram's form has two
+    EditTexts, so an un-indexed selector is refused (username 0, password 1); tapping the field's hint does not
+    focus it; and the phone's keyboard (Facemoji) puts its own terms dialog over the app until answered.
+  - also fixed: `adb connect` to a stale Wi-Fi address now gives up in 5 s instead of hanging 20, the robot
+    phone's USB serial is used first when the laptop is on another network, and a login never submits an empty
+    form.
+- **What is left (the honest list):** the throwaway's **TikTok** login (blocked on `musically`), the **first
+  Instagram post** from this account through ClipMaker (the whole loop, mode='phone'), the 14-day YouTube test,
+  and then the real brands one login per day (§5.5's order).
+
   - **step 10 (move the real accounts in)** — the robot's side is built; it is one login per day, safest first
     (§5.5), and **the first real login is the next thing to run**: the throwaway is now **"vtuber Clips"**
     (user said so 2026-11-19), on `us-ps-1-virginia`, its accounts already signed in in Chameleon. Its

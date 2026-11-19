@@ -1,0 +1,2063 @@
+{
+ "name": "instagram-profile",
+ "size": [
+  1080,
+  2460
+ ],
+ "elements": [
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar_launch_animation_container",
+   "bounds": [
+    0,
+    0,
+    1080,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar_container",
+   "bounds": [
+    0,
+    0,
+    1080,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar",
+   "bounds": [
+    12,
+    0,
+    1068,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar_contents",
+   "bounds": [
+    24,
+    0,
+    1056,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/left",
+   "bounds": [
+    60,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/status_bar_left_side",
+   "bounds": [
+    60,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "11:40 PM",
+   "desc": "11:40 PM",
+   "resource_id": "com.android.systemui:id/clock",
+   "bounds": [
+    60,
+    0,
+    224,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/notification_icon_area",
+   "bounds": [
+    224,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/notification_icon_area_inner",
+   "bounds": [
+    224,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/notificationIcons",
+   "bounds": [
+    224,
+    0,
+    468,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "sing-box notification: 192.168.1.16:52377",
+   "resource_id": "",
+   "bounds": [
+    224,
+    30,
+    272,
+    78
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/cutout_space_view",
+   "bounds": [
+    468,
+    0,
+    612,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/system_icon_area",
+   "bounds": [
+    612,
+    0,
+    1020,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/system_icons",
+   "bounds": [
+    612,
+    0,
+    1020,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/statusIcons",
+   "bounds": [
+    612,
+    0,
+    895,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "VPN on.",
+   "resource_id": "",
+   "bounds": [
+    747,
+    21,
+    795,
+    87
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Ringer silent.",
+   "resource_id": "",
+   "bounds": [
+    801,
+    21,
+    838,
+    87
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Wifi signal full.",
+   "resource_id": "com.android.systemui:id/wifi_combo",
+   "bounds": [
+    844,
+    21,
+    889,
+    87
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/wifi_group",
+   "bounds": [
+    847,
+    21,
+    889,
+    87
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    847,
+    33,
+    889,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/wifi_signal",
+   "bounds": [
+    847,
+    33,
+    889,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/inout_container",
+   "bounds": [
+    851,
+    33,
+    889,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/wifi_in",
+   "bounds": [
+    851,
+    33,
+    889,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/wifi_out",
+   "bounds": [
+    851,
+    33,
+    889,
+    75
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    895,
+    0,
+    949,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "54.6",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/network_rate_view",
+   "bounds": [
+    901,
+    34,
+    943,
+    58
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "K/S",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/network_rate_unit_view",
+   "bounds": [
+    901,
+    54,
+    943,
+    74
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.android.systemui:id/battery",
+   "bounds": [
+    952,
+    0,
+    1020,
+    108
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    952,
+    36,
+    1020,
+    72
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/action_bar_root",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "android:id/content",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/overlay_layout_container",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/swipe_navigation_container",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/layout_container_center_right_coordinator_layout",
+   "bounds": [
+    0,
+    0,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/layout_container_right",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/activity_and_camera_shared_views_main_container",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/layout_container_main_panel",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/layout_container_main_wrapper",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/layout_container_main",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/swipeable_tab_view_pager",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/swipeable_nav_view_pager_inner_recycler_view",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/layout_container_swipeable",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/user_detail_fragment",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/coordinator_root_layout",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/tab_appbar",
+   "bounds": [
+    0,
+    276,
+    1080,
+    1003
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_container",
+   "bounds": [
+    0,
+    276,
+    1080,
+    1003
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_fixed_list",
+   "bounds": [
+    0,
+    276,
+    1080,
+    858
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/row_profile_header",
+   "bounds": [
+    0,
+    276,
+    1080,
+    762
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_avatar_container_top_left_stub",
+   "bounds": [
+    48,
+    276,
+    312,
+    618
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/pog_note_bubble_container",
+   "bounds": [
+    48,
+    276,
+    312,
+    618
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/pog_note_bubble_view",
+   "bounds": [
+    48,
+    276,
+    312,
+    473
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/pog_note_bubble_root_view",
+   "bounds": [
+    48,
+    276,
+    312,
+    473
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/pog_note_bubble_card_view",
+   "bounds": [
+    72,
+    288,
+    288,
+    449
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/pog_bubble_text_container",
+   "bounds": [
+    72,
+    288,
+    288,
+    449
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Try sharing a song...",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/pog_bubble_text",
+   "bounds": [
+    72,
+    312,
+    288,
+    425
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    48,
+    354,
+    312,
+    618
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    69,
+    375,
+    291,
+    597
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/camera_pano_image_view",
+   "bounds": [
+    69,
+    375,
+    291,
+    597
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/row_profile_header_imageview_frame_layout",
+   "bounds": [
+    69,
+    375,
+    291,
+    597
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "vtubers Clips",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_full_name_above_vanity",
+   "bounds": [
+    360,
+    353,
+    624,
+    403
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_metrics_full_width",
+   "bounds": [
+    360,
+    403,
+    1032,
+    565
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_post_count_front_familiar",
+   "bounds": [
+    360,
+    403,
+    532,
+    565
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "0",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_familiar_post_count_value",
+   "bounds": [
+    360,
+    427,
+    389,
+    488
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "posts",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_familiar_post_count_label",
+   "bounds": [
+    360,
+    488,
+    469,
+    541
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "0followers",
+   "resource_id": "com.instagram.android:id/profile_header_followers_stacked_familiar",
+   "bounds": [
+    532,
+    403,
+    791,
+    565
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "0",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_familiar_followers_value",
+   "bounds": [
+    550,
+    427,
+    579,
+    488
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "followers",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_familiar_followers_label",
+   "bounds": [
+    550,
+    488,
+    728,
+    541
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "0following",
+   "resource_id": "com.instagram.android:id/profile_header_following_stacked_familiar",
+   "bounds": [
+    791,
+    403,
+    1032,
+    565
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "0",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_familiar_following_value",
+   "bounds": [
+    809,
+    427,
+    838,
+    488
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "following",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_familiar_following_label",
+   "bounds": [
+    809,
+    488,
+    987,
+    541
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/banner_row",
+   "bounds": [
+    48,
+    654,
+    1032,
+    726
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    48,
+    654,
+    1032,
+    726
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    48,
+    654,
+    374,
+    726
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/igds_prism_chip_icon",
+   "bounds": [
+    72,
+    672,
+    108,
+    708
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Add banners",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/igds_prism_chip_label",
+   "bounds": [
+    120,
+    666,
+    338,
+    714
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    762,
+    1080,
+    858
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_header_actions_top_row",
+   "bounds": [
+    0,
+    762,
+    1080,
+    858
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    36,
+    762,
+    531,
+    858
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Edit profile",
+   "resource_id": "com.instagram.android:id/button_container",
+   "bounds": [
+    36,
+    762,
+    531,
+    858
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "Edit profile",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    174,
+    783,
+    392,
+    837
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    549,
+    762,
+    1044,
+    858
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Share profile",
+   "resource_id": "com.instagram.android:id/button_container",
+   "bounds": [
+    549,
+    762,
+    1044,
+    858
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "Share profile",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    668,
+    783,
+    924,
+    837
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_tabs_container",
+   "bounds": [
+    0,
+    858,
+    1080,
+    1003
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_tab_layout",
+   "bounds": [
+    0,
+    858,
+    1080,
+    1002
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    858,
+    1080,
+    1002
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    858,
+    540,
+    1002
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    858,
+    540,
+    1002
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Grid view",
+   "resource_id": "com.instagram.android:id/profile_tab_icon_view",
+   "bounds": [
+    0,
+    858,
+    540,
+    1002
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    540,
+    858,
+    1080,
+    1002
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    540,
+    858,
+    1080,
+    1002
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/wrapper",
+   "bounds": [
+    540,
+    858,
+    1080,
+    1002
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/container",
+   "bounds": [
+    774,
+    894,
+    846,
+    966
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Photos of you",
+   "resource_id": "com.instagram.android:id/profile_tab_icon_view",
+   "bounds": [
+    774,
+    894,
+    846,
+    966
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_tabs_bottom_divider",
+   "bounds": [
+    0,
+    1002,
+    1080,
+    1003
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/swipe_refresh_animated_progressbar_container_background",
+   "bounds": [
+    0,
+    276,
+    1080,
+    277
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/swipe_refresh_animated_progressbar_container",
+   "bounds": [
+    435,
+    276,
+    645,
+    486
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    1003,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_viewpager",
+   "bounds": [
+    0,
+    1003,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "android:id/list",
+   "bounds": [
+    0,
+    1003,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/empty_state_view_root",
+   "bounds": [
+    0,
+    1003,
+    1080,
+    1874
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/empty_state_headline_component",
+   "bounds": [
+    108,
+    1069,
+    972,
+    1808
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    108,
+    1069,
+    972,
+    1808
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Create your first post",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/igds_empty_state_title",
+   "bounds": [
+    204,
+    1213,
+    876,
+    1367
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Give this space some love.",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/igds_empty_state_body_text",
+   "bounds": [
+    204,
+    1391,
+    876,
+    1441
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/igds_empty_state_tertiary_text",
+   "bounds": [
+    204,
+    1489,
+    876,
+    1532
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Create",
+   "resource_id": "com.instagram.android:id/igds_empty_state_primary_action_button",
+   "bounds": [
+    413,
+    1580,
+    667,
+    1712
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "Create",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    473,
+    1619,
+    607,
+    1673
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    1874,
+    1080,
+    2091
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "Complete your profile",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/title",
+   "bounds": [
+    0,
+    1940,
+    590,
+    2001
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "1 of 4 Complete",
+   "desc": "1 of 4 Complete",
+   "resource_id": "com.instagram.android:id/progress",
+   "bounds": [
+    0,
+    2001,
+    1080,
+    2091
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    0,
+    2091,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/find_people_horizontal_layout",
+   "bounds": [
+    0,
+    2091,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    33,
+    2091,
+    693,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    48,
+    2091,
+    678,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    48,
+    2127,
+    678,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    252,
+    2175,
+    474,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/find_people_card_image",
+   "bounds": [
+    279,
+    2175,
+    447,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    693,
+    2091,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    708,
+    2091,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    708,
+    2127,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    912,
+    2175,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/find_people_card_image",
+   "bounds": [
+    939,
+    2175,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/profile_action_bar",
+   "bounds": [
+    0,
+    108,
+    1080,
+    276
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/action_bar_layout",
+   "bounds": [
+    0,
+    108,
+    1056,
+    276
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/action_bar_username_container",
+   "bounds": [
+    48,
+    108,
+    768,
+    276
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "",
+   "bounds": [
+    48,
+    108,
+    577,
+    276
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "vtubersclips90",
+   "desc": "vtubersclips90",
+   "resource_id": "com.instagram.android:id/action_bar_title",
+   "bounds": [
+    48,
+    108,
+    523,
+    276
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/action_bar_username_buttons_container",
+   "bounds": [
+    523,
+    108,
+    577,
+    276
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/action_bar_title_chevron",
+   "bounds": [
+    541,
+    174,
+    577,
+    210
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/right_action_bar_buttons",
+   "bounds": [
+    768,
+    108,
+    1056,
+    276
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Create New",
+   "resource_id": "com.instagram.android:id/profile_header_create_button",
+   "bounds": [
+    768,
+    108,
+    912,
+    276
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Options",
+   "resource_id": "",
+   "bounds": [
+    912,
+    108,
+    1056,
+    276
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/tab_bar_shadow",
+   "bounds": [
+    0,
+    2315,
+    1080,
+    2316
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/tab_bar",
+   "bounds": [
+    0,
+    2316,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Home",
+   "resource_id": "com.instagram.android:id/feed_tab",
+   "bounds": [
+    0,
+    2316,
+    216,
+    2460
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/wrapper",
+   "bounds": [
+    0,
+    2316,
+    216,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/container",
+   "bounds": [
+    72,
+    2352,
+    144,
+    2424
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/tab_icon",
+   "bounds": [
+    72,
+    2352,
+    144,
+    2424
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Reels",
+   "resource_id": "com.instagram.android:id/clips_tab",
+   "bounds": [
+    216,
+    2316,
+    432,
+    2460
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/tab_icon",
+   "bounds": [
+    288,
+    2352,
+    360,
+    2424
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Message",
+   "resource_id": "com.instagram.android:id/direct_tab",
+   "bounds": [
+    432,
+    2316,
+    648,
+    2460
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/tab_icon",
+   "bounds": [
+    504,
+    2352,
+    576,
+    2424
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Search and explore",
+   "resource_id": "com.instagram.android:id/search_tab",
+   "bounds": [
+    648,
+    2316,
+    864,
+    2460
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/tab_icon",
+   "bounds": [
+    720,
+    2352,
+    792,
+    2424
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "Profile",
+   "resource_id": "com.instagram.android:id/profile_tab",
+   "bounds": [
+    864,
+    2316,
+    1080,
+    2460
+   ],
+   "clickable": true,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/wrapper",
+   "bounds": [
+    864,
+    2316,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/container",
+   "bounds": [
+    927,
+    2343,
+    1017,
+    2433
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/tab_avatar",
+   "bounds": [
+    927,
+    2343,
+    1017,
+    2433
+   ],
+   "clickable": false,
+   "enabled": true
+  },
+  {
+   "text": "",
+   "desc": "",
+   "resource_id": "com.instagram.android:id/bottom_sheet_camera_container",
+   "bounds": [
+    0,
+    108,
+    1080,
+    2460
+   ],
+   "clickable": false,
+   "enabled": true
+  }
+ ]
+}

@@ -19,6 +19,7 @@ from robotapp.post.tiktok import (
     PROFILE,
     SHARE_ON_TIKTOK,
 )
+from robotapp.post.instagram import HOME as INSTAGRAM_HOME, PROFILE as INSTAGRAM_PROFILE
 from robotapp.ui import Element, find, find_exact
 
 FIXTURES = Path(__file__).parent / "fixtures" / "screens"
@@ -45,6 +46,9 @@ def load(name: str) -> list[Element]:
         ("tiktok-feed", HOME),
         ("tiktok-profile", PROFILE),
         ("tiktok-editor", EDITOR),
+        # saved after the first real Instagram login (vtubersclips90, 2026-11-19)
+        ("instagram-home", INSTAGRAM_HOME),
+        ("instagram-profile", INSTAGRAM_PROFILE),
     ],
 )
 def test_a_real_screen_matches_its_signature(fixture: str, signature) -> None:
