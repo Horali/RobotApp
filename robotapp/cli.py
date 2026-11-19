@@ -32,7 +32,7 @@ from .journal import Journal, write_status
 from .log import setup
 from .media import find_media_uri, push_video, video_length
 from .post.base import FAILED, PostResult, PostSpec, split_caption
-from .post.tiktok import TIKTOK_ID, TIKTOK_US, TikTokPoster
+from .post.tiktok import TikTokPoster, tiktok_package
 from .secrets import Chameleon, ChameleonError
 from .spaces import SPACE_PACKAGES, Spaces
 from .ui import U2Screen
@@ -279,7 +279,7 @@ def cmd_provision(args: argparse.Namespace, settings: Settings) -> int:
     emit({"t": "leakcheck", **result.as_dict()})
     emit({"t": "info", "name": "space ready", "user": space_user, "ok": result.ok})
     leave_space(phone)
-    return EXIT_OK if result.ok or result.outcome == "dry_run" else EXIT_ERROR
+    return EXIT_OK if result.ok else EXIT_ERROR
 
 
 def setup_vpn(phone, screen, chameleon, settings, user: int, proxy_id: str, emit, wait_s: float = 90.0) -> dict:
@@ -572,7 +572,7 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
         media_uri=media_uri,
     )
     if args.platform == "tiktok":
-        package = args.package or (TIKTOK_ID if args.user == 0 else TIKTOK_US)
+        package = args.package or tiktok_package(args.user)
         poster = TikTokPoster(phone, screen, journal, job_id, package=package, emit=emit, shots_dir=settings.shots_dir)
     elif args.platform == "instagram":
         from .post.instagram import INSTAGRAM as INSTAGRAM_PACKAGE, InstagramPoster
