@@ -36,7 +36,8 @@ SCREENS = {
     "email_entry": [el("Email", bounds=(100, 500, 900, 600), clickable=True), el("Continue", bounds=(100, 1200, 900, 1300), clickable=True)],
     "password_form": [el("Password", bounds=(100, 500, 900, 600), clickable=True), el("Log in", bounds=(100, 1200, 900, 1300), clickable=True)],
     "code_form": [el("Verify it's you", bounds=(100, 300, 900, 400)), el("Enter the code", bounds=(100, 500, 900, 600), clickable=True)],
-    "logged_in": [el("Edit profile"), el("Followers"), el("@throwaway", bounds=(100, 500, 400, 550)), el(desc="Profile", clickable=True)],
+    "logged_in": [el("Edit profile"), el("Followers"), el("@throwaway", bounds=(100, 500, 400, 550)),
+                  el(desc="Profile", bounds=(900, 2200, 1080, 2320), clickable=True)],
 }
 
 

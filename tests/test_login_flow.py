@@ -30,12 +30,17 @@ SCREENS = {
     "email_entry": [el("Email", bounds=(100, 500, 900, 600), clickable=True), el("Continue", bounds=(100, 1200, 900, 1300), clickable=True)],
     "password_form": [el("Password", bounds=(100, 500, 900, 600), clickable=True), el("Log in", bounds=(100, 1200, 900, 1300), clickable=True)],
     "code_form": [el("Verify it's you", bounds=(100, 300, 900, 400)), el("Enter the code", bounds=(100, 500, 900, 600), clickable=True)],
-    "logged_in": [el("Edit profile"), el("Followers"), el("@throwaway", bounds=(100, 500, 400, 550)), el(desc="Profile", clickable=True)],
+    "logged_in": [el("Edit profile"), el("Followers"), el("@throwaway", bounds=(100, 500, 400, 550)),
+                  el(desc="Profile", bounds=(900, 2200, 1080, 2320), clickable=True)],
     "captcha": [el("Confirm you're human"), el("Slide to verify")],
     "terms": [el("Agree and continue", bounds=(96, 2100, 984, 2200), clickable=True),
               el("By tapping 'Agree and continue', you agree to our Terms of Service")],
     "notifications": [el("Allow TikTok to send you notifications?"),
                       el("DON\u2019T ALLOW", bounds=(48, 2133, 1032, 2292), clickable=True)],
+    "feed_trap": [el("For You"),
+                  el(desc="spryzen.ae profile", bounds=(36, 800, 400, 900), clickable=True),
+                  el(desc="Profile", bounds=(900, 2200, 1080, 2320), clickable=True)],
+    "author": [el("Following"), el("Followers"), el("3.5M"), el("Likes")],
 }
 
 
@@ -58,6 +63,8 @@ class LoginScreen:
             self.state = "captcha"
             return
         moves = {
+            ("feed_trap", "Profile"): "profile",           # the bottom bar's tab
+            ("feed_trap", "spryzen.ae profile"): "author",  # the video author's page: a dead end
             ("terms", "Agree and continue"): "notifications",
             ("notifications", "DON\u2019T ALLOW"): "home",
             ("home", "Profile"): "profile",
@@ -145,6 +152,16 @@ def test_musicallys_first_run_gates_are_all_answered() -> None:
     assert result.logged_in is True
     assert "Agree and continue" in screen.taps
     assert "DON\u2019T ALLOW" in screen.taps
+
+
+def test_the_profile_tab_is_tapped_not_the_video_author() -> None:
+    """On the feed a video author's link also says 'profile' (2026-11-19, musically: the login opened
+    @spryzen.ae's page instead of the tab and never reached the login choice)."""
+    screen = LoginScreen(state="feed_trap")
+    login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon(), code_provider=lambda: "123456")
+    result = login.login("profile-1", "throwaway@example.com", "com.zhiliaoapp.musically")
+    assert result.logged_in is True
+    assert "spryzen.ae profile" not in screen.taps
 
 
 class BirthdateScreen:

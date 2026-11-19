@@ -59,7 +59,7 @@ def test_the_tiktok_login_opens_the_space_build(monkeypatch) -> None:
 
     phone = FakePhone(guard=fake_guard())
     monkeypatch.setattr(login_module, "wait_for", boom)
-    login = TikTokLogin(phone, FakeScreen([]), NoChameleon(), user=11)
+    login = TikTokLogin(phone, FakeScreen([el("For You")]), NoChameleon(), user=11)
     with pytest.raises(ScreenTimeout):
         login.login("profile-1", "somebody@example.com", "com.zhiliaoapp.musically")
     assert started_in(phone, "com.zhiliaoapp.musically", 11)

@@ -103,7 +103,7 @@ class TikTokLogin:
 
         elements = wait_for(self.screen, HOME, 45)
         self._guard_screen(elements, "the TikTok home screen")
-        self._tap_desc("Profile")
+        self._tap_profile_tab()
         time.sleep(1.5)
         elements = self.screen.elements()
         if find(elements, "Log in") is not None:
@@ -272,7 +272,7 @@ class TikTokLogin:
 
     def _read_handle(self) -> str | None:
         try:
-            self._tap_desc("Profile")
+            self._tap_profile_tab()
             elements = wait_for(self.screen, PROFILE, 20)
         except ScreenTimeout:
             return None
@@ -282,6 +282,19 @@ class TikTokLogin:
         return None
 
     # -- helpers -----------------------------------------------------------------------------------
+    def _tap_profile_tab(self) -> None:
+        """The bottom bar's Profile tab: exact label, lower part of the screen only.
+
+        A video author's profile link also says 'profile' and opens someone else's page - the trap
+        the post flow already fixed (2026-11-19, musically: the login opened @spryzen.ae instead).
+        """
+        height = self.screen.size()[1]
+        for element in self.screen.elements():
+            if element.enabled and element.says("Profile") and element.bounds[1] >= height * 0.85:
+                self.screen.tap(element)
+                return
+        raise RuntimeError("the Profile tab is not on screen")
+
     def _type_into_field(self, value: str, label: str) -> None:
         field = find(self.screen.elements(), label) or find(self.screen.elements(), "email")
         if field is not None:
