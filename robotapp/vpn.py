@@ -174,10 +174,13 @@ def import_profile(phone: Phone, url: str, user: int) -> None:
 
 
 def sfa_import(phone: Phone, screen, url: str, user: int, emit=lambda event: None) -> bool:
-    """Open the import link and walk SFA's three screens: the update offer, the confirm, the new profile.
+    """Open the import link and walk SFA's screens: the confirm dialog, the update offer, the new profile.
 
-    SFA 1.14 opens "New Profile" pre-filled and needs its "Create" tapped; before that it offers an automatic
-    update check. A config it refuses shows an "Error" dialog with the reason, which is worth surfacing verbatim.
+    SFA 1.14 asks "Are you sure to import remote profile <host>?" before it fetches anything. The
+    profile list behind that dialog stays readable to uiautomator2, so a plain "is Profiles on screen"
+    check answered yes and left the dialog unanswered - the import never happened and the space had
+    no tunnel (found on the phone, 2026-11-20). The dialog is answered first; "Profiles" only counts
+    when no dialog is up. A config it refuses shows an "Error" dialog with the reason, surfaced verbatim.
     """
     import time
 
@@ -193,8 +196,20 @@ def sfa_import(phone: Phone, screen, url: str, user: int, emit=lambda event: Non
         text = " ".join(e.text + " " + e.desc for e in elements)
         if "decode config" in text or "parse config" in text:
             raise RuntimeError(f"sing-box refused the profile: {text.strip()[:300]}")
+
+        # The remote-import confirmation, before anything else: its OK is the only way forward.
+        if "are you sure to import" in text.lower():
+            button = find_exact(elements, "OK") or find(elements, "OK")
+            if button is not None:
+                if "import OK" not in seen:
+                    emit({"t": "info", "name": "sfa", "tapped": "OK (import confirmation)"})
+                    seen.add("import OK")
+                screen.tap(button)
+                time.sleep(1.5)
+                continue
+
         tapped = False
-        for label in ("No, thanks", "OK", "Create", "Allow", "Done"):
+        for label in ("No, thanks", "Create", "Allow", "Done", "OK"):
             button = find_exact(elements, label) or find(elements, label)
             if button is not None:
                 if label not in seen:

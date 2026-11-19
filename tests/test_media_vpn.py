@@ -87,6 +87,40 @@ def test_a_dropped_adb_says_the_vpn_is_down_instead_of_crashing() -> None:
     assert state["up"] is False and "could not read" in str(state["detail"])
 
 
+def test_the_import_confirmation_is_answered_before_the_profile_list_counts() -> None:
+    """SFA asks "Are you sure to import remote profile <host>?" and the profile list behind that
+    dialog stays readable. A plain "Profiles is on screen" check answered yes, left the dialog
+    unanswered and the space got no tunnel (on the phone, 2026-11-20)."""
+    from robotapp.ui import Element
+    from robotapp.vpn import sfa_import
+
+    def el(text: str) -> Element:
+        return Element(text=text, bounds=(0, 1400, 1080, 1560), clickable=True)
+
+    class ImportScreen:
+        def __init__(self) -> None:
+            self.dialog = True
+            self.taps: list[str] = []
+
+        def elements(self) -> list[Element]:
+            rows = [Element(text="Profiles", bounds=(0, 100, 1080, 200))]   # behind the dialog
+            if self.dialog:
+                rows += [el("Are you sure to import remote profile 192.168.1.16:50877?"),
+                         el("Cancel"), el("OK")]
+            return rows
+
+        def tap(self, element) -> None:
+            self.taps.append(element.text or "")
+            if (element.text or "") == "OK":
+                self.dialog = False
+
+    screen = ImportScreen()
+    phone = FakePhone(guard=fake_guard())
+    assert sfa_import(phone, screen, "http://192.168.1.16:50877/tok/config.json", 11) is True
+    assert screen.taps, "the dialog was never answered"
+    assert screen.taps[0] == "OK"
+
+
 def test_the_import_link_encodes_the_url() -> None:
     link = import_link("http://192.168.1.5:8080/tok/config.json")
     assert link.startswith("sing-box://import-remote-profile?url=")
