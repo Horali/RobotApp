@@ -294,9 +294,9 @@ class GoogleLogin:
                 button = find_exact(elements, label) or find(elements, label)
                 if button is None:
                     continue
-                height = self.screen.size()[1]
-                if not closed_keyboard and button.bounds[1] > height * 0.62:
-                    # below the keyboard's top edge: a tap there hits the keyboard, not the button
+                # Only when the keyboard is actually up AND covers the button: Google's own Next
+                # sits low on its screen, so a plain height test dismissed the sign-in sheet.
+                if not closed_keyboard and self._keyboard_open(elements) and button.bounds[1] > self.screen.size()[1] * 0.62:
                     self.screen.press_back()
                     closed_keyboard = True
                     time.sleep(1.5)
@@ -306,6 +306,16 @@ class GoogleLogin:
             else:
                 time.sleep(1.5)
         raise RuntimeError(f"none of {labels} appeared on screen in {timeout_s:.0f}s")
+
+    @staticmethod
+    def _keyboard_open(elements: list[Element]) -> bool:
+        """The IME's own toolbar is on screen (the keyboard's ids or its shortcut row)."""
+        for element in elements:
+            rid = (element.resource_id or "").lower()
+            if "input_method" in rid or "inputmethod" in rid:
+                return True
+        text = " ".join(e.text for e in elements)
+        return "Clipboard" in text and "Voice" in text
 
     def _shot(self, name: str) -> str | None:
         if not self.shots_dir:
