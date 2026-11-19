@@ -31,6 +31,14 @@ EMAIL_FORM = Signature("email form", any_of=("Email / Username", "Email or usern
 PASSWORD_FORM = Signature("password form", any_of=("Password", "Forgot password"))
 CODE_FORM = Signature("code form", any_of=("Verify it's you", "Enter the code", "We sent a code", "6-digit code"))
 PROFILE = Signature("profile", any_of=("Edit profile", "Followers", "Following"))
+BIRTHDAY = Signature(
+    "tiktok birthdate wall",
+    any_of=("your birthdate", "Month picker"),        # the title and the body both carry the words
+)
+# musically 47.9.1 asks for a birthdate before anything else. One adult, constant date for every
+# robot account (not a secret, deliberately the same everywhere; measured 2026-11-19: the field
+# takes MM/DD/YYYY and shows it back).
+BIRTHDATE_VALUE = "06/15/1996"
 CAPTCHA = Signature(
     "captcha",
     any_of=(
@@ -87,6 +95,7 @@ class TikTokLogin:
     def login(self, profile_id: str, email: str, package: str, platform: str = "tiktok") -> LoginResult:
         self.phone.force_stop(package, self.user)
         self.phone.start_app(package, self.user)
+        self._birthday()
         self._first_run()
 
         elements = wait_for(self.screen, HOME, 45)
@@ -124,6 +133,38 @@ class TikTokLogin:
         return LoginResult(handle=handle, logged_in=handle is not None)
 
     # -- screens -----------------------------------------------------------------------------------
+    def _birthday(self) -> None:
+        """musically's birthdate wall, before anything else: type the date, read it back, Continue.
+
+        The trill flow never met it (G2G was logged in by hand). The field takes MM/DD/YYYY
+        (measured 2026-11-19); the wheels below it are SeekBars that do not expose their values,
+        so the typed field is the one read back, and nothing is submitted blind.
+        """
+        for _ in range(4):
+            time.sleep(1.5)
+            elements = self.screen.elements()
+            if not BIRTHDAY.matches(elements):
+                return
+            field = find(elements, "Birthday")
+            if field is None:
+                raise NeedsHuman("TikTok asks for a birthdate but its field is not there",
+                                 self._shot("tiktok-birthday"))
+            self.screen.tap(field)
+            time.sleep(0.8)
+            self.screen.type_text(BIRTHDATE_VALUE, min_ms=60, max_ms=160)
+            time.sleep(0.8)
+            typed = (self.screen.focused_text() or "").strip()
+            page = " ".join(e.text for e in self.screen.elements())
+            if BIRTHDATE_VALUE not in typed + " " + page:
+                raise NeedsHuman("TikTok's birthdate field did not take the date",
+                                 self._shot("tiktok-birthday"))
+            button = find_exact(self.screen.elements(), "Continue")
+            if button is not None:
+                self.screen.tap(button)
+        time.sleep(1.5)
+        if BIRTHDAY.matches(self.screen.elements()):
+            raise NeedsHuman("TikTok's birthdate wall did not clear", self._shot("tiktok-birthday"))
+
     def _first_run(self) -> None:
         """Interests → Skip, the swipe tutorial → swipe, notifications → Don't allow (§5.2 step 1)."""
         for _ in range(6):

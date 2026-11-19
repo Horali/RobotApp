@@ -128,3 +128,52 @@ def test_a_captcha_stops_the_login_and_asks_for_a_human() -> None:
     with pytest.raises(NeedsHuman) as caught:
         login.login("profile-1", "throwaway@example.com", "com.zhiliaoapp.musically")
     assert "CAPTCHA" in str(caught.value)
+
+
+class BirthdateScreen:
+    """musically's wall (found on the phone, 2026-11-19): the date goes into the field, Continue clears it."""
+
+    def __init__(self, takes: bool = True) -> None:
+        self.wall = True
+        self.takes = takes
+        self.typed: list[str] = []
+        self.taps: list[str] = []
+
+    def elements(self) -> list[Element]:
+        if not self.wall:
+            return SCREENS["home"]
+        return [
+            el("When's your birthdate?"),
+            el("Birthday", bounds=(96, 768, 984, 912), clickable=True),
+            el(desc="Month picker", bounds=(120, 1346, 360, 1743)),
+            el("Continue", bounds=(96, 2175, 984, 2307), clickable=True),
+        ]
+
+    def tap(self, element: Element) -> None:
+        self.taps.append(element.text or element.desc)
+        if (element.text or "") == "Continue":
+            self.wall = False
+
+    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
+        if self.takes:
+            self.typed.append(text)
+
+    def focused_text(self) -> str | None:
+        return self.typed[-1] if self.typed else None
+
+
+def test_the_birthdate_wall_is_typed_and_cleared() -> None:
+    screen = BirthdateScreen()
+    login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+    login._birthday()
+    assert screen.typed == ["06/15/1996"]
+    assert "Continue" in screen.taps
+    assert screen.wall is False
+
+
+def test_a_birthdate_field_that_refuses_the_date_stops_for_a_human() -> None:
+    screen = BirthdateScreen(takes=False)
+    login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+    with pytest.raises(NeedsHuman) as caught:
+        login._birthday()
+    assert "birthdate" in str(caught.value)
