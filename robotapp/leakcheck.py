@@ -77,16 +77,36 @@ def dismiss_chrome_intro(screen: Screen, timeout_s: float = 6.0) -> int:
     return dismissed
 
 
-def read_trace(phone: Phone, screen: Screen, user: int, timeout_s: float = 30.0) -> tuple[str | None, str | None, str]:
-    """Open the Cloudflare trace page and read `ip=` and `loc=`. Returns (ip, loc, raw text)."""
-    open_url(phone, user, TRACE_URL)
+def trace_url(now: float | None = None) -> str:
+    """The trace page with a cache-busting query: Chrome must fetch it, never show its cached copy.
+
+    Found the hard way on 2026-11-20: with the space's DNS broken, Chrome kept showing the trace page
+    it had loaded minutes earlier, so the check read a fresh-looking `ip=`/`loc=` from a dead network.
+    A unique query forces a real request, and `read_trace` also checks the page's own `ts=`.
+    """
+    return f"{TRACE_URL}?t={int(now if now is not None else time.time())}"
+
+
+def read_trace(
+    phone: Phone, screen: Screen, user: int, timeout_s: float = 30.0, max_age_s: float = 600.0
+) -> tuple[str | None, str | None, str]:
+    """Open the Cloudflare trace page and read `ip=` and `loc=` *from a page fetched just now*.
+
+    A page older than ``max_age_s`` (its own `ts=`) is not an answer: the network may be down and
+    the browser showing a cached copy. Returns (None, None, text) in that case, so the check fails.
+    """
+    open_url(phone, user, trace_url())
     dismiss_chrome_intro(screen)
     deadline_text = ""
     for _ in range(int(timeout_s)):
         deadline_text = page_text(screen)
         ip = re.search(r"\bip=([0-9a-fA-F:.]+)", deadline_text)
         loc = re.search(r"\bloc=([A-Z]{2})\b", deadline_text)
-        if ip and loc:
+        stamp = re.search(r"\bts=(\d+(?:\.\d+)?)", deadline_text)
+        fresh = True
+        if stamp is not None:
+            fresh = abs(time.time() - float(stamp.group(1))) <= max_age_s
+        if ip and loc and fresh:
             return ip.group(1), loc.group(1), deadline_text
         time.sleep(1.0)
     return None, None, deadline_text
