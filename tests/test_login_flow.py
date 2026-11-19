@@ -41,13 +41,18 @@ SCREENS = {
                   el(desc="spryzen.ae profile", bounds=(36, 800, 400, 900), clickable=True),
                   el(desc="Profile", bounds=(900, 2200, 1080, 2320), clickable=True)],
     "author": [el("Following"), el("Followers"), el("3.5M"), el("Likes")],
+    "email_code": [el("Verify email"),
+                   el("Use the link or enter the code sent to horalixscripts7@gmail.com"),
+                   el("Resend code", bounds=(96, 858, 394, 975), clickable=True)],
 }
 
 
 class LoginScreen:
-    def __init__(self, state: str = "home", captcha_after_login: bool = False) -> None:
+    def __init__(self, state: str = "home", captcha_after_login: bool = False,
+                 code_instead_of_password: bool = False) -> None:
         self.state = state
         self.captcha_after_login = captcha_after_login
+        self.code_instead_of_password = code_instead_of_password
         self.taps: list[str] = []
         self.typed: list[str] = []
         self.secrets: list[str] = []
@@ -71,7 +76,7 @@ class LoginScreen:
             ("profile", "Log in"): "login_choice",
             ("login_choice", "Use phone / email / username"): "email_form",
             ("email_form", "Email / Username"): "email_entry",
-            ("email_entry", "Continue"): "password_form",
+            ("email_entry", "Continue"): "email_code" if self.code_instead_of_password else "password_form",
             ("password_form", "Log in"): "code_form",
             ("code_form", "Enter the code"): "logged_in",
         }
@@ -84,6 +89,9 @@ class LoginScreen:
 
     def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
         self.typed.append(text)
+        # a full 6-digit code submits itself on both code screens
+        if self.state in ("code_form", "email_code") and len(text.strip()) == 6 and text.strip().isdigit():
+            self.state = "logged_in"
 
     def type_secret(self, secret: Secret) -> None:
         self.secrets.append(secret.reveal())  # the fake records it; the real one types it and drops it
@@ -162,6 +170,18 @@ def test_the_profile_tab_is_tapped_not_the_video_author() -> None:
     result = login.login("profile-1", "throwaway@example.com", "com.zhiliaoapp.musically")
     assert result.logged_in is True
     assert "spryzen.ae profile" not in screen.taps
+
+
+def test_musically_goes_from_the_email_straight_to_the_code() -> None:
+    """musically 47.9.1 (2026-11-19): after the email's Continue there is no password form - TikTok
+    emails a code ("Verify email"). No secret is fetched at all on this path."""
+    screen = LoginScreen(state="home", code_instead_of_password=True)
+    login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon(), code_provider=lambda: "123456")
+    result = login.login("profile-1", "throwaway@example.com", "com.zhiliaoapp.musically")
+    assert result.logged_in is True
+    assert "123456" in screen.typed
+    assert screen.secrets == []          # no password was ever fetched
+    assert "Resend code" not in screen.taps   # the unlabeled field is typed into, never tapped at
 
 
 class BirthdateScreen:

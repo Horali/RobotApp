@@ -74,6 +74,12 @@ class LeakScreen(FakeScreen):
     def set_text(self, text: str) -> None:
         self.typed.append(text)
 
+    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
+        self.typed.append(text)
+        # a full 6-digit code submits itself: the real flow types into the unlabeled field
+        if self.state == "code_form" and len(text.strip()) == 6 and text.strip().isdigit():
+            self.state = "logged_in"
+
     def size(self) -> tuple[int, int]:
         return 1080, 2400
 

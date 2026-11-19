@@ -29,7 +29,12 @@ HOME = Signature("tiktok home", any_of=("For You", "Following", "Inbox"))
 LOGIN_CHOICE = Signature("login choice", any_of=("Use phone / email / username", "Continue with Google", "Log in"))
 EMAIL_FORM = Signature("email form", any_of=("Email / Username", "Email or username", "Log in with email"))
 PASSWORD_FORM = Signature("password form", any_of=("Password", "Forgot password"))
-CODE_FORM = Signature("code form", any_of=("Verify it's you", "Enter the code", "We sent a code", "6-digit code"))
+CODE_FORM = Signature(
+    "code form",
+    # musically 47.9.1 (2026-11-19): the email's Continue goes straight here, "Verify email",
+    # and the entry field carries no label - only "Resend code" names the screen.
+    any_of=("Verify it's you", "Enter the code", "We sent a code", "6-digit code", "Verify email", "Resend code"),
+)
 PROFILE = Signature("profile", any_of=("Edit profile", "Followers", "Following"))
 BIRTHDAY = Signature(
     "tiktok birthdate wall",
@@ -116,20 +121,35 @@ class TikTokLogin:
 
         self._type_into_field(email, label="Email")
         self._tap_any(("Continue", "Next", "Log in"))
-        wait_for(self.screen, PASSWORD_FORM, 30)
-        self._guard_screen(self.screen.elements(), "the password screen")
 
-        # The secret exists only inside this block.
-        password = self.chameleon.platform_password(profile_id, platform)
-        try:
-            field = find(self.screen.elements(), "Password")
-            if field is not None:
-                self.screen.tap(field)
-                time.sleep(0.5)
-            self.screen.type_secret(password)
-        finally:
-            del password
-        self._tap_any(("Log in", "Continue", "Next"))
+        # trill asked for the password after the email; musically 47.9.1 goes straight to a code it
+        # emails ("Verify email", no password form at all - measured 2026-11-19). Whichever appears.
+        deadline = time.monotonic() + 30
+        elements: list[Element] = []
+        while time.monotonic() < deadline:
+            elements = self.screen.elements()
+            if PASSWORD_FORM.matches(elements) or CODE_FORM.matches(elements):
+                break
+            time.sleep(1.5)
+        else:
+            raise ScreenTimeout("waited 30 s for the password or the code form")
+
+        if CODE_FORM.matches(elements) and not PASSWORD_FORM.matches(elements):
+            self._enter_code()          # the code path: no secret is fetched at all
+        else:
+            self._guard_screen(elements, "the password screen")
+
+            # The secret exists only inside this block.
+            password = self.chameleon.platform_password(profile_id, platform)
+            try:
+                field = find(self.screen.elements(), "Password")
+                if field is not None:
+                    self.screen.tap(field)
+                    time.sleep(0.5)
+                self.screen.type_secret(password)
+            finally:
+                del password
+            self._tap_any(("Log in", "Continue", "Next"))
 
         self._after_password()
         handle = self._read_handle()
@@ -259,16 +279,16 @@ class TikTokLogin:
         raise NeedsHuman("TikTok did not reach the profile in 90 s", self._shot("tiktok-login-timeout"))
 
     def _enter_code(self) -> None:
+        """The emailed code. musically's field carries no label and "Resend code" does - so the
+        code is typed straight into the screen's editable (index 0), never tapped at by name."""
         code = self.code_provider()
         if not code:
             raise NeedsCode("tiktok")
         digits = re.sub(r"\D", "", code)
         if len(digits) != 6:
             raise NeedsCode("tiktok")
-        field = find(self.screen.elements(), "code") or find(self.screen.elements(), "Enter")
-        if field is not None:
-            self.screen.tap(field)
         self.screen.type_text(digits, min_ms=120, max_ms=300)
+        time.sleep(2.0)      # a full 6 boxes submits itself
 
     def _read_handle(self) -> str | None:
         try:

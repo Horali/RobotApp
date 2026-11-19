@@ -496,6 +496,24 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
     def code_provider() -> str:
         if args.code:
             return args.code
+        if args.code_file:
+            # A manual run in the background: the code arrives after TikTok has sent it, so the
+            # robot polls a file - the person writes the code into it when they read the email.
+            path = Path(args.code_file)
+            emit({"t": "needs", "kind": "email_code", "platform": args.platform,
+                  "note": f"type the 6-digit code into {path}; the robot waits (5 min)"})
+            deadline = time.monotonic() + 300
+            while time.monotonic() < deadline:
+                try:
+                    if path.is_file():
+                        value = path.read_text(encoding="utf-8").strip()
+                        if value:
+                            return value
+                except OSError:
+                    pass
+                time.sleep(5.0)
+            print("the code file never appeared; giving up", file=sys.stderr, flush=True)
+            return ""
         emit({"t": "needs", "kind": "email_code", "platform": args.platform})
         print("Type the 6-digit code from the account's email and press Enter:", file=sys.stderr, flush=True)
         return sys.stdin.readline().strip()
@@ -791,6 +809,7 @@ def parser() -> argparse.ArgumentParser:
     lo.add_argument("--email", default="", help="the login name; Chameleon's assigned email when omitted")
     lo.add_argument("--package", default="", help="the app package; each platform picks its own by default")
     lo.add_argument("--code", default="")
+    lo.add_argument("--code-file", default="", help="read the 6-digit code from this file when the app asks (it may not exist yet)")
     lo.add_argument("--job", default="")
     lo.set_defaults(func=cmd_login)
 
