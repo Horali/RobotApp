@@ -5,8 +5,8 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-19, 16:22 WIB (step 10's TikTok half done: musically installed + the throwaway's
-TikTok signed in; eight flow bugs fixed on the way).
+Last updated: 2026-11-19, 17:00 WIB (the throwaway's TikTok signed in; its first Instagram + TikTok
+posts are queued and the robot path is on - tomorrow's window is the first fully automatic sitting).
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
@@ -202,13 +202,27 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   - `robot login` accepts **`--code-file`**: a manual run in the background polls a file for the
     6-digit code (5 min), so the user can type the code into a file while the run sits on the code
     screen.
-- **What is left (the honest list):** the **first real posts** - Instagram's whole loop for vtubers
-  Clips (no queueable row exists: the throwaway has **no campaign** in ClipMaker and its profiles are
-  `enrolled` with `posting_locked_until 2026-11-22 17:55 UTC`, and `queue_post` refuses both), TikTok's
-  first post (needs a clip), then the 14-day YouTube test (Timmy's Google sign-in), then the real
-  brands one login per day (§5.5's order). The throwaway's handles: Instagram **@vtubersclips90**,
-  TikTok **@vtubersclips70** (ClipMaker's `warmup_profiles.account_handle` is still empty for both -
-  storing them is the clipper session's call, §8.4).
+- **The first posts are QUEUED. 2026-11-19, 16:58 WIB** (the user chose "force it now" over waiting out
+  the Nov 22 warmup lock): the throwaway's Instagram and TikTok profiles are graduated by hand (no
+  warmup days - a throwaway; backup `data/backups/warmup-before-throwaway-force-20261119-1657.db`),
+  a "robot test" campaign carries them (source `other`, platforms instagram+tiktok, no Content
+  Rewards link so nothing auto-submits), and **two `mode='phone'` rows went through ClipMaker's own
+  `queue_post` gates**: instagram `b988d8b5…`, tiktok `cd9c25ea…` - the clip is a house (Loud Lobby)
+  one, "Kai crashes a real-life Mario Kart in Tokyo" (`renderer\out\twitch_2907224886_204_v2.mp4`,
+  56 s, no paid-campaign ties). **The robot path is switched on for the throwaway only**
+  (`CLIPMAKER_PHONE_ROBOT=1` in ClipMaker's `.env` + `data/phone_robot.json`; every other brand keeps
+  Telegram). Read-only simulation at Fri 06:30 WIB: the gate says go and one sitting posts Instagram
+  then TikTok. **The user's one action: restart ClipMaker's app before tomorrow's window** (the
+  running app still has the old flag in memory), and leave the phone on Wi-Fi overnight. If the app
+  is not restarted, the tick sends the posts to Telegram as hand posts instead - the rows only leave
+  the queue from 06:00 WIB, so any restart tonight is in time.
+- **What is left (the honest list):** **tomorrow 06:00-10:00 WIB: the first fully automatic sitting**
+  (ClipMaker's tick → `robot sitting` → the two posts → `phone-posted`) - if the TikTok leg meets a
+  musically screen the trill flow did not, it stops safely before Post and the row lands back for
+  Telegram. After that: the 24 h views reading, the 14-day YouTube test (Timmy's Google sign-in),
+  then the real brands one login per day (§5.5's order). The throwaway's handles: Instagram
+  **@vtubersclips90**, TikTok **@vtubersclips70** (ClipMaker's `warmup_profiles.account_handle` is
+  still empty for both - storing them is the clipper session's call, §8.4).
 
   - **step 10 (move the real accounts in)** — the robot's side is built; it is one login per day, safest first
     (§5.5), and **the first real login is the next thing to run**: the throwaway is now **"vtuber Clips"**
@@ -219,12 +233,12 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
     checked against the 47.8.3 of the same listing; the throwaway's TikTok is signed in (@vtubersclips70).
   - **The 14-day YouTube test needs Timmy's Google sign-in** (a separate, checked-by-hand job, §5.6).
   - **The first posts need queueable rows in ClipMaker** (see the honest list above).
-- **For the next session, in order:** (1) the first real posts need queueable rows: the throwaway has no
-  campaign in ClipMaker and its profiles are enrolled until 2026-11-22 - graduate it (or wait out the warmup),
-  give it a campaign, queue an Instagram row, then `robot sitting` end to end. (2) The TikTok first post
-  (needs a clip). (3) The 14-day YouTube test needs Timmy's Google sign-in (§5.6). (4) The real brands, one
-  login per day; the musically login flow is now proven up to the code screen - the next login exercises the
-  robot's own code entry (`--code-file`).
+- **For the next session, in order:** (1) **tomorrow 06:00-10:00 WIB the first automatic sitting
+  should run by itself** (restart ClipMaker's app first - see above); check the phone the next
+  morning: two `posted` rows with links, or a Telegram fallback with the reason. Then the 24 h views
+  reading rides the next sitting. (2) The 14-day YouTube test needs Timmy's Google sign-in (§5.6).
+  (3) The real brands, one login per day; the musically login flow is proven up to the code screen -
+  the next login exercises the robot's own code entry (`--code-file`).
 
 
 **What you must do**
