@@ -15,6 +15,7 @@ import re
 import time
 
 from .adb import Phone
+from .post.tiktok import tiktok_package
 from .ui import Element, Screen, Signature, wait_for
 
 log = logging.getLogger("robotapp")
@@ -62,7 +63,10 @@ def _numbers_on_tiles(elements: list[Element], screen_height: int) -> list[int]:
 
 def read_views(phone: Phone, screen: Screen, platform: str, user: int) -> int | None:
     """Open the app's own profile and read the newest post's play count. None when it cannot be read."""
-    package = {"tiktok": "com.ss.android.ugc.trill", "instagram": "com.instagram.android"}.get(platform)
+    package = {
+        "tiktok": tiktok_package(user),        # trill in the owner user, the US build in a space
+        "instagram": "com.instagram.android",
+    }.get(platform)
     if package is None:
         return None
     phone.start_app(package, user)

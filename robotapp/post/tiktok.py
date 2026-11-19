@@ -29,6 +29,11 @@ log = logging.getLogger("robotapp")
 TIKTOK_US = "com.zhiliaoapp.musically"
 TIKTOK_ID = "com.ss.android.ugc.trill"
 
+
+def tiktok_package(user: int) -> str:
+    """The TikTok build a space uses: G2G's trill in the owner user, the US build everywhere else."""
+    return TIKTOK_ID if user == 0 else TIKTOK_US
+
 HOME = Signature("tiktok home", any_of=("For You", "Following", "Inbox", "Profile"))
 CAMERA = Signature("tiktok camera", any_of=("Upload", "Add sound", "Flip", "Record"))
 GALLERY = Signature("tiktok gallery", any_of=("Videos", "Photos", "Select", "Next"))

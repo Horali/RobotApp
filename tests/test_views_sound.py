@@ -49,6 +49,32 @@ def test_reading_views_needs_a_signed_in_profile(monkeypatch) -> None:
     assert read_views(BlankPhone(), FakeScreen([]), "tiktok", 0) is None
 
 
+def test_views_reads_the_right_tiktok_build_for_the_space(monkeypatch) -> None:
+    """The US space's views come from musically, the owner user's from trill (found as a gap 2026-11-19)."""
+    from robotapp import views as views_module
+    from robotapp.post.tiktok import tiktok_package
+
+    started: list[tuple[str, int]] = []
+
+    class RecordingPhone:
+        serial = "fake"
+
+        def start_app(self, package, user=0):
+            started.append((package, user))
+            return ""
+
+        def shell(self, command, timeout=60):
+            return ""
+
+    monkeypatch.setattr(views_module, "wait_for", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("no profile")))
+
+    assert read_views(RecordingPhone(), FakeScreen([]), "tiktok", 11) is None
+    assert started == [("com.zhiliaoapp.musically", 11)]
+    assert read_views(RecordingPhone(), FakeScreen([]), "tiktok", 0) is None
+    assert started[-1] == ("com.ss.android.ugc.trill", 0)
+    assert tiktok_package(0) == "com.ss.android.ugc.trill" and tiktok_package(11) == "com.zhiliaoapp.musically"
+
+
 def test_the_sound_step_reports_failure_instead_of_lying() -> None:
     """No audio panel means False; the poster then decides (post without it, unless required)."""
     screen = FakeScreen([el("Next"), el("Edit")])       # the editor, but no sound panel opens
