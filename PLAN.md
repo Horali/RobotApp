@@ -253,6 +253,12 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   time, no space open, VPN up + locked (leak check green: `208.214.162.185`, US, no SIM, location off).
   Battery 76 % but **44.4 °C** (doctor's limit 42 °C) — it cools with the screen off; check before the
   window.
+- **The robot switch itself was broken (found at 04:30, ClipMaker commit `899c6da`).** Nothing loads
+  `.env` into the app's process environment, and `phone_robot.on()` read only `os.environ` — so with
+  `CLIPMAKER_PHONE_ROBOT=1` in the file the running app still answered "off" and would have sent the
+  posts to Telegram. It now reads the environment first and `.env` fresh after (2 tests). **The app
+  must still be restarted once** (its running process has the old module in memory); after that the
+  flag works with no shell environment.
 - **What is left:** the first fully automatic sitting (tomorrow 06:00-10:00 WIB: ClipMaker's tick →
   `robot sitting` → the two posts → `phone-posted`; an unknown musically screen stops it safely before
   Post and the row falls back to Telegram), the YouTube channel rename + its row, the 24 h views
