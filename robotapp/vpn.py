@@ -45,6 +45,12 @@ def build_config(proxy: Proxy, dns_server: str = "1.1.1.1") -> dict:
     because the legacy `address` form is rejected, and a blocked protocol is a route action (`reject`) because
     the `block` outbound no longer exists. A config this robot writes must be accepted by the installed app:
     the first version of this function was refused with "legacy DNS server formats are deprecated".
+
+    **DNS rides HTTPS (DoH, port 443), not port 53.** Measured through the Virginia proxy on 2026-11-20:
+    `CONNECT example.com:443` answers `200`, `CONNECT www.google.com:443` answers `200`, but
+    `CONNECT 1.1.1.1:53` and `CONNECT 8.8.8.8:53` answer **403 Forbidden** - the proxy blocks DNS on port 53.
+    With the old `tcp/53` DNS every hostname failed to resolve while raw-IP pages still loaded, which looked
+    like a broken app (Google's account-add said "Something went wrong") and would have broken every post.
     """
     if proxy.protocol.lower().startswith("socks"):
         outbound: dict[str, object] = {
@@ -64,7 +70,14 @@ def build_config(proxy: Proxy, dns_server: str = "1.1.1.1") -> dict:
         "log": {"level": "warn", "timestamp": True},
         "dns": {
             "servers": [
-                {"type": "tcp", "tag": "proxy-dns", "server": dns_server, "server_port": 53, "detour": "proxy"}
+                {
+                    "type": "https",
+                    "tag": "proxy-dns",
+                    "server": dns_server,
+                    "server_port": 443,
+                    "path": "/dns-query",
+                    "detour": "proxy",
+                }
             ],
             "final": "proxy-dns",
             "strategy": "ipv4_only",
@@ -220,12 +233,24 @@ def clear_lockdown(phone: Phone, user: int) -> None:
 
 
 def vpn_state(phone: Phone, user: int) -> dict[str, object]:
-    """What the phone says about the VPN for that user: up, which app, and whether lockdown is on."""
-    connectivity = phone.shell("dumpsys connectivity | grep -i -m6 -E 'VPN CONNECTED|TRANSPORT_VPN|VpnNetworkProvider'")
+    """What the phone says about the VPN for that user: up, which app, and whether lockdown is on.
+
+    A dropped adb connection ("error: closed", seen 2026-11-20) answers "not up" instead of raising:
+    every caller treats a VPN it cannot see as down, and a crash there loses the whole job's report.
+    """
+    try:
+        connectivity = phone.shell(
+            "dumpsys connectivity | grep -i -m6 -E 'VPN CONNECTED|TRANSPORT_VPN|VpnNetworkProvider'"
+        )
+    except Exception as exc:  # noqa: BLE001 - an unreadable phone is not a working tunnel
+        return {"up": False, "always_on_app": "", "lockdown": False, "detail": f"could not read it: {exc}"}
     # "VpnNetworkProvider" alone is a system network provider, not our tunnel: only a connected VPN counts.
     up = "VPN CONNECTED" in connectivity or "TRANSPORT_VPN" in connectivity
-    app = phone.settings_get("secure", "always_on_vpn_app", user).strip()
-    lockdown = phone.settings_get("secure", "always_on_vpn_lockdown", user).strip()
+    try:
+        app = phone.settings_get("secure", "always_on_vpn_app", user).strip()
+        lockdown = phone.settings_get("secure", "always_on_vpn_lockdown", user).strip()
+    except Exception as exc:  # noqa: BLE001
+        return {"up": up, "always_on_app": "", "lockdown": False, "detail": f"settings unreadable: {exc}"}
     return {
         "up": up,
         "always_on_app": app,

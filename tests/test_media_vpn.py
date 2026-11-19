@@ -56,6 +56,37 @@ def test_a_socks_proxy_becomes_a_socks_outbound() -> None:
     assert config["outbounds"][0]["version"] == "5"
 
 
+def test_dns_rides_https_through_the_proxy_never_port_53() -> None:
+    """Measured through the Virginia proxy on 2026-11-20: CONNECT to :443 answers 200, CONNECT to
+    :53 answers 403 - the proxy blocks DNS on port 53. With the old tcp/53 DNS no hostname resolved
+    (Google's account-add said "Something went wrong" while raw-IP pages still loaded), so the DNS
+    must go over HTTPS on 443, through the proxy."""
+    config = build_config(Proxy("208.214.162.185", 50100, "u", Secret("p"), "http"))
+    (server,) = config["dns"]["servers"]
+    assert server["type"] == "https"
+    assert server["server_port"] == 443
+    assert server["path"] == "/dns-query"
+    assert server["detour"] == "proxy"          # never the home connection: that would leak DNS
+    assert config["dns"]["final"] == "proxy-dns"
+    assert all(s.get("server_port") != 53 for s in config["dns"]["servers"])
+
+
+def test_a_dropped_adb_says_the_vpn_is_down_instead_of_crashing() -> None:
+    """Seen 2026-11-20: `dumpsys` answered 'error: closed' mid-job and the whole command died. An
+    unreadable phone must read as 'not up', which every caller already handles."""
+    from robotapp.vpn import vpn_state
+
+    class DroppedPhone:
+        def shell(self, command: str, timeout: int = 60) -> str:
+            raise RuntimeError("adb failed (1): error: closed")
+
+        def settings_get(self, namespace: str, key: str, user: int) -> str:
+            return ""
+
+    state = vpn_state(DroppedPhone(), 11)
+    assert state["up"] is False and "could not read" in str(state["detail"])
+
+
 def test_the_import_link_encodes_the_url() -> None:
     link = import_link("http://192.168.1.5:8080/tok/config.json")
     assert link.startswith("sing-box://import-remote-profile?url=")
