@@ -131,7 +131,7 @@ class GoogleLogin:
             time.sleep(0.6)
         self.screen.type_text(email, min_ms=60, max_ms=160)
         self._require_typed(email)
-        self._tap_any(("Next", "Continue"))
+        self._advance("google email")
         wait_for(self.screen, PASSWORD_FORM, 45)
 
     def _password(self, email_account_id: str) -> None:
@@ -267,6 +267,34 @@ class GoogleLogin:
         return None
 
     # -- helpers ---------------------------------------------------------------------------------
+    def _advance(self, where: str, tries: int = 5) -> None:
+        """Press Next/Continue and make sure the screen actually moved on.
+
+        Clicking a button by its coordinates can land on the keyboard that sits over it (measured
+        2026-11-20: the tap "worked" and the page never changed). So every try is verified: if the
+        screen still shows the same form, the keyboard is closed and the button is pressed again.
+        """
+        for attempt in range(tries):
+            elements = self.screen.elements()
+            button = None
+            for label in ("Next", "Continue", "Sign in"):
+                button = find_exact(elements, label) or find(elements, label)
+                if button is not None:
+                    break
+            if button is not None:
+                self.screen.tap(button)
+                time.sleep(2.5)
+                after = self.screen.elements()
+                if PASSWORD_FORM.matches(after) or CODE_FORM.matches(after) or TERMS.matches(after):
+                    return
+                # still on the same form: the keyboard most likely ate the tap
+                if attempt < tries - 1:
+                    self.screen.press_back()
+                    time.sleep(1.5)
+            else:
+                time.sleep(1.5)
+        raise ScreenTimeout(f"Google did not move past {where}")
+
     def _require_typed(self, value: str) -> None:
         """Never submit an empty form: the field (or the page) must show what was typed.
 

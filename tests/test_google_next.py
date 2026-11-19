@@ -54,3 +54,30 @@ def test_a_keyboard_over_the_button_is_closed_then_next_is_tapped() -> None:
     screen = Screen([el("Next", bounds=(756, 2280, 1020, 2424))], keyboard=True)
     GoogleLogin(phone=None, screen=screen, chameleon=None)._tap_any(("Next", "Continue"), timeout_s=3)
     assert screen.taps == ["back", "Next"]
+
+
+class SwallowingScreen(Screen):
+    """The tap lands on the keyboard: the page only moves after the keyboard is closed."""
+
+    def __init__(self, elements, keyboard: bool = True) -> None:
+        super().__init__(elements, keyboard)
+        self.swallowed = 0
+
+    def tap(self, element) -> None:
+        super().tap(element)
+        if self.keyboard:
+            self.swallowed += 1          # nothing happens
+        else:
+            self.current = [el("Enter your password"), el("Show password"), el("Next")]
+
+    def press_back(self) -> None:
+        super().press_back()
+        self.keyboard = False
+
+
+def test_advance_notices_the_tap_was_eaten_and_tries_again() -> None:
+    """Measured 2026-11-20: Next was tapped, the keyboard took the click, the page never changed and
+    the sign-in timed out waiting for the password screen. _advance verifies the move."""
+    screen = SwallowingScreen([el("Next", bounds=(756, 2280, 1020, 2424))])
+    GoogleLogin(phone=None, screen=screen, chameleon=None)._advance("google email", tries=4)
+    assert screen.swallowed == 1 and "back" in screen.taps      # first tap eaten, then the keyboard closed
