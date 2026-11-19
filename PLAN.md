@@ -244,10 +244,14 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   `horalixscripts7`). Its YouTube account had **no channel**, so YouTube's "Create a channel" made one
   and it took the account's default name **"Horali Cript"** / handle `@HoraliCript`. Renaming needs
   YouTube Studio's settings, which will not load in the phone's mobile Chrome ("Oops, something went
-  wrong"), so **the YouTube row was pulled from tomorrow's queue**: the throwaway must not publish
-  under the user's own name. **A 2-minute rename in desktop Studio (Channel → Basic info) and the row
-  goes straight back in** — the row's script (`data/queue_yt_row.py` pattern) graduates nothing now,
-  the profile and the campaign are ready.
+  wrong"); **Chrome's "Desktop site" mode does render Studio** (menu → Desktop site), and the channel
+  id is **`UCl1ZpgCNfkIGhtf-Af3f5nQ`**, so
+  `https://studio.youtube.com/channel/UCl1ZpgCNfkIGhtf-Af3f5nQ/editing/details` is the direct page —
+  but its Profile form does not expose its fields to uiautomator2, so the rename is a **2-minute job
+  for the user on the laptop** (Studio → Customization → Profile, or Settings → Channel → Basic info).
+  **The YouTube row was pulled from tomorrow's queue**: the throwaway must not publish under the
+  user's own name. Once renamed, the row goes straight back in (the profile is graduated, the
+  campaign already lists youtube, `youtube_by_phone` is on).
 - **Tomorrow's sitting is the proven pair only:** Instagram `b988d8b5…` then TikTok `92a0c985…`, both
   06:00 WIB, both the Mario Kart clip. Phone left as other scripts expect at 04:25: owner user, Jakarta
   time, no space open, VPN up + locked (leak check green: `208.214.162.185`, US, no SIM, location off).
