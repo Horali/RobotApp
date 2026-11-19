@@ -254,14 +254,14 @@ class InstagramLogin:
             raise RuntimeError(f"the login field is empty after typing {value[:3]}***; not submitting")
 
     def _in_front(self, package: str) -> bool:
-        """The window in focus must be Instagram's: the launcher answers its own words."""
+        """The app actually resumed must be Instagram's: the launcher answers its own words."""
         try:
-            focus = self.phone.shell("dumpsys window | grep -m1 mCurrentFocus", timeout=20)
+            fore, _ = self.phone.fore_app()
         except Exception:  # noqa: BLE001
             return True
-        if not focus.strip():
+        if not fore:
             return True
-        return package in focus
+        return fore == package
 
     def _type_into(self, value: str, label: str) -> None:
         field = find(self.screen.elements(), label)

@@ -36,6 +36,7 @@ class FakePhone:
         self.battery_temp = 405  # 40.5 °C, as measured on the real phone
         self.zone = "Asia/Jakarta"
         self.current = 0
+        self._fore = ""        # fore_app's answer; "" means "the phone did not say"
         self.versions = {"com.zhiliaoapp.musically": "39.5.4", "com.ss.android.ugc.trill": "47.8.3"}
 
     # -- fixture helpers ---------------------------------------------------------------------------

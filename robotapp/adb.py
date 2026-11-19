@@ -166,13 +166,17 @@ class AdbPhone:
         return self.prop("persist.sys.timezone")
 
     def fore_app(self) -> tuple[str, int]:
-        """(package, Android user) of the window actually in front - from the display, not a cached value.
+        """(package, Android user) of the app actually in front - from the display, not a cached value.
 
         `am get-current-user` answers what the phone *thinks*; this answers what is on the screen, which
         is what a tap hits. On 2026-11-19 the two disagreed and a read was blamed on the wrong account.
-        """
-        out = self.shell("dumpsys window | grep -m1 mCurrentFocus", timeout=20)
-        # mCurrentFocus=Window{6e0c44e u11 com.instagram.android/com.instagram.modal.ModalActivity}
+
+        `dumpsys window`'s mCurrentFocus is printed once per root task on this XOS build - a background
+        user's window comes first and blamed the user's own Instagram while the space's TikTok was on
+        screen (2026-11-19). `topResumedActivity` is one line and was proven right both ways on the
+        phone (u11 musically in front; after `am switch-user 0`, u0)."""
+        out = self.shell("dumpsys activity activities | grep -m1 topResumedActivity", timeout=20)
+        # topResumedActivity=ActivityRecord{d7f682f u11 com.zhiliaoapp.musically/...SplashActivity} t1100032}
         m = re.search(r"u(\d+)\s+([\w.]+)/", out)
         return (m.group(2), int(m.group(1))) if m else ("", self.current_user())
 

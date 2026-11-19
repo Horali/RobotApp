@@ -191,12 +191,12 @@ class InstagramPoster:
 
     def _in_front(self) -> bool:
         try:
-            focus = self.phone.shell("dumpsys window | grep -m1 mCurrentFocus", timeout=20)
+            package, _ = self.phone.fore_app()
         except Exception:  # noqa: BLE001
             return True
-        if not focus.strip():
+        if not package:
             return True
-        return self.package in focus or "mCurrentFocus=null" in focus
+        return package == self.package
 
     def _clear_dialog(self, elements: list[Element]) -> bool:
         for label in ("Not now", "Skip", "Later", "Cancel", "Don't allow", "Dismiss"):

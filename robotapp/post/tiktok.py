@@ -180,14 +180,14 @@ class TikTokPoster:
         raise ScreenTimeout("TikTok did not reach its home screen in 60 s")
 
     def _in_front(self) -> bool:
-        """Guard against a stale hierarchy: the window in focus must be TikTok's."""
+        """Guard against a stale hierarchy: the app actually resumed must be TikTok's."""
         try:
-            focus = self.phone.shell("dumpsys window | grep -m1 mCurrentFocus", timeout=20)
+            package, _ = self.phone.fore_app()
         except Exception:  # noqa: BLE001 - if the phone cannot say, trust the screen text
             return True
-        if not focus.strip():  # a phone (or a fake) that does not answer is not a reason to fail
+        if not package:  # a phone (or a fake) that does not answer is not a reason to fail
             return True
-        return self.package in focus or "mCurrentFocus=null" in focus
+        return package == self.package
 
     def _clear_dialog(self, elements: list[Element]) -> bool:
         """TikTok's own prompts, and Android's. Returns True when something was dismissed.
