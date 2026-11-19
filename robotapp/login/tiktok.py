@@ -201,11 +201,15 @@ class TikTokLogin:
         return next((e for e in elements if e.desc == desc and e.enabled), None)
 
     def _first_run(self) -> None:
-        """Interests → Skip, the swipe tutorial → swipe, notifications → Don't allow (§5.2 step 1)."""
+        """Interests → Skip, the swipe tutorial → swipe, notifications → Don't allow (§5.2 step 1).
+
+        musically also shows its Terms of Service dialog here (trill was logged in by hand, so this
+        is new, 2026-11-19): "Agree and continue", answered like Instagram's own terms sheet.
+        """
         for _ in range(6):
             time.sleep(1.5)
             elements = self.screen.elements()
-            for label in ("Skip", "Not now", "Don't allow", "Cancel"):
+            for label in ("Skip", "Not now", "Don't allow", "Cancel", "Agree and continue"):
                 button = find_exact(elements, label)
                 if button is not None:
                     self.screen.tap(button)
@@ -230,7 +234,7 @@ class TikTokLogin:
             if CODE_FORM.matches(elements):
                 self._enter_code()
                 continue
-            for label in ("Not now", "Skip", "Don't allow", "Later"):
+            for label in ("Not now", "Skip", "Don't allow", "Later", "Agree and continue"):
                 button = find_exact(elements, label)
                 if button is not None:
                     self.screen.tap(button)

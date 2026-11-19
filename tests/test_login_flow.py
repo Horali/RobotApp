@@ -32,6 +32,8 @@ SCREENS = {
     "code_form": [el("Verify it's you", bounds=(100, 300, 900, 400)), el("Enter the code", bounds=(100, 500, 900, 600), clickable=True)],
     "logged_in": [el("Edit profile"), el("Followers"), el("@throwaway", bounds=(100, 500, 400, 550)), el(desc="Profile", clickable=True)],
     "captcha": [el("Confirm you're human"), el("Slide to verify")],
+    "terms": [el("Agree and continue", bounds=(96, 2100, 984, 2200), clickable=True),
+              el("By tapping 'Agree and continue', you agree to our Terms of Service")],
 }
 
 
@@ -54,6 +56,7 @@ class LoginScreen:
             self.state = "captcha"
             return
         moves = {
+            ("terms", "Agree and continue"): "home",
             ("home", "Profile"): "profile",
             ("profile", "Log in"): "login_choice",
             ("login_choice", "Use phone / email / username"): "email_form",
@@ -128,6 +131,15 @@ def test_a_captcha_stops_the_login_and_asks_for_a_human() -> None:
     with pytest.raises(NeedsHuman) as caught:
         login.login("profile-1", "throwaway@example.com", "com.zhiliaoapp.musically")
     assert "CAPTCHA" in str(caught.value)
+
+
+def test_musicallys_terms_dialog_is_answered_before_the_walk() -> None:
+    """musically shows its Terms of Service between the birthdate wall and the feed (2026-11-19)."""
+    screen = LoginScreen(state="terms")
+    login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon(), code_provider=lambda: "123456")
+    result = login.login("profile-1", "throwaway@example.com", "com.zhiliaoapp.musically")
+    assert result.logged_in is True
+    assert "Agree and continue" in screen.taps
 
 
 class BirthdateScreen:

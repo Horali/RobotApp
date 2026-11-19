@@ -205,7 +205,7 @@ class TikTokPoster:
                 time.sleep(2.0)
                 self.screen.press_back()
                 return True
-        for label in ("Not now", "Skip", "Later", "Cancel", "Don't allow", "Dismiss"):
+        for label in ("Not now", "Skip", "Later", "Cancel", "Don't allow", "Dismiss", "Agree and continue"):
             button = find_exact(elements, label)
             if button is not None:
                 self.screen.tap(button)
@@ -213,7 +213,7 @@ class TikTokPoster:
         return False
 
     def _dismiss_popups(self, elements: list[Element]) -> None:
-        for label in ("Not now", "Skip", "Later", "Cancel", "Don't allow", "Dismiss"):
+        for label in ("Not now", "Skip", "Later", "Cancel", "Don't allow", "Dismiss", "Agree and continue"):
             button = find_exact(elements, label)
             if button is not None:
                 self.screen.tap(button)
