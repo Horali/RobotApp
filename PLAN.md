@@ -157,12 +157,10 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   - also fixed: `adb connect` to a stale Wi-Fi address now gives up in 5 s instead of hanging 20, the robot
     phone's USB serial is used first when the laptop is on another network, and a login never submits an empty
     form.
-- **Open verification (do this first next time the phone is reachable):** read the signed-in Instagram
-  account in **each** Android user — user 11 (US space, Virginia) must show **@vtubersclips90**, user 0 (the
-  user's own) must show only their account. `robot screen` now prints the package **and user** in front
-  (`mCurrentFocus`), so the answer comes from the display, not from a cached value. Nothing was posted, liked,
-  followed or edited during the login; if user 0 does hold the account, log it out there (account switcher →
-  @vtubersclips90 → Log out) and the space keeps its own copy.
+- **Open verification — DONE 2026-11-19, 12:34 WIB.** Read per user: **user 0 = "Faiz"** (the user's own
+  account, 101 followers, untouched), **user 11 = "vtubers Clips"** (the throwaway, 0 posts). The login landed
+  in the US space as intended; the earlier alarm ("on my main account") was a misread of a foreground window,
+  now impossible to repeat: `robot screen` prints the package and user from `mCurrentFocus`.
 - **What is left (the honest list):** the throwaway's **TikTok** login (blocked on `musically`), the **first
   Instagram post** from this account through ClipMaker (the whole loop, mode='phone'), the 14-day YouTube test,
   and then the real brands one login per day (§5.5's order).
