@@ -92,6 +92,26 @@ Answer: `{"ok": true, "url": …, "next": "24-hour check of the last post at …
 Owner user in front, no space open, time zone Asia/Jakarta, lock released. The CLI does the lock and the switch
 back; check with `robot lock status` and `robot screen --user 0`.
 
+## If the space has "no internet" while the VPN is up (2026-11-20, measured)
+
+Two layers, both real, both fixed in the robot; check them in this order:
+
+1. **The phone's Private DNS.** `settings get global private_dns_mode` must be `off`. With
+   `hostname` + a specifier (this phone had `dns.quad9.net`), Android insists on DoT to that server;
+   through a locked proxy it is unreachable, so **every hostname fails** while raw-IP pages load
+   (`https://1.1.1.1/cdn-cgi/trace` works, `google.com` and `example.com` do not). That reads as
+   "no internet" and as Google's "Something went wrong".
+2. **The proxy blocks DNS on port 53.** From the laptop, `CONNECT 1.1.1.1:53` and `8.8.8.8:53` answer
+   **403**, while `:443` answers 200. So sing-box's DNS is **DoH over 443 through the proxy**
+   (`{"type": "https", ..., "path": "/dns-query", "detour": "proxy"}`) — `build_config` writes that.
+
+Check it with a hostname, never with an IP: open `https://example.com` in the space (and note the
+leak check now refuses a trace page older than 10 minutes, so a cached page cannot fake a pass).
+
+SFA's "Are you sure to import remote profile …?" dialog must be answered with **OK** before the
+profile list means anything: the list stays readable behind the dialog, which once made the import
+look finished when it had not started.
+
 ## Still missing for the full plan
 
 - ~~**TikTok's US build (`musically`)**~~: **installed 2026-11-19** (47.9.1, user 11 only; certificate

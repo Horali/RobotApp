@@ -5,8 +5,9 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-19, 17:00 WIB (the throwaway's TikTok signed in; its first Instagram + TikTok
-posts are queued and the robot path is on - tomorrow's window is the first fully automatic sitting).
+Last updated: 2026-11-20, 04:25 WIB (the space's DNS was broken at two layers - phone Private DNS and
+the proxy blocking port 53 - both fixed; the throwaway's Google account is signed in; its YouTube
+channel needs renaming before the YouTube row goes back).
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
@@ -216,13 +217,48 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   running app still has the old flag in memory), and leave the phone on Wi-Fi overnight. If the app
   is not restarted, the tick sends the posts to Telegram as hand posts instead - the rows only leave
   the queue from 06:00 WIB, so any restart tonight is in time.
-- **What is left (the honest list):** **tomorrow 06:00-10:00 WIB: the first fully automatic sitting**
-  (ClipMaker's tick → `robot sitting` → the two posts → `phone-posted`) - if the TikTok leg meets a
-  musically screen the trill flow did not, it stops safely before Post and the row lands back for
-  Telegram. After that: the 24 h views reading, the 14-day YouTube test (Timmy's Google sign-in),
-  then the real brands one login per day (§5.5's order). The throwaway's handles: Instagram
-  **@vtubersclips90**, TikTok **@vtubersclips70** (ClipMaker's `warmup_profiles.account_handle` is
-  still empty for both - storing them is the clipper session's call, §8.4).
+- **The YouTube leg — the night it turned out the space had no DNS (2026-11-20, 02:40-04:25 WIB).**
+  The user asked for the throwaway's YouTube post too. The Google sign-in failed with "Something went
+  wrong. Please go back and try again" — from Settings *and* from the YouTube app's own Accounts → Add
+  account, so never the route. Three real faults, all found and fixed (commits `332805a`, `4e08840`,
+  `64c172c`, `592d76b`, `6b0ae7a`, `80a5458`, `00d132a`, `4515b0d`):
+  1. **The phone's own Private DNS** was strict (`private_dns_mode=hostname`, `dns.quad9.net`) — DoT on
+     port 853, unreachable through the locked Virginia proxy, so **no hostname resolved anywhere**
+     while raw-IP pages still loaded. Turned off (`settings put global private_dns_mode off`). The owner
+     user now uses the router's plain DNS; the user should know.
+  2. **The robot's sing-box profile sent DNS as `tcp :53` through the proxy**, and that proxy answers
+     **403 Forbidden** to `CONNECT 1.1.1.1:53` (200 on `:443`) — measured from the laptop. `build_config`
+     now uses **DNS over HTTPS on 443 through the proxy**; verified on the phone (example.com and
+     google.com load). Test.
+  3. **The leak check could lie**: it read whatever Chrome showed, and a *cached* trace page passed
+     while the network was dead. It now asks for a unique URL (cache-busting `?t=`) and requires the
+     page's own `ts=` to be recent. 3 tests.
+  Also fixed on the way: SFA's remote-import confirmation was never answered (the profile list behind
+  it counted as success — now the dialog is answered first, with a test); `vpn_state` died on a dropped
+  adb ("error: closed" — now reads as "not up", with a test); `robot login youtube` had no CLI branch
+  (wired to `GoogleLogin`); Google's Next was tapped blind (now it waits, verifies the page moved,
+  closes the keyboard only when it is really open, and retries); and the Gmail password went to field
+  **index 1** (Instagram's habit) while Google's page has **one** field — it typed nothing and Google
+  answered "Enter a password" (now index 0, plus a check that the field is not empty).
+  **Result: the throwaway's Google account IS signed in on the phone** (`logged_in: true`, handle
+  `horalixscripts7`). Its YouTube account had **no channel**, so YouTube's "Create a channel" made one
+  and it took the account's default name **"Horali Cript"** / handle `@HoraliCript`. Renaming needs
+  YouTube Studio's settings, which will not load in the phone's mobile Chrome ("Oops, something went
+  wrong"), so **the YouTube row was pulled from tomorrow's queue**: the throwaway must not publish
+  under the user's own name. **A 2-minute rename in desktop Studio (Channel → Basic info) and the row
+  goes straight back in** — the row's script (`data/queue_yt_row.py` pattern) graduates nothing now,
+  the profile and the campaign are ready.
+- **Tomorrow's sitting is the proven pair only:** Instagram `b988d8b5…` then TikTok `92a0c985…`, both
+  06:00 WIB, both the Mario Kart clip. Phone left as other scripts expect at 04:25: owner user, Jakarta
+  time, no space open, VPN up + locked (leak check green: `208.214.162.185`, US, no SIM, location off).
+  Battery 76 % but **44.4 °C** (doctor's limit 42 °C) — it cools with the screen off; check before the
+  window.
+- **What is left:** the first fully automatic sitting (tomorrow 06:00-10:00 WIB: ClipMaker's tick →
+  `robot sitting` → the two posts → `phone-posted`; an unknown musically screen stops it safely before
+  Post and the row falls back to Telegram), the YouTube channel rename + its row, the 24 h views
+  reading, the 14-day YouTube test (Timmy's Google sign-in), then the real brands one login per day
+  (§5.5's order). The throwaway's handles: Instagram **@vtubersclips90**, TikTok **@vtubersclips70**,
+  YouTube channel **"Horali Cript"** (to rename).
 
   - **step 10 (move the real accounts in)** — the robot's side is built; it is one login per day, safest first
     (§5.5), and **the first real login is the next thing to run**: the throwaway is now **"vtuber Clips"**
