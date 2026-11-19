@@ -503,6 +503,8 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
     if args.platform == "tiktok":
         from .login.tiktok import TikTokLogin
 
+        if not args.package:
+            args.package = tiktok_package(args.user)     # trill for G2G's owner user, musically in a space
         login = TikTokLogin(phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider)
     else:
         from .login.instagram import InstagramLogin
