@@ -630,7 +630,9 @@ def cmd_screen(args: argparse.Namespace, settings: Settings) -> int:
     else:
         for row in rows[: args.limit]:
             label = row["text"] or row["desc"]
-            print(f"{label!r:45.45}  id={row['id'][-40:]:40.40}  {row['bounds']}")
+            line = f"{label!r:45.45}  id={row['id'][-40:]:40.40}  {row['bounds']}"
+            # a Windows console may not speak emoji (cp1252); the text must still be readable
+            print(line.encode("ascii", "backslashreplace").decode("ascii"))
     if args.shot:
         path = settings.shots_dir / "screen.png"
         screen.screenshot(path)

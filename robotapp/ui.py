@@ -46,9 +46,12 @@ class Element:
         return needle in self.text.lower() or needle in self.desc.lower() or needle == self.resource_id
 
     def says(self, label: str) -> bool:
-        """Exact label, ignoring case and surrounding spaces: for buttons like "Post" that are also words."""
-        label = label.strip().lower()
-        return self.text.strip().lower() == label or self.desc.strip().lower() == label
+        """Exact label, ignoring case, spaces and the curly apostrophe: for buttons like "Post" that
+        are also words. Android prints permission buttons as "DON'T ALLOW" (all caps, U+2019)."""
+        label = label.strip().lower().replace("\u2019", "'")
+        text = self.text.strip().lower().replace("\u2019", "'")
+        desc = self.desc.strip().lower().replace("\u2019", "'")
+        return text == label or desc == label
 
 
 @dataclass

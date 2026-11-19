@@ -143,7 +143,8 @@ class TikTokLogin:
 
         The field takes typed text but the wheels are the real input - typing alone leaves Continue
         disabled (measured 2026-11-19). The flow drags a wheel once to initialise them, then the year
-        wheel down until the field shows an adult year, and only then presses Continue.
+        wheel down until the field shows an adult year, presses Continue once and waits for the wall
+        to clear (it takes ~8 s) before moving on.
         """
         for _ in range(3):
             time.sleep(1.5)
@@ -158,9 +159,14 @@ class TikTokLogin:
                 raise NeedsHuman("TikTok's birthdate Continue is not tappable",
                                  self._shot("tiktok-birthday"))
             self.screen.tap(button)
-        time.sleep(1.5)
-        if BIRTHDAY.matches(self.screen.elements()):
-            raise NeedsHuman("TikTok's birthdate wall did not clear", self._shot("tiktok-birthday"))
+            deadline = time.monotonic() + 20
+            while time.monotonic() < deadline:
+                time.sleep(1.5)
+                if not BIRTHDAY.matches(self.screen.elements()):
+                    return              # the wall is accepted; the terms dialog follows in ~8 s
+            raise NeedsHuman("TikTok's birthdate wall did not clear after Continue",
+                             self._shot("tiktok-birthday"))
+        raise NeedsHuman("TikTok's birthdate wall keeps coming back", self._shot("tiktok-birthday"))
 
     def _adult_birthday(self, elements: list[Element]) -> bool:
         """True once the field shows a date old enough. One drag on any wheel initialises an unset
@@ -201,23 +207,32 @@ class TikTokLogin:
         return next((e for e in elements if e.desc == desc and e.enabled), None)
 
     def _first_run(self) -> None:
-        """Interests → Skip, the swipe tutorial → swipe, notifications → Don't allow (§5.2 step 1).
+        """The whole onboarding, with a deadline: dismiss every first-run gate until the feed.
 
-        musically also shows its Terms of Service dialog here (trill was logged in by hand, so this
-        is new, 2026-11-19): "Agree and continue", answered like Instagram's own terms sheet.
+        musically's measured sequence (2026-11-19): birthdate wall (another method) -> Terms of
+        Service dialog ("Agree and continue", ~8 s after Continue) -> the notifications permission
+        ("ALLOW" / "DON'T ALLOW" - all caps and a curly apostrophe, so `says` normalises them) ->
+        the feed. Interests screens and the swipe tutorial still answer to Skip or a swipe.
         """
-        for _ in range(6):
+        deadline = time.monotonic() + 40
+        idle = 0
+        while time.monotonic() < deadline:
             time.sleep(1.5)
             elements = self.screen.elements()
             for label in ("Skip", "Not now", "Don't allow", "Cancel", "Agree and continue"):
                 button = find_exact(elements, label)
                 if button is not None:
                     self.screen.tap(button)
+                    idle = 0
                     break
             else:
                 if find(elements, "For You") is not None:
                     return
-                self.screen.swipe_up()
+                idle += 1
+                if idle >= 3:      # nothing to dismiss and no feed: the tutorial wants a swipe
+                    self.screen.swipe_up()
+                    idle = 0
+        log.warning("tiktok: the first-run screens did not reach the feed in 40 s")
 
     def _after_password(self) -> None:
         """The code screen, the save-login offer, and the things only a human can clear."""

@@ -34,6 +34,8 @@ SCREENS = {
     "captcha": [el("Confirm you're human"), el("Slide to verify")],
     "terms": [el("Agree and continue", bounds=(96, 2100, 984, 2200), clickable=True),
               el("By tapping 'Agree and continue', you agree to our Terms of Service")],
+    "notifications": [el("Allow TikTok to send you notifications?"),
+                      el("DON\u2019T ALLOW", bounds=(48, 2133, 1032, 2292), clickable=True)],
 }
 
 
@@ -56,7 +58,8 @@ class LoginScreen:
             self.state = "captcha"
             return
         moves = {
-            ("terms", "Agree and continue"): "home",
+            ("terms", "Agree and continue"): "notifications",
+            ("notifications", "DON\u2019T ALLOW"): "home",
             ("home", "Profile"): "profile",
             ("profile", "Log in"): "login_choice",
             ("login_choice", "Use phone / email / username"): "email_form",
@@ -133,13 +136,15 @@ def test_a_captcha_stops_the_login_and_asks_for_a_human() -> None:
     assert "CAPTCHA" in str(caught.value)
 
 
-def test_musicallys_terms_dialog_is_answered_before_the_walk() -> None:
-    """musically shows its Terms of Service between the birthdate wall and the feed (2026-11-19)."""
+def test_musicallys_first_run_gates_are_all_answered() -> None:
+    """musically's measured journey (2026-11-19): Terms of Service, then the notifications permission
+    (printed "DON'T ALLOW", all caps and a curly apostrophe), then the feed."""
     screen = LoginScreen(state="terms")
     login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon(), code_provider=lambda: "123456")
     result = login.login("profile-1", "throwaway@example.com", "com.zhiliaoapp.musically")
     assert result.logged_in is True
     assert "Agree and continue" in screen.taps
+    assert "DON\u2019T ALLOW" in screen.taps
 
 
 class BirthdateScreen:

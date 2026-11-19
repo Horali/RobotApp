@@ -32,6 +32,13 @@ def test_parse_count(text, expected) -> None:
     assert parse_count(text) == expected
 
 
+def test_says_matches_androids_curly_apostrophes() -> None:
+    """Android prints permission buttons as "DON'T ALLOW" (all caps, U+2019); a label written with a
+    straight apostrophe must still match them (musically's first-run gate, 2026-11-19)."""
+    assert el("DON\u2019T ALLOW").says("Don't allow")
+    assert el("Agree and continue").says("AGREE AND CONTINUE")
+
+
 def test_reading_views_needs_a_signed_in_profile(monkeypatch) -> None:
     """No profile tab and no numbers: None, so the caller asks the user instead of guessing."""
     from robotapp import views as views_module
