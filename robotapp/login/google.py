@@ -135,7 +135,13 @@ class GoogleLogin:
         wait_for(self.screen, PASSWORD_FORM, 45)
 
     def _password(self, email_account_id: str) -> None:
-        """The Gmail password, fetched at the moment it is typed and dropped right after."""
+        """The Gmail password, fetched at the moment it is typed and dropped right after.
+
+        Google's page has ONE field, so the secret goes into editable 0. The old call used the
+        default index 1 (Instagram has two fields): nothing was typed and Google answered "Enter a
+        password" (measured on the phone, 2026-11-20). The field is then checked not to be empty
+        before anything is submitted.
+        """
         elements = self.screen.elements()
         if CAPTCHA.matches(elements):
             raise NeedsHuman("Google shows a CAPTCHA before the password",
@@ -146,10 +152,14 @@ class GoogleLogin:
             time.sleep(0.6)
         password = self.chameleon.email_password(email_account_id)
         try:
-            self.screen.type_secret(password)
+            self.screen.type_secret(password, index=0)
         finally:
             del password
-        self._tap_any(("Next", "Continue", "Sign in"))
+        time.sleep(0.8)
+        if not (self.screen.focused_text() or "").strip():
+            raise NeedsHuman("Google's password field stayed empty after typing",
+                             self._shot("google-password-empty"))
+        self._advance("google password")
 
     # -- everything Google may ask after the password ----------------------------------------------
     def _after_password(self) -> None:
