@@ -127,6 +127,9 @@ class FakePhone:
     def timezone(self) -> str:
         return self.zone
 
+    def fore_app(self) -> tuple[str, int]:
+        return (self._fore, self.current)
+
     def package_version(self, package: str) -> str | None:
         return self.versions.get(package)
 

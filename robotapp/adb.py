@@ -165,6 +165,17 @@ class AdbPhone:
     def timezone(self) -> str:
         return self.prop("persist.sys.timezone")
 
+    def fore_app(self) -> tuple[str, int]:
+        """(package, Android user) of the window actually in front - from the display, not a cached value.
+
+        `am get-current-user` answers what the phone *thinks*; this answers what is on the screen, which
+        is what a tap hits. On 2026-11-19 the two disagreed and a read was blamed on the wrong account.
+        """
+        out = self.shell("dumpsys window | grep -m1 mCurrentFocus", timeout=20)
+        # mCurrentFocus=Window{6e0c44e u11 com.instagram.android/com.instagram.modal.ModalActivity}
+        m = re.search(r"u(\d+)\s+([\w.]+)/", out)
+        return (m.group(2), int(m.group(1))) if m else ("", self.current_user())
+
     def package_version(self, package: str) -> str | None:
         """None when the app is not installed: `grep` finds nothing and adb exits 1, which is an answer too."""
         try:

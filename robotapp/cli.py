@@ -607,6 +607,8 @@ def cmd_screen(args: argparse.Namespace, settings: Settings) -> int:
     if getattr(args, "user", None) is not None:
         enter_space(phone, args.user)
     screen = screen_for(phone, settings)
+    package, fore_user = phone.fore_app()
+    emit({"t": "info", "name": "in front", "package": package or "?", "user": fore_user})
     elements = screen.elements()
     rows = [
         {"text": e.text, "desc": e.desc, "id": e.resource_id, "bounds": list(e.bounds), "clickable": e.clickable}
