@@ -64,6 +64,7 @@ class ScriptedScreen:
         self.taps: list[str] = []
         self.typed: list[str] = []
         self.secrets: list[str] = []
+        self.secret_indexes: list[int] = []
         self.shots: list[Path] = []
         self._clipboard = "https://youtube.com/shorts/j1a7ETNYOAI"
 
@@ -115,8 +116,10 @@ class ScriptedScreen:
     def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
         self.typed.append(text)
 
-    def type_secret(self, secret) -> None:
+    def type_secret(self, secret, index: int = 1) -> None:
         self.secrets.append(secret.reveal())
+        self.secret_indexes.append(index)
+        self.typed.append("\u2022" * 8)      # the field holds it, masked: focused_text is not empty
 
     def set_text(self, text: str) -> None:
         self.typed.append(text)
@@ -265,6 +268,7 @@ def test_the_google_sign_in_walks_its_screens_and_never_prints_the_password(capl
     assert result.channel == "timmy.clips"
     assert "timmy.clips@gmail.com" in screen.typed
     assert screen.secrets == [PASSWORD]       # the Gmail password, typed once through the secret path
+    assert screen.secret_indexes == [0]       # Google's page has ONE field (index 1 typed nothing, 2026-11-20)
     assert PASSWORD not in caplog.text
     assert "Accept" in screen.taps            # the services screen was accepted
 
