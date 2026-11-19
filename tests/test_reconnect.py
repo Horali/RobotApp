@@ -53,7 +53,7 @@ def fake_adb(tmp_path):
         reconnector = Reconnector(tmp_path / "adb.exe")
         original_run = subprocess.run
 
-        def patched(*args: str):
+        def patched(*args, **kwargs):
             fake.calls.append(" ".join(args))
             done = original_run(
                 [sys.executable, fake.script(), str(fake.path), " ".join(args)],
@@ -106,7 +106,7 @@ def test_the_cable_fallback_sets_tcpip(fake_adb) -> None:
     calls: list[str] = []
     original = r._adb
 
-    def patched(*args: str):
+    def patched(*args, **kwargs):
         calls.append(" ".join(args))
         code, out = original(*args)
         if "tcpip 5555" in calls[-1]:

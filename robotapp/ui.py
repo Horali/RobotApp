@@ -76,8 +76,8 @@ class Screen(Protocol):
     def elements(self) -> list[Element]: ...
     def tap(self, element: Element) -> None: ...
     def long_press(self, element: Element) -> None: ...
-    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None: ...
-    def type_secret(self, secret: Secret) -> None: ...
+    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110, index: int = 0) -> None: ...
+    def type_secret(self, secret: Secret, index: int = 1) -> None: ...
     def set_text(self, text: str) -> None: ...
     def clear_field(self) -> None: ...
     def press_back(self) -> None: ...
@@ -145,15 +145,59 @@ class U2Screen:
         self.device.long_click(x, y, 1.0)
         jitter(400, 900)
 
-    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
+    def _editable(self, index: int = 0):
+        """The text field to type into: the EditText at `index`, else whatever has focus.
+
+        Aiming at the field element (rather than the focused window) is what works on Instagram:
+        tapping its hint does not focus the EditText, and the form has two fields (username, password),
+        so an un-indexed selector is ambiguous and uiautomator2 refuses it (real login, 2026-11-19).
+        """
+        try:
+            field = self.device(className="android.widget.EditText", instance=index)
+            if field.exists:
+                return field
+        except Exception:  # noqa: BLE001 - some builds have no such proxy
+            pass
+        return self.device(focused=True)
+
+    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110, index: int = 0) -> None:
+        """Put text in the field: the field's own setText first (works in any user, no IME needed)."""
         self.guard.check("type")
+        field = self._editable(index)
+        try:
+            field.set_text(text)
+            jitter(min_ms, max_ms)
+            return
+        except Exception:  # noqa: BLE001 - fall back to the IME
+            pass
         for char in text:
             self.device.send_keys(char)
             jitter(min_ms, max_ms)
 
-    def type_secret(self, secret: Secret) -> None:
-        """Human-speed, and the value is dropped by the caller right after (it is never logged)."""
-        self.type_text(secret.reveal(), min_ms=90, max_ms=260)
+    def type_secret(self, secret: Secret, index: int = 1) -> None:
+        """Human-speed, and the value is dropped by the caller right after (it is never logged).
+
+        One character at a time through the field's own setText (appending): still through the
+        uiautomator2 connection, never on a command line, and it does not need the IME (a fresh space
+        has none, which is how the first real login submitted an empty form). `index` is the password
+        field's position on screen.
+        """
+        value = secret.reveal()
+        self.guard.check("type")
+        field = self._editable(index)
+        try:
+            field.clear_text()
+        except Exception:  # noqa: BLE001 - an empty field may refuse a clear
+            pass
+        typed = ""
+        for char in value:
+            typed += char
+            try:
+                field.set_text(typed)
+            except Exception:  # noqa: BLE001 - fall back to the IME for this character
+                self.device.send_keys(char)
+            jitter(90, 260)
+        del value
 
     def set_text(self, text: str) -> None:
         """Paste-like entry for a caption: one call, so newlines and emoji survive (a paste is what people do)."""
@@ -193,9 +237,22 @@ class U2Screen:
             return None
 
     def focused_text(self) -> str | None:
+        """What the text field holds: the focused window's text, else the EditText's own.
+
+        On Instagram the keyboard window takes the focus, so `focused=True` reports nothing even when
+        the field is full; the EditText's own text is the reliable answer.
+        """
         try:
             info = self.device(focused=True).info
-            return str(info.get("text") or "") or None
+            text = str(info.get("text") or "").strip()
+            if text:
+                return text
+        except Exception:  # noqa: BLE001 - no focused window at all
+            pass
+        try:
+            field = self._editable(0)
+            text = str(field.get_text() or "").strip()
+            return text or None
         except Exception:  # noqa: BLE001
             return None
 

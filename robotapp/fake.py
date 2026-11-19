@@ -261,10 +261,10 @@ class FakeScreen:
     def long_press(self, element) -> None:
         self.taps.append(f"long:{element.text or element.desc}")
 
-    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
+    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110, index: int = 0) -> None:
         self.typed.append(text)
 
-    def type_secret(self, secret) -> None:
+    def type_secret(self, secret, index: int = 1) -> None:
         self.typed.append(secret.reveal())
 
     def set_text(self, text: str) -> None:

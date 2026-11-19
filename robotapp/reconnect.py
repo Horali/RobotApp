@@ -45,10 +45,14 @@ class Reconnector:
         self.adb_path = str(adb_path)
         self.timeout = timeout
 
-    def _adb(self, *args: str) -> tuple[int, str]:
-        done = subprocess.run(
-            [self.adb_path, *args], capture_output=True, text=True, timeout=self.timeout
-        )
+    def _adb(self, *args: str, timeout: float | None = None) -> tuple[int, str]:
+        try:
+            done = subprocess.run(
+                [self.adb_path, *args], capture_output=True, text=True,
+                timeout=timeout or self.timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return 124, "timed out"
         return done.returncode, (done.stdout + done.stderr).strip()
 
     # -- the pieces --------------------------------------------------------------------------------
@@ -66,8 +70,9 @@ class Reconnector:
         return ""
 
     def connect(self, serial: str) -> bool:
-        code, out = self._adb("connect", serial)
-        if code != 0 or "cannot connect" in out.lower() or "failed" in out.lower():
+        """`adb connect`, with a short timeout: a stale Wi-Fi address must not hang the whole job."""
+        code, out = self._adb("connect", serial, timeout=5.0)
+        if code != 0 or "cannot connect" in out.lower() or "failed" in out.lower() or "timed out" in out.lower():
             return False
         return self.state_of(serial) == "device"
 
@@ -126,7 +131,13 @@ class Reconnector:
         return connected
 
     def reconnect(self, configured_serial: str, cable_fallback: bool = True, usb_serial: str = "") -> str:
-        """One serial, or an empty string. Tries everything, including the cable."""
+        """One serial, or an empty string. Tries everything, including the cable.
+
+        The robot phone on USB comes first when it is there: the cable works whatever network this
+        laptop is on, and a Wi-Fi address from the *home* network would otherwise hang for seconds.
+        """
+        if usb_serial and self.state_of(usb_serial) == "device":
+            return usb_serial
         connected = self.find_phone(configured_serial)
         if connected:
             return connected[0]

@@ -25,12 +25,25 @@ from ..ui import Element, Screen, ScreenTimeout, Signature, find, find_exact, wa
 
 log = logging.getLogger("robotapp")
 
-HOME = Signature("instagram home", any_of=("Search", "For you", "Following", "Home"))
+HOME = Signature("instagram home", any_of=("For you", "Following"))
 LOGIN = Signature("instagram login", any_of=("Log in", "Log in with Facebook", "Sign up"))
-FORM = Signature("instagram login form", any_of=("Username", "Phone", "Email"))
+# Never a launcher word: "Search" is on the phone's home screen, which made the flow race ahead of a
+# slow first launch (the real login run, 2026-11-19 10:37 WIB).
+ONBOARD = Signature(
+    "instagram login or feed",
+    any_of=("Instagram from Meta", "Username, email or mobile number", "Forgot password?",
+            "Log in with Facebook", "Create new account", "For you"),
+)
+FORM = Signature("instagram login form", any_of=("Username, email or mobile number", "Username", "Email"))
 PASSWORD_FORM = Signature("instagram password form", any_of=("Password", "Log in"))
 CODE_FORM = Signature("instagram code form", any_of=("Enter code", "Verification code", "code", "Security code"))
 UNUSUAL = Signature("instagram unusual login", any_of=("Unusual login attempt", "unusual", "Verify"))
+# The plan's section 5.4 list: a device approval and an SMS code both stop and ask the user.
+CONFIRM_DEVICE = Signature(
+    "instagram confirm it's you",
+    any_of=("Choose a way to confirm it", "Approve the login from another device",
+            "Notification on another device", "Text message, We'll send a code"),
+)
 CAPTCHA = Signature("captcha", any_of=("Confirm you're human", "Slide to verify", "Verify you are human",
                                        "puzzle", "Rotate the image", "drag the slider"))
 PROFILE = Signature("instagram profile", any_of=("Edit profile", "Followers", "Following", "Posts"))
@@ -80,16 +93,42 @@ class InstagramLogin:
         self.phone.force_stop(package)
         time.sleep(1.0)
         self.phone.start_app(package)
-        time.sleep(6.0)
-        elements = wait_for(self.screen, _LOGIN_ANY, 45)
+        # Instagram is heavy: a first launch after a force-stop can take well over ten seconds, and the
+        # launcher underneath would otherwise answer first. Wait for the app to be in front, then for its
+        # own words.
+        for attempt in range(3):
+            time.sleep(8.0)
+            if self._in_front(package):
+                break
+            self.phone.start_app(package)
+        # The launcher answers its own words, and a fresh install shows a terms sheet (and the phone's
+        # keyboard its own dialog) over the login form: clear those while waiting, not after.
+        deadline = time.monotonic() + 150
+        elements: list[Element] = []
+        while time.monotonic() < deadline:
+            elements = self.screen.elements()
+            if ONBOARD.matches(elements):
+                break
+            if not self._in_front(package):
+                # Another app's window is on top: the keyboard's terms dialog, most often. Back closes it.
+                self.screen.press_back()
+                time.sleep(1.5)
+                continue
+            self._handle_terms()
+            time.sleep(1.5)
+        else:
+            raise ScreenTimeout("Instagram did not show its login screen in 150 s")
         if LOGIN.matches(elements):
             button = find_exact(elements, "Log in") or find(elements, "Log in")
             if button is not None:
                 self.screen.tap(button)
+                time.sleep(2.0)
+        self._handle_terms()
         wait_for(self.screen, FORM, 30)
         self._guard(elements)
 
-        self._type_into(username, "Username")
+        self._type_into(username, "Username, email or mobile number")
+        self._require_typed(username)
         self._tap_any(("Log in", "Next", "Continue"))
         wait_for(self.screen, PASSWORD_FORM, 30)
         self._guard(self.screen.elements())
@@ -116,6 +155,13 @@ class InstagramLogin:
             text = " ".join(e.text + " " + e.desc for e in elements).lower()
             if CAPTCHA.matches(elements):
                 raise NeedsHuman("Instagram shows a CAPTCHA", self._shot("instagram-captcha"))
+            if CONFIRM_DEVICE.matches(elements):
+                # The plan's "tap Yes on your other device" / "phone code": only the user can do it.
+                raise NeedsHuman(
+                    "Instagram asks how to confirm it's you: approve the login on your other phone, "
+                    "or take the SMS code (it offers a text message to a number ending 71)",
+                    self._shot("instagram-confirm"),
+                )
             for word in STOP_WORDS:
                 if word in text:
                     raise NeedsHuman(f"Instagram says: {word}", self._shot("instagram-stop"))
@@ -171,6 +217,52 @@ class InstagramLogin:
         return None
 
     # -- helpers -----------------------------------------------------------------------------------
+    def _handle_terms(self) -> None:
+        """Terms sheets and other apps' dialogs: answer them so the login form is reachable.
+
+        Two are real on this phone (2026-11-19): Instagram's own terms ("Agree And Continue") and the
+        Facemoji keyboard's privacy dialog, which reappears every time a field takes focus until it is
+        answered. Both are answered by their own button; a back press does not dismiss the keyboard's.
+        """
+        for _ in range(4):
+            elements = self.screen.elements()
+            agree = (find_exact(elements, "Agree And Continue")
+                     or find(elements, "Agree And Continue")
+                     or find_exact(elements, "I agree") or find_exact(elements, "Accept"))
+            if agree is not None:
+                self.screen.tap(agree)
+                time.sleep(2.0)
+                continue
+            close = find_exact(elements, "Close")
+            if close is not None:      # the keyboard's dialog's X, when it offers one
+                self.screen.tap(close)
+                time.sleep(1.5)
+                continue
+            if FORM.matches(elements):
+                return
+            time.sleep(1.0)
+
+    def _require_typed(self, value: str) -> None:
+        """The field must hold what was typed before anything is submitted.
+
+        A real run (2026-11-19) tapped Log in on an empty field, because the IME is not enabled in a
+        fresh space; a login attempt with an empty form is noise the account does not need.
+        """
+        typed = (self.screen.focused_text() or "").strip()
+        page = " ".join(e.text for e in self.screen.elements())
+        if value.lower() not in (typed.lower() + " " + page.lower()):
+            raise RuntimeError(f"the login field is empty after typing {value[:3]}***; not submitting")
+
+    def _in_front(self, package: str) -> bool:
+        """The window in focus must be Instagram's: the launcher answers its own words."""
+        try:
+            focus = self.phone.shell("dumpsys window | grep -m1 mCurrentFocus", timeout=20)
+        except Exception:  # noqa: BLE001
+            return True
+        if not focus.strip():
+            return True
+        return package in focus
+
     def _type_into(self, value: str, label: str) -> None:
         field = find(self.screen.elements(), label)
         if field is not None:

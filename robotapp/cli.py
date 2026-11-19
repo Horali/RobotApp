@@ -58,17 +58,22 @@ def emit(event: dict) -> None:
 
 
 def resolve_serial(settings: Settings, emit_event: bool = True) -> str:
-    """The serial to talk to: the configured one, or whatever mDNS found after a reboot.
+    """The serial to talk to: the configured one, the robot phone on USB, or whatever mDNS found.
 
-    Transport only (adb connect / mdns services), never a phone shell command, so this is the one
-    part of a job that may run at 05:50: it wakes nothing on the phone. The cable fallback is
-    pinned to the robot phone's USB serial, so another phone on the cable is never touched.
+    Order: the configured serial (works at home), then the robot phone's USB serial (works on any
+    network - the cable needs no Wi-Fi), then mDNS (Wireless debugging after a reboot), then the
+    cable fallback. Transport only, never a phone shell command, so this may run before 06:00.
     """
     from .reconnect import Reconnector
 
     reconnector = Reconnector(settings.adb)
     if reconnector.state_of(settings.serial) == "device":
         return settings.serial
+    # The robot phone on the cable: independent of whatever network this laptop is on.
+    if settings.usb_serial and reconnector.state_of(settings.usb_serial) == "device":
+        if emit_event:
+            emit({"t": "info", "name": "serial", "configured": settings.serial, "using": settings.usb_serial})
+        return settings.usb_serial
     serial = reconnector.reconnect(settings.serial, usb_serial=settings.usb_serial)
     if not serial:
         return settings.serial  # let the command itself report the phone as unreachable
@@ -382,7 +387,7 @@ def cmd_leak(args: argparse.Namespace, settings: Settings) -> int:
     finally:
         leave_space(phone)
     emit({"t": "leakcheck", **result.as_dict()})
-    return EXIT_OK if result.ok or result.outcome == "dry_run" else EXIT_ERROR
+    return EXIT_OK if result.ok else EXIT_ERROR
 
 
 def cmd_brands(args: argparse.Namespace, settings: Settings) -> int:
@@ -474,6 +479,19 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
     job_id = args.job or f"login-{uuid.uuid4().hex[:8]}"
     journal.start_job(job_id, "login", payload={"user": args.user, "profile": args.profile_id})
     enter_space(phone, args.user)
+
+    # The login name comes from Chameleon (the email assigned to the profile) unless given.
+    email = args.email
+    if not email:
+        email, account_id = chameleon.login_identity(args.profile_id, args.platform)
+        if not email:
+            emit({"t": "error", "reason": "no email assigned to this profile in Chameleon: pass --email, "
+                                          "or link the account on the brand page"})
+            journal.set_state(job_id, "failed")
+            leave_space(phone)
+            return EXIT_ERROR
+        emit({"t": "info", "name": "login name", "email": email})
+        args.email = email
 
     def code_provider() -> str:
         if args.code:
@@ -756,8 +774,8 @@ def parser() -> argparse.ArgumentParser:
     lo.add_argument("platform", choices=("tiktok", "instagram", "youtube"))
     lo.add_argument("--user", type=int, required=True)
     lo.add_argument("--profile-id", required=True)
-    lo.add_argument("--email", required=True)
-    lo.add_argument("--package", default=TIKTOK_US)
+    lo.add_argument("--email", default="", help="the login name; Chameleon's assigned email when omitted")
+    lo.add_argument("--package", default="", help="the app package; each platform picks its own by default")
     lo.add_argument("--code", default="")
     lo.add_argument("--job", default="")
     lo.set_defaults(func=cmd_login)

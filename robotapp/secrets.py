@@ -79,5 +79,21 @@ class Chameleon:
             raise NotSaved(f"no password saved for email account {account_id}")
         return Secret(str(password))
 
+    def login_identity(self, profile_id: str, platform: str | None = None) -> tuple[str | None, str | None]:
+        """(the email address, the email account id) assigned to a brand profile, or (None, None).
+
+        This is the login name of an account: the email Chameleon links to the profile. The plan's
+        callers pass Chameleon ids, not secrets; the robot looks the name up instead of asking.
+        """
+        items = self._get("/v1/email-accounts").get("items") or []
+        for account in items:
+            for assignment in account.get("assignments") or []:
+                if assignment.get("brand_profile_id") != profile_id:
+                    continue
+                if platform and assignment.get("platform") not in (platform, "gmail", None):
+                    continue
+                return account.get("address"), account.get("id")
+        return None, None
+
     def health(self) -> dict:
         return self._get("/v1/health")

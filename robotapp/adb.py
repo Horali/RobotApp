@@ -212,9 +212,9 @@ class AdbPhone:
         self.guard.check("open an app")
         out = self.shell(f"cmd package resolve-activity --brief --user {user} {package}", timeout=30)
         component = next((line.strip() for line in out.splitlines() if "/" in line and " " not in line.strip()), "")
-        if component:
-            return self.shell(f"am start --user {user} -n {component}", timeout=30).strip()
-        return self.shell(f"monkey -p {package} -c android.intent.category.LAUNCHER 1", timeout=30).strip()
+        if not component:
+            raise RuntimeError(f"{package} is not installed in user {user}")
+        return self.shell(f"am start --user {user} -n {component}", timeout=30).strip()
 
     def install_existing(self, package: str, user: int) -> str:
         self.guard.check("install an app into a user")
