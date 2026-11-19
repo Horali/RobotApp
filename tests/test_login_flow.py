@@ -131,49 +131,62 @@ def test_a_captcha_stops_the_login_and_asks_for_a_human() -> None:
 
 
 class BirthdateScreen:
-    """musically's wall (found on the phone, 2026-11-19): the date goes into the field, Continue clears it."""
+    """musically's wall with the wheel rules as measured on the phone (2026-11-19): a drag on any
+    wheel initialises an unset wall to today, the year wheel's down-drag is one year older, and
+    Continue only becomes tappable once the wheels hold a date."""
 
-    def __init__(self, takes: bool = True) -> None:
+    def __init__(self, wheel_moves: bool = True) -> None:
         self.wall = True
-        self.takes = takes
-        self.typed: list[str] = []
+        self.wheel_moves = wheel_moves
+        self.year = 0          # 0 = the wheels are unset
         self.taps: list[str] = []
+        self.drags: list[str] = []
 
     def elements(self) -> list[Element]:
         if not self.wall:
             return SCREENS["home"]
-        return [
+        out = [
             el("When's your birthdate?"),
-            el("Birthday", bounds=(96, 768, 984, 912), clickable=True),
+            el(f"November 19, {self.year}" if self.year else "Birthday", bounds=(96, 768, 984, 912)),
             el(desc="Month picker", bounds=(120, 1346, 360, 1743)),
-            el("Continue", bounds=(96, 2175, 984, 2307), clickable=True),
+            el(desc="Day picker", bounds=(420, 1346, 660, 1743)),
+            el(desc="Year picker", bounds=(720, 1346, 960, 1743)),
         ]
+        button = el("Continue", bounds=(96, 2175, 984, 2307), clickable=True)
+        button.enabled = bool(self.year)      # an unset wall's button is not tappable yet
+        out.append(button)
+        return out
 
     def tap(self, element: Element) -> None:
         self.taps.append(element.text or element.desc)
-        if (element.text or "") == "Continue":
+        if (element.text or "") == "Continue" and self.year:
             self.wall = False
 
-    def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
-        if self.takes:
-            self.typed.append(text)
+    def drag(self, x1: int, y1: int, x2: int, y2: int, steps: int = 20) -> None:
+        self.drags.append(f"{x1},{y1}->{x2},{y2}")
+        if not self.wheel_moves:
+            return                          # a wheel that refuses to move
+        if self.year == 0:
+            self.year = 2026                # any drag initialises the unset wheels to today
+        elif 720 <= x1 <= 960:
+            self.year -= 1                  # the year wheel, one year older per drag
 
-    def focused_text(self) -> str | None:
-        return self.typed[-1] if self.typed else None
 
-
-def test_the_birthdate_wall_is_typed_and_cleared() -> None:
+def test_the_birthdate_wall_dials_an_adult_year(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda s: None)
     screen = BirthdateScreen()
     login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
     login._birthday()
-    assert screen.typed == ["06/15/1996"]
+    assert screen.year <= 2004
     assert "Continue" in screen.taps
     assert screen.wall is False
+    assert len(screen.drags) >= 22          # 2026 down to 2004: one year wheel drag at a time
 
 
-def test_a_birthdate_field_that_refuses_the_date_stops_for_a_human() -> None:
-    screen = BirthdateScreen(takes=False)
+def test_a_stuck_birthdate_wheel_stops_for_a_human(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    screen = BirthdateScreen(wheel_moves=False)
     login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
     with pytest.raises(NeedsHuman) as caught:
         login._birthday()
-    assert "birthdate" in str(caught.value)
+    assert "wheels" in str(caught.value) or "birthdate" in str(caught.value)

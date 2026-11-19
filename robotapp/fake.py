@@ -283,6 +283,9 @@ class FakeScreen:
     def swipe_up(self) -> None:
         self.taps.append("swipe")
 
+    def drag(self, x1: int, y1: int, x2: int, y2: int, steps: int = 20) -> None:
+        self.taps.append(f"drag {x1},{y1}->{x2},{y2}")
+
     def screenshot(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(b"\x89PNG fake")

@@ -35,10 +35,13 @@ BIRTHDAY = Signature(
     "tiktok birthdate wall",
     any_of=("your birthdate", "Month picker"),        # the title and the body both carry the words
 )
-# musically 47.9.1 asks for a birthdate before anything else. One adult, constant date for every
-# robot account (not a secret, deliberately the same everywhere; measured 2026-11-19: the field
-# takes MM/DD/YYYY and shows it back).
-BIRTHDATE_VALUE = "06/15/1996"
+# musically 47.9.1 asks for a birthdate before anything else (trill never did: G2G was logged in by
+# hand). The three wheels are SeekBars; the field only DISPLAYS their date, and Continue only
+# becomes tappable once the wheels hold one (measured 2026-11-19): one drag on any wheel
+# initialises them to today, and each ~200px down-drag on the year wheel is one year older.
+# The date itself is arbitrary: the flow dials the year back until the age is an adult's, reading
+# the field after every drag and never pressing Continue on a guess.
+ADULT_YEAR = 2004        # 21+ years old in 2026; the wheels keep today's month and day
 CAPTCHA = Signature(
     "captcha",
     any_of=(
@@ -133,37 +136,69 @@ class TikTokLogin:
         return LoginResult(handle=handle, logged_in=handle is not None)
 
     # -- screens -----------------------------------------------------------------------------------
-    def _birthday(self) -> None:
-        """musically's birthdate wall, before anything else: type the date, read it back, Continue.
+    _DATE = re.compile(r"^\s*[A-Za-z]+\s+\d{1,2},\s*(\d{4})\s*$")
 
-        The trill flow never met it (G2G was logged in by hand). The field takes MM/DD/YYYY
-        (measured 2026-11-19); the wheels below it are SeekBars that do not expose their values,
-        so the typed field is the one read back, and nothing is submitted blind.
+    def _birthday(self) -> None:
+        """musically's birthdate wall, before anything else: dial the wheels to an adult date.
+
+        The field takes typed text but the wheels are the real input - typing alone leaves Continue
+        disabled (measured 2026-11-19). The flow drags a wheel once to initialise them, then the year
+        wheel down until the field shows an adult year, and only then presses Continue.
         """
-        for _ in range(4):
+        for _ in range(3):
             time.sleep(1.5)
             elements = self.screen.elements()
             if not BIRTHDAY.matches(elements):
                 return
-            field = find(elements, "Birthday")
-            if field is None:
-                raise NeedsHuman("TikTok asks for a birthdate but its field is not there",
-                                 self._shot("tiktok-birthday"))
-            self.screen.tap(field)
-            time.sleep(0.8)
-            self.screen.type_text(BIRTHDATE_VALUE, min_ms=60, max_ms=160)
-            time.sleep(0.8)
-            typed = (self.screen.focused_text() or "").strip()
-            page = " ".join(e.text for e in self.screen.elements())
-            if BIRTHDATE_VALUE not in typed + " " + page:
-                raise NeedsHuman("TikTok's birthdate field did not take the date",
+            if not self._adult_birthday(elements):
+                raise NeedsHuman("TikTok's birthdate wheels would not dial to an adult year",
                                  self._shot("tiktok-birthday"))
             button = find_exact(self.screen.elements(), "Continue")
-            if button is not None:
-                self.screen.tap(button)
+            if button is None:
+                raise NeedsHuman("TikTok's birthdate Continue is not tappable",
+                                 self._shot("tiktok-birthday"))
+            self.screen.tap(button)
         time.sleep(1.5)
         if BIRTHDAY.matches(self.screen.elements()):
             raise NeedsHuman("TikTok's birthdate wall did not clear", self._shot("tiktok-birthday"))
+
+    def _adult_birthday(self, elements: list[Element]) -> bool:
+        """True once the field shows a date old enough. One drag on any wheel initialises an unset
+        wall; one drag on the year wheel is a year older. Every drag is verified by reading the
+        field - a wheel that does not move stops the login instead of spinning forever."""
+        moved = False
+        for _ in range(45):
+            before = self._field_year(elements)
+            if before is not None and before <= ADULT_YEAR:
+                return True
+            wheel = self._wheel(elements, "Month picker") if before is None and not moved \
+                else self._wheel(elements, "Year picker")
+            if wheel is None:
+                return False
+            self._drag_wheel(wheel)
+            moved = True
+            time.sleep(1.2)
+            elements = self.screen.elements()
+            after = self._field_year(elements)
+            if before is not None and after == before:
+                return False        # the wheel did not move: a stuck wheel is a human's problem
+        return False
+
+    def _drag_wheel(self, wheel: Element) -> None:
+        """A ~200px drag inside the wheel, downward = older (measured: -1 year per drag)."""
+        x1, y1, x2, y2 = wheel.bounds
+        centre = x1 + (x2 - x1) // 2
+        self.screen.drag(centre, y1 + (y2 - y1) // 4, centre, y1 + 3 * (y2 - y1) // 4, steps=20)
+
+    def _field_year(self, elements: list[Element]) -> int | None:
+        for element in elements:
+            match = self._DATE.match(element.text or "")
+            if match:
+                return int(match.group(1))
+        return None
+
+    def _wheel(self, elements: list[Element], desc: str) -> Element | None:
+        return next((e for e in elements if e.desc == desc and e.enabled), None)
 
     def _first_run(self) -> None:
         """Interests → Skip, the swipe tutorial → swipe, notifications → Don't allow (§5.2 step 1)."""
