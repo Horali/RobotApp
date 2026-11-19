@@ -5,7 +5,8 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-19, 03:10 WIB (builder session, unattended while the user slept).
+Last updated: 2026-11-19, 16:22 WIB (step 10's TikTok half done: musically installed + the throwaway's
+TikTok signed in; eight flow bugs fixed on the way).
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
@@ -161,23 +162,69 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   account, 101 followers, untouched), **user 11 = "vtubers Clips"** (the throwaway, 0 posts). The login landed
   in the US space as intended; the earlier alarm ("on my main account") was a misread of a foreground window,
   now impossible to repeat: `robot screen` prints the package and user from `mCurrentFocus`.
-- **What is left (the honest list):** the throwaway's **TikTok** login (blocked on `musically`), the **first
-  Instagram post** from this account through ClipMaker (the whole loop, mode='phone'), the 14-day YouTube test,
-  and then the real brands one login per day (§5.5's order).
+- **STEP 10's TikTok HALF IS DONE. 2026-11-19, 12:43-16:22 WIB** (the user allowed the phone outside the
+  window for this build, `ROBOTAPP_BUILD_MODE=1` per command; **@vtubersclips70 is signed in**):
+  - **`musically` 47.9.1 (TikTok US) is on the phone**, in user 11 only. APKMirror's APK download
+    (485,014,178 bytes, size exact), certificate checked per §4.7: apksigner on 47.9.1 **and on 47.8.3
+    from the same listing** - the same signer both times (`CN=musical.ly, O=musical.ly Inc., Shanghai`,
+    SHA-256 `9041803e…cf2ab5ba`). Installed through the built provision path (it re-verifies the
+    digest itself), then `pm uninstall --user 0` so the owner user keeps only G2G's `trill`. The
+    throwaway's **TikTok login is DONE: @vtubersclips70** in the Virginia space - the emailed code was
+    taken by the user on the phone (the plan's one-hand rule). The robot's code path is built and
+    unit-tested for the next login; what ran robotically was everything up to the code screen.
+  - **musically's login journey, measured** (trill never showed any of it - G2G was logged in by hand):
+    a birthdate wall whose three SeekBar **wheels** are the real input (the "Birthday" field only
+    displays; typing leaves Continue disabled; one drag initialises the wheels to today, a 200px
+    down-drag on the year wheel = one year older; the flow dials to an adult year, reads the field
+    back, presses Continue once and waits for the wall to clear); then a **Terms of Service dialog**
+    ("Agree and continue"); then the notifications permission (**"DON'T ALLOW"** - all caps and a curly
+    apostrophe, so `says()` normalises U+2019); then the feed. The email login goes **straight to an
+    emailed code ("Verify email"), no password form** - the code field carries no label (only
+    "Resend code" does), so the code is typed into the screen's editable, never tapped at by name.
+  - **Eight real bugs fixed on the way** (commits `fade624`…`34ea49d`, 107 → **123 tests green**):
+    1. **the flows opened their app in the owner user, not the space** - `TikTokLogin`, `InstagramLogin`
+       and all three posters called `start_app` with its default `user=0`. This one bug explains the
+       morning Instagram login's ten crashed runs, the TikTok login opening musically in user 0, and
+       the stray TikTok in the owner's launcher. All flows now take and pass their space's user.
+    2. **`dumpsys window` prints one `mCurrentFocus` line per root** - with the user's own Instagram
+       open in user 0, its stale line came first and `robot screen` blamed the wrong account. The one
+       unique, proven source is `dumpsys activity activities`' **`topResumedActivity`**; `fore_app`
+       and every `_in_front` guard now read it.
+    3. a failed leak check crashed `provision` (`LeakResult` has no `outcome` - it hid on every green
+       run).
+    4. `views` read TikTok view counts from `trill` regardless of the space.
+    5. a TikTok login without `--package` had no default (now trill for user 0, musically otherwise).
+    6. the login's "Profile" tap was a substring match and opened a video author's page on the feed
+       (the trap the post flow had already fixed) - now an exact bottom-bar tap, like `views`.
+    7. `robot screen` died on emoji in a cp1252 console (it prints backslash-escaped ASCII now).
+    8. `sitting` still refused Instagram/YouTube posts with "not built yet" - a stale guard left over
+       from step 1, removed.
+  - `robot login` accepts **`--code-file`**: a manual run in the background polls a file for the
+    6-digit code (5 min), so the user can type the code into a file while the run sits on the code
+    screen.
+- **What is left (the honest list):** the **first real posts** - Instagram's whole loop for vtubers
+  Clips (no queueable row exists: the throwaway has **no campaign** in ClipMaker and its profiles are
+  `enrolled` with `posting_locked_until 2026-11-22 17:55 UTC`, and `queue_post` refuses both), TikTok's
+  first post (needs a clip), then the 14-day YouTube test (Timmy's Google sign-in), then the real
+  brands one login per day (§5.5's order). The throwaway's handles: Instagram **@vtubersclips90**,
+  TikTok **@vtubersclips70** (ClipMaker's `warmup_profiles.account_handle` is still empty for both -
+  storing them is the clipper session's call, §8.4).
 
   - **step 10 (move the real accounts in)** — the robot's side is built; it is one login per day, safest first
     (§5.5), and **the first real login is the next thing to run**: the throwaway is now **"vtuber Clips"**
     (user said so 2026-11-19), on `us-ps-1-virginia`, its accounts already signed in in Chameleon. Its
     Instagram login on the phone has **not** been attempted yet, on purpose: §5.5 puts new-device logins inside
     the 06:00-10:00 window, and the build session was at 02:00-03:00. Nothing was touched.
-  - **TikTok's US build (`musically`)** is still not on the phone: US brands' TikTok posts wait.
-  - **`musically` and the throwaway's TikTok login**, then the 14-day YouTube test (step 6's remainder).
-- **For the next session, in order:** (1) 06:00-10:00: `robot connect`, `robot doctor`, then the throwaway's
-  Instagram login (`robot login instagram --user 11 --profile-id <vtuber instagram> --email <its Gmail>`); it
-  may ask for a 6-digit code — that is the one thing that needs the user. (2) Capture the Instagram fixtures
-  from the real screens (`robot screen --user 11 --save-as instagram-*`) so the Instagram signatures stop being
-  guesses. (3) The throwaway's TikTok is blocked on `musically`. (4) The 14-day YouTube test needs Timmy's
-  Google sign-in (a separate, checked-by-hand job, §5.6).
+  - **TikTok's US build (`musically`)**: **DONE 2026-11-19** - 47.9.1 installed in user 11, certificate
+    checked against the 47.8.3 of the same listing; the throwaway's TikTok is signed in (@vtubersclips70).
+  - **The 14-day YouTube test needs Timmy's Google sign-in** (a separate, checked-by-hand job, §5.6).
+  - **The first posts need queueable rows in ClipMaker** (see the honest list above).
+- **For the next session, in order:** (1) the first real posts need queueable rows: the throwaway has no
+  campaign in ClipMaker and its profiles are enrolled until 2026-11-22 - graduate it (or wait out the warmup),
+  give it a campaign, queue an Instagram row, then `robot sitting` end to end. (2) The TikTok first post
+  (needs a clip). (3) The 14-day YouTube test needs Timmy's Google sign-in (§5.6). (4) The real brands, one
+  login per day; the musically login flow is now proven up to the code screen - the next login exercises the
+  robot's own code entry (`--code-file`).
 
 
 **What you must do**

@@ -94,7 +94,21 @@ back; check with `robot lock status` and `robot screen --user 0`.
 
 ## Still missing for the full plan
 
-- **TikTok's US build (`musically`)**: not on the phone. The US space is ready except for it.
-- **The throwaway account**: does not exist; the login path is built and unit-tested but has not run on a real
-  account. Chameleon must be restarted once for the platform-password route.
+- ~~**TikTok's US build (`musically`)**~~: **installed 2026-11-19** (47.9.1, user 11 only; certificate
+  checked against the 47.8.3 of the same APKMirror listing, signer identical: `CN=musical.ly`, SHA-256
+  `9041803e…cf2ab5ba`; the APK sits in `data\apk\musically-47.9.1.apk` for future spaces).
+- **TikTok US logins (`musically`), measured 2026-11-19** - a journey `trill` never shows:
+  1. a **birthdate wall**: the "Birthday" field is only a display; the three SeekBar wheels are the
+     input. One drag on any wheel initialises them to today; a ~200px **down-drag on the Year picker =
+     one year older**; `robot login` dials to an adult year, reads the field back each step, presses
+     Continue once (the wall clears ~8 s later).
+  2. a **Terms of Service** dialog → "Agree and continue" (the robot answers it).
+  3. the **notifications permission** → its button prints as "DON'T ALLOW" (all caps, curly apostrophe);
+     the robot declines.
+  4. the feed; the email login goes **straight to an emailed code** ("Verify email", no password
+     form). The code field has **no label** - the code is typed into the screen's editable, never
+     tapped at by name ("Resend code" is a button, not the field). A manual run can wait for the code
+     with `--code-file <path>` (5 min).
+- **The throwaway account**: signed in - Instagram **@vtubersclips90**, TikTok **@vtubersclips70**, both in
+  user 11 (Virginia space).
 - **Wi-Fi adb after a reboot**: step 2's Keeper app.
