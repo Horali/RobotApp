@@ -112,17 +112,6 @@ def run(
             results.append(result)
             continue
 
-        if spec.platform != "tiktok":
-            result = PostResult(
-                spec.upload_id,
-                spec.platform,
-                FAILED,
-                reason=f"the {spec.platform} flow is not built yet (PLAN step 5/6)",
-            )
-            emit(result.as_event())
-            results.append(result)
-            continue
-
         if spec.video and spec.video.exists() and str(spec.video) not in pushed:
             remote = pushed[str(spec.video)] = push_video(phone, spec.video, user)
             spec.media_uri = find_media_uri(phone, user, remote)
@@ -130,14 +119,16 @@ def run(
 
         if spec.platform == "tiktok":
             package = tiktok_package(user)
-            poster = TikTokPoster(phone, screen, journal, sitting.job_id, package=package, emit=emit, shots_dir=shots_dir)
+            poster = TikTokPoster(
+                phone, screen, journal, sitting.job_id, package=package, user=user, emit=emit, shots_dir=shots_dir
+            )
         elif spec.platform == "instagram":
             poster = InstagramPoster(
-                phone, screen, journal, sitting.job_id, package=INSTAGRAM_PACKAGE, emit=emit, shots_dir=shots_dir
+                phone, screen, journal, sitting.job_id, package=INSTAGRAM_PACKAGE, user=user, emit=emit, shots_dir=shots_dir
             )
         elif spec.platform == "youtube":
             poster = YouTubePoster(
-                phone, screen, journal, sitting.job_id, package=YOUTUBE_PACKAGE, emit=emit, shots_dir=shots_dir
+                phone, screen, journal, sitting.job_id, package=YOUTUBE_PACKAGE, user=user, emit=emit, shots_dir=shots_dir
             )
         else:
             result = PostResult(

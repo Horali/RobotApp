@@ -505,7 +505,10 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
 
         if not args.package:
             args.package = tiktok_package(args.user)     # trill for G2G's owner user, musically in a space
-        login = TikTokLogin(phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider)
+        login = TikTokLogin(
+            phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider,
+            user=args.user,
+        )
     else:
         from .login.instagram import InstagramLogin
         from .post.instagram import INSTAGRAM as INSTAGRAM_PACKAGE
@@ -513,7 +516,8 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
         if not args.package:
             args.package = INSTAGRAM_PACKAGE
         login = InstagramLogin(
-            phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider
+            phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider,
+            user=args.user,
         )
     try:
         result = login.login(args.profile_id, args.email, args.package)
@@ -575,18 +579,22 @@ def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
     )
     if args.platform == "tiktok":
         package = args.package or tiktok_package(args.user)
-        poster = TikTokPoster(phone, screen, journal, job_id, package=package, emit=emit, shots_dir=settings.shots_dir)
+        poster = TikTokPoster(
+            phone, screen, journal, job_id, package=package, user=args.user, emit=emit, shots_dir=settings.shots_dir
+        )
     elif args.platform == "instagram":
         from .post.instagram import INSTAGRAM as INSTAGRAM_PACKAGE, InstagramPoster
 
         poster = InstagramPoster(
-            phone, screen, journal, job_id, package=args.package or INSTAGRAM_PACKAGE, emit=emit, shots_dir=settings.shots_dir
+            phone, screen, journal, job_id, package=args.package or INSTAGRAM_PACKAGE, user=args.user,
+            emit=emit, shots_dir=settings.shots_dir,
         )
     else:
         from .post.youtube import YOUTUBE as YOUTUBE_PACKAGE, YouTubePoster
 
         poster = YouTubePoster(
-            phone, screen, journal, job_id, package=args.package or YOUTUBE_PACKAGE, emit=emit, shots_dir=settings.shots_dir
+            phone, screen, journal, job_id, package=args.package or YOUTUBE_PACKAGE, user=args.user,
+            emit=emit, shots_dir=settings.shots_dir,
         )
     try:
         result = poster.post(spec, dry_run=args.dry_run)

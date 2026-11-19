@@ -49,6 +49,7 @@ class YouTubePoster:
         journal: Journal,
         job_id: str,
         package: str = YOUTUBE,
+        user: int = 0,
         emit=None,
         shots_dir: Path | None = None,
     ) -> None:
@@ -57,6 +58,7 @@ class YouTubePoster:
         self.journal = journal
         self.job_id = job_id
         self.package = package
+        self.user = user
         self.emit = emit or (lambda event: None)
         self.shots_dir = shots_dir
         self.channel: str | None = None
@@ -158,9 +160,9 @@ class YouTubePoster:
 
     # -- steps -------------------------------------------------------------------------------------
     def _open(self) -> None:
-        self.phone.force_stop(self.package)
+        self.phone.force_stop(self.package, self.user)
         time.sleep(1.0)
-        self.phone.start_app(self.package)
+        self.phone.start_app(self.package, self.user)
         time.sleep(8.0)
         deadline = time.monotonic() + 60
         stable = 0

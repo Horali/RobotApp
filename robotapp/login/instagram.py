@@ -80,6 +80,7 @@ class InstagramLogin:
         emit=None,
         shots_dir: Path | None = None,
         code_provider: Callable[[], str] | None = None,
+        user: int = 0,
     ) -> None:
         self.phone = phone
         self.screen = screen
@@ -87,12 +88,13 @@ class InstagramLogin:
         self.emit = emit or (lambda event: None)
         self.shots_dir = shots_dir
         self.code_provider = code_provider or (lambda: "")
+        self.user = user
         self.handle: str | None = None
 
     def login(self, profile_id: str, username: str, package: str) -> LoginResult:
-        self.phone.force_stop(package)
+        self.phone.force_stop(package, self.user)
         time.sleep(1.0)
-        self.phone.start_app(package)
+        self.phone.start_app(package, self.user)
         # Instagram is heavy: a first launch after a force-stop can take well over ten seconds, and the
         # launcher underneath would otherwise answer first. Wait for the app to be in front, then for its
         # own words.
@@ -100,7 +102,7 @@ class InstagramLogin:
             time.sleep(8.0)
             if self._in_front(package):
                 break
-            self.phone.start_app(package)
+            self.phone.start_app(package, self.user)
         # The launcher answers its own words, and a fresh install shows a terms sheet (and the phone's
         # keyboard its own dialog) over the login form: clear those while waiting, not after.
         deadline = time.monotonic() + 150

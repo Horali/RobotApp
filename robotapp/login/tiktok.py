@@ -73,6 +73,7 @@ class TikTokLogin:
         emit=None,
         shots_dir: Path | None = None,
         code_provider: Callable[[], str] | None = None,
+        user: int = 0,
     ) -> None:
         self.phone = phone
         self.screen = screen
@@ -80,11 +81,12 @@ class TikTokLogin:
         self.emit = emit or (lambda event: None)
         self.shots_dir = shots_dir
         self.code_provider = code_provider or (lambda: "")
+        self.user = user
         self.handle: str | None = None
 
     def login(self, profile_id: str, email: str, package: str, platform: str = "tiktok") -> LoginResult:
-        self.phone.force_stop(package)
-        self.phone.start_app(package)
+        self.phone.force_stop(package, self.user)
+        self.phone.start_app(package, self.user)
         self._first_run()
 
         elements = wait_for(self.screen, HOME, 45)

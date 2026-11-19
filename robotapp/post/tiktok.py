@@ -53,6 +53,7 @@ class TikTokPoster:
         journal: Journal,
         job_id: str,
         package: str = TIKTOK_US,
+        user: int = 0,
         emit=None,
         shots_dir: Path | None = None,
     ) -> None:
@@ -61,6 +62,7 @@ class TikTokPoster:
         self.journal = journal
         self.job_id = job_id
         self.package = package
+        self.user = user
         self.emit = emit or (lambda event: None)
         self.shots_dir = shots_dir
         self.handle: str | None = None
@@ -159,9 +161,9 @@ class TikTokPoster:
 
     # -- steps -------------------------------------------------------------------------------------
     def _open(self) -> None:
-        self.phone.force_stop(self.package)
+        self.phone.force_stop(self.package, self.user)
         time.sleep(1.0)
-        self.phone.start_app(self.package)
+        self.phone.start_app(self.package, self.user)
         time.sleep(6.0)  # TikTok's splash lasts several seconds; reading before that gives a stale screen
         stable = 0
         deadline = time.monotonic() + 60
@@ -263,7 +265,7 @@ class TikTokPoster:
 
     def _share_video(self, spec: PostSpec) -> bool:
         """Send the clip to TikTok's share activity; tap its Video button. False when that path is not there."""
-        user = self.phone.current_user()
+        user = self.user
         self.phone.force_stop(self.package)
         time.sleep(0.5)
         self.phone.shell(
