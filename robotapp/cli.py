@@ -518,7 +518,16 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
         print("Type the 6-digit code from the account's email and press Enter:", file=sys.stderr, flush=True)
         return sys.stdin.readline().strip()
 
-    if args.platform == "tiktok":
+    if args.platform == "youtube":
+        # The Google sign-in (PLAN section 5.6): the brand's Gmail goes into the space's settings,
+        # and YouTube's avatar is checked to be the brand's channel. The email and its account id
+        # were looked up above, the same way as the other platforms.
+        from .login.google import GoogleLogin
+
+        login = GoogleLogin(
+            phone, screen, chameleon, emit=emit, shots_dir=settings.shots_dir, code_provider=code_provider
+        )
+    elif args.platform == "tiktok":
         from .login.tiktok import TikTokLogin
 
         if not args.package:
@@ -538,7 +547,10 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
             user=args.user,
         )
     try:
-        result = login.login(args.profile_id, args.email, args.package)
+        if args.platform == "youtube":
+            result = login.login(args.email, account_id, args.user)
+        else:
+            result = login.login(args.profile_id, args.email, args.package)
     except NeedsHuman as exc:
         emit(exc.as_event())
         journal.set_state(job_id, "needs_human")
@@ -548,7 +560,8 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
         journal.set_state(job_id, "needs_code")
         return EXIT_NEEDS
     journal.set_state(job_id, "done" if result.logged_in else "failed")
-    emit({"t": "done", "job": job_id, "handle": result.handle, "logged_in": result.logged_in})
+    handle = result.channel if args.platform == "youtube" else result.handle
+    emit({"t": "done", "job": job_id, "handle": handle, "logged_in": result.logged_in})
     leave_space(phone)
     return EXIT_OK if result.logged_in else EXIT_ERROR
 
