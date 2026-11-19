@@ -216,16 +216,6 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   running app still has the old flag in memory), and leave the phone on Wi-Fi overnight. If the app
   is not restarted, the tick sends the posts to Telegram as hand posts instead - the rows only leave
   the queue from 06:00 WIB, so any restart tonight is in time.
-- **SHADOWBAN RULE CHANGED (user, 2026-11-20, from the Clipper US Targeting Guide-2).** "If You Get
-  Shadowbanned: Stop posting for 3–5 days — posting during a shadowban extends it. Keep using the app
-  normally — scroll, watch, like. Don't go inactive." ClipMaker's `verdict` follows it now (commit
-  `f2de31f`): an under-200 reading **pauses** posting (3 days, 5 on a second round) instead of posting
-  another warmup clip; when the pause ends one **re-check** post may go out; still under 200 after three
-  rounds → "start a new account" as before. Also applied the guide's "never repost the same file across
-  accounts": the throwaway's queued TikTok row now uses a different house clip (`38b3e15a…`, Herobrine,
-  48 s) than the Instagram row (Mario Kart, 56 s). **Honest gap:** "keep using the app" during a pause is
-  the half the robot cannot do yet (sittings engage only when they post) — an engage-only sitting is the
-  follow-up; until then a paused account is warmed by hand.
 - **What is left (the honest list):** **tomorrow 06:00-10:00 WIB: the first fully automatic sitting**
   (ClipMaker's tick → `robot sitting` → the two posts → `phone-posted`) - if the TikTok leg meets a
   musically screen the trill flow did not, it stops safely before Post and the row lands back for
