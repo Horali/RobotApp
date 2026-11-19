@@ -130,6 +130,7 @@ class GoogleLogin:
             self.screen.tap(field)
             time.sleep(0.6)
         self.screen.type_text(email, min_ms=60, max_ms=160)
+        self._require_typed(email)
         self._tap_any(("Next", "Continue"))
         wait_for(self.screen, PASSWORD_FORM, 45)
 
@@ -266,13 +267,45 @@ class GoogleLogin:
         return None
 
     # -- helpers ---------------------------------------------------------------------------------
-    def _tap_any(self, labels: tuple[str, ...]) -> None:
-        for label in labels:
-            button = find(self.screen.elements(), label)
-            if button is not None:
+    def _require_typed(self, value: str) -> None:
+        """Never submit an empty form: the field (or the page) must show what was typed.
+
+        The IME is not enabled in a fresh space, so a typed email can vanish silently - the same
+        mistake the first Instagram login made (2026-11-19).
+        """
+        typed = (self.screen.focused_text() or "").strip()
+        page = " ".join(e.text for e in self.screen.elements())
+        if value.lower() not in (typed.lower() + " " + page.lower()):
+            raise RuntimeError(f"the Google account field is empty after typing {value[:3]}***; not submitting")
+
+    def _tap_any(self, labels: tuple[str, ...], timeout_s: float = 20.0) -> None:
+        """Tap the first of `labels` that shows up, waiting for it.
+
+        A single look is not enough: Google's "Next" appears a beat after the email lands, and the
+        keyboard can sit over it (measured 2026-11-20 - the first run typed the email and then failed
+        with "none of ('Next', 'Continue') is on screen" while Next was there a second later). When the
+        button is under the keyboard, the keyboard is closed once and the screen re-read.
+        """
+        deadline = time.monotonic() + timeout_s
+        closed_keyboard = False
+        while time.monotonic() < deadline:
+            elements = self.screen.elements()
+            for label in labels:
+                button = find_exact(elements, label) or find(elements, label)
+                if button is None:
+                    continue
+                height = self.screen.size()[1]
+                if not closed_keyboard and button.bounds[1] > height * 0.62:
+                    # below the keyboard's top edge: a tap there hits the keyboard, not the button
+                    self.screen.press_back()
+                    closed_keyboard = True
+                    time.sleep(1.5)
+                    break
                 self.screen.tap(button)
                 return
-        raise RuntimeError(f"none of {labels} is on screen")
+            else:
+                time.sleep(1.5)
+        raise RuntimeError(f"none of {labels} appeared on screen in {timeout_s:.0f}s")
 
     def _shot(self, name: str) -> str | None:
         if not self.shots_dir:
