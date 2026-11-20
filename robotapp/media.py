@@ -149,13 +149,17 @@ def _lan_ip() -> str:
             pass
 
 
-def _push_via_browser(phone: Phone, local: Path, user_id: int, remote_name: str, wait_s: float = 120.0) -> str:
+def _push_via_browser(phone: Phone, local: Path, user_id: int, remote_name: str, wait_s: float = 420.0) -> str:
     """Chrome in the space downloads the clip, then the space's media store indexes it.
 
     The file is served on a laptop port and reached through `adb reverse` (device loopback). A LAN
-    address would travel through the space's VPN, and the proxy cannot reach 192.168.x.x.
+    address would travel through the space's VPN, and the proxy cannot reach 192.168.x.x. A 1080p
+    clip is ~100 MB and the space's download runs at about 1 MB/s, so the wait is minutes (120 s
+    was too short: the download was still going when the robot gave up, 2026-11-20).
     """
     download = f"/storage/emulated/{user_id}/Download/{remote_name}"
+    if find_media_uri(phone, user_id, download):
+        return download                      # a previous attempt already delivered it
     with _serve_file(local, filename=remote_name) as url:
         port = int(url.rsplit(":", 1)[1].split("/")[0])
         try:
@@ -170,9 +174,9 @@ def _push_via_browser(phone: Phone, local: Path, user_id: int, remote_name: str,
         # Chrome writes the download itself; the media store picks it up (or a scan makes it)
         deadline = time.monotonic() + wait_s
         while time.monotonic() < deadline:
+            time.sleep(5.0)
             if find_media_uri(phone, user_id, download):
                 return download
-            time.sleep(3.0)
             try:
                 phone.shell(
                     f"am broadcast --user {user_id} -a android.intent.action.MEDIA_SCANNER_SCAN_FILE "
