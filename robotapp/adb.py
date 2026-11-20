@@ -233,13 +233,18 @@ class AdbPhone:
         return self.shell(f"am force-stop --user {user} {package}").strip()
 
     def start_app(self, package: str, user: int = 0) -> str:
-        """Launch an app in a user. `monkey` has no --user on this build, so resolve the activity and `am start`."""
+        """Launch an app in a user. `monkey` has no --user on this build, so resolve the activity and `am start`.
+
+        The component is quoted: YouTube's is `com.google.android.youtube/.app.honeycomb.Shell$HomeActivity`,
+        and this phone's shell expands `$HomeActivity` away, so `am start` answered "Activity class ...
+        Shell does not exist" and the app never opened (measured 2026-11-21).
+        """
         self.guard.check("open an app")
         out = self.shell(f"cmd package resolve-activity --brief --user {user} {package}", timeout=30)
         component = next((line.strip() for line in out.splitlines() if "/" in line and " " not in line.strip()), "")
         if not component:
             raise RuntimeError(f"{package} is not installed in user {user}")
-        return self.shell(f"am start --user {user} -n {component}", timeout=30).strip()
+        return self.shell(f"am start --user {user} -n '{component}'", timeout=30).strip()
 
     def install_existing(self, package: str, user: int) -> str:
         self.guard.check("install an app into a user")
