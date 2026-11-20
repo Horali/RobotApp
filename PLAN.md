@@ -5,9 +5,10 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-20, 04:25 WIB (the space's DNS was broken at two layers - phone Private DNS and
-the proxy blocking port 53 - both fixed; the throwaway's Google account is signed in; its YouTube
-channel needs renaming before the YouTube row goes back).
+Last updated: 2026-11-21, 04:00 WIB. **This session's handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**
+(state, the two blockers, the exact steps) and the copy-paste prompt
+[`docs/next-session-prompt.md`](docs/next-session-prompt.md). The three first posts are queued (Instagram,
+TikTok, **YouTube** — the user insists YouTube is in scope) and due at 06:00 WIB.
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
@@ -294,6 +295,19 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   Instagram has the best chance: its window opens at 06:00 WIB and both its blockers are fixed. TikTok
   needs the camera-step work, done live with the space in front (about 10 minutes). **Restart the app**
   so it runs today's code.
+- **The YouTube row is queued too (2026-11-21, 03:55 WIB): `03841246…`**, on the Herobrine clip (the
+  other two share the Mario Kart clip). The user was explicit that **YouTube is in scope now, not a later
+  test**. Its channel is still "Horali Cript" / `@HoraliCript` (id `UCl1ZpgCNfkIGhtf-Af3f5nQ`) — the rename
+  is a 2-minute laptop job in Studio → Customization → Profile; the poster itself has never run for real,
+  so expect 1-2 selector fixes on its first run.
+- **The TikTok blocker, precisely:** after the bottom bar's Create, Play takes the screen with "TikTok
+  needs to download additional files" (the installed `musically` 47.9.1 is the **base APK**; Play wants the
+  dynamic modules). Dismissing it once restores the feed, but it returns when the camera/editor assets are
+  asked for. The real fix is the **bundle** variant of the same release from the same listing (same signer
+  `9041803e…cf2ab5ba`), installed in user 11 — which needs a fresh TikTok login (a code to the Gmail; the
+  robot has `--code-file` for that).
+- **Handoff for the next session: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**, with the
+  copy-paste prompt [`docs/next-session-prompt.md`](docs/next-session-prompt.md).
 - **What is left:** the first fully automatic sitting, the TikTok camera step, the YouTube channel
   rename + its row, the 24 h views reading, the 14-day YouTube test (Timmy's Google sign-in), then the
   real brands one login per day (§5.5's order). The throwaway's handles: Instagram
