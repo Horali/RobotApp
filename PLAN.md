@@ -263,12 +263,41 @@ caption goes in one paste and is read back; TikTok's location prompt is cleared 
   posts to Telegram. It now reads the environment first and `.env` fresh after (2 tests). **The app
   must still be restarted once** (its running process has the old module in memory); after that the
   flag works with no shell environment.
-- **What is left:** the first fully automatic sitting (tomorrow 06:00-10:00 WIB: ClipMaker's tick →
-  `robot sitting` → the two posts → `phone-posted`; an unknown musically screen stops it safely before
-  Post and the row falls back to Telegram), the YouTube channel rename + its row, the 24 h views
-  reading, the 14-day YouTube test (Timmy's Google sign-in), then the real brands one login per day
-  (§5.5's order). The throwaway's handles: Instagram **@vtubersclips90**, TikTok **@vtubersclips70**,
-  YouTube channel **"Horali Cript"** (to rename).
+- **THE FIRST MORNING DIDN'T POST — but it found the real blockers. 2026-11-20, 07:00-09:40 WIB.**
+  Nothing had run by 07:03: the app's tick was alive but its **in-memory code predated the switch fix**,
+  so the robot branch still read as off. Running that same tick from the command line exposed, one at a
+  time, everything that had never been exercised (all fixed, each with a test):
+  1. **The sitting did not name its space** (`_sitting_json` never sent `"user"`), so RobotApp posted
+     in whichever user was in front — **the owner user, the user's own Instagram**. It was stopped after
+     "open app" (the journal has zero events: nothing was pressed). Now ClipMaker sends the brand's
+     `user` from `data/phone_robot.json`, and **RobotApp refuses a sitting with no user** (fail closed).
+  2. **A clip cannot be pushed into a secondary user's storage**: SELinux refuses
+     `mkdir /storage/emulated/11/...` from the adb shell (step 1 only ever pushed into user 0). The
+     space's own Chrome now downloads it over **`adb reverse`** (a LAN address travels through the VPN
+     and the proxy cannot reach 192.168.x.x), served under the robot's name (Chrome otherwise keeps the
+     laptop's name and the lookup misses), and the space's media store indexes it —
+     `content://media/external/video/media/42` was reached that way.
+  3. **Instagram 456 has no "+" in the bottom bar**: the create action is the top-left button
+     (desc "Create"). Worse, **the profile page matched the old HOME signature** (it shows "0
+     following"), so the flow never left the profile and never found the button — "Following" is gone
+     from the signature now.
+  4. **musically throws Play's "TikTok needs to download additional files" sheet** over the app and
+     re-throws it mid-flow (the app is APK-installed, so Play keeps offering the extra modules). The
+     flows dismiss it wherever it appears.
+  End state: the **clip lands in the space**, the apps open, **the right accounts are read**
+  (@vtubersclips70 on TikTok, "vtubers Clips" on Instagram), Instagram's create button is found, and
+  every unknown screen stops the flow **before any press**. **Still blocking the post:** TikTok's
+  camera → gallery picker step (the share intent did not land in the editor on musically and the camera
+  entry's labels are still unknown — the last runs stopped there), and Instagram's own run never
+  happened because its evening window closed at 21:00 New York (09:00 WIB) during those fixes.
+- **Both rows stay queued for tomorrow** (Instagram `b988d8b5…`, TikTok `92a0c985…`), unclaimed.
+  Instagram has the best chance: its window opens at 06:00 WIB and both its blockers are fixed. TikTok
+  needs the camera-step work, done live with the space in front (about 10 minutes). **Restart the app**
+  so it runs today's code.
+- **What is left:** the first fully automatic sitting, the TikTok camera step, the YouTube channel
+  rename + its row, the 24 h views reading, the 14-day YouTube test (Timmy's Google sign-in), then the
+  real brands one login per day (§5.5's order). The throwaway's handles: Instagram
+  **@vtubersclips90**, TikTok **@vtubersclips70**, YouTube channel **"Horali Cript"** (to rename).
 
   - **step 10 (move the real accounts in)** — the robot's side is built; it is one login per day, safest first
     (§5.5), and **the first real login is the next thing to run**: the throwaway is now **"vtuber Clips"**
