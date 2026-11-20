@@ -195,11 +195,20 @@ class TikTokPoster:
         while time.monotonic() < deadline:
             elements = self.screen.elements()
             # Play can throw its "TikTok needs to download additional files" sheet over the app
-            # (measured 2026-11-20: it covered the screen for the whole 60 s wait). Dismiss it.
+            # (measured 2026-11-20: it covered the screen for the whole 60 s wait). Dismiss it - and
+            # then leave Play, because the sheet's activity belongs to Play, which stays in front
+            # while TikTok waits behind it (measured 2026-11-21: the whole 90 s went on Play).
             if self._handle_play_sheet(elements):
+                self._back_to_tiktok()
                 stable = 0
                 continue
-            if HOME.matches(elements) and self._in_front():
+            if not self._in_front():
+                # Something else owns the screen (usually Play's own UI after its sheet).
+                self._back_to_tiktok()
+                stable = 0
+                time.sleep(1.5)
+                continue
+            if HOME.matches(elements):
                 stable += 1
                 if stable >= 2:
                     self._dismiss_popups(elements)
@@ -210,6 +219,39 @@ class TikTokPoster:
             time.sleep(1.5)
         self._shot("tiktok-open")
         raise ScreenTimeout("TikTok did not reach its home screen in 90 s")
+
+    def _back_to_tiktok(self) -> None:
+        """Bring TikTok back in front of whatever took the screen (Play, a system sheet).
+
+        One Back closes the other app's top screen (Play's acquisition dialog or its account sheet);
+        only if that is not enough is the app started again, which brings TikTok's task forward instead
+        of waiting for it. Measured 2026-11-21: with Play left in front, TikTok never got the screen and
+        the post stopped before anything was pressed.
+        """
+        if self._leave_play():
+            return
+        self.phone.start_app(self.package, self.user)
+        time.sleep(3.0)
+
+    def _leave_play(self) -> bool:
+        """Press Back once when another app owns the screen; True when TikTok is in front afterwards.
+
+        Safe in the middle of a post (the editor, the caption): it never restarts the app, so a
+        dismissed Play sheet returns to the same screen instead of the feed.
+        """
+        try:
+            package, _ = self.phone.fore_app()
+        except Exception:  # noqa: BLE001 - a phone that cannot say is not a reason to press Back
+            return True
+        if not package or package == self.package:
+            return True
+        self.screen.press_back()
+        time.sleep(1.5)
+        try:
+            package, _ = self.phone.fore_app()
+        except Exception:  # noqa: BLE001
+            return True
+        return not package or package == self.package
 
     def _in_front(self) -> bool:
         """Guard against a stale hierarchy: the app actually resumed must be TikTok's."""
@@ -292,6 +334,7 @@ class TikTokPoster:
         for _ in range(6):
             elements = self.screen.elements()
             if self._handle_play_sheet(elements):
+                self._back_to_tiktok()   # Play keeps its own app in front after the sheet
                 continue
             if self._tap_nav("Create"):
                 break
@@ -305,6 +348,7 @@ class TikTokPoster:
             for _ in range(20):
                 elements = self.screen.elements()
                 if self._handle_play_sheet(elements):
+                    self._back_to_tiktok()
                     continue
                 if self._tap_nav("Create"):
                     break
@@ -327,6 +371,7 @@ class TikTokPoster:
         while time.monotonic() < deadline:
             elements = self.screen.elements()
             if self._handle_play_sheet(elements):
+                self._leave_play()      # Back only: never restart TikTok mid-post
                 continue
             if signature.matches(elements):
                 return
