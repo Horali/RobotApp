@@ -166,7 +166,7 @@ class TikTokPoster:
         self.phone.start_app(self.package, self.user)
         time.sleep(6.0)  # TikTok's splash lasts several seconds; reading before that gives a stale screen
         stable = 0
-        deadline = time.monotonic() + 60
+        deadline = time.monotonic() + 90
         while time.monotonic() < deadline:
             elements = self.screen.elements()
             # Play can throw its "TikTok needs to download additional files" sheet over the app

@@ -32,10 +32,10 @@ INSTAGRAM = "com.instagram.android"
 # caught the flow believing it was home while still on the profile).
 HOME = Signature(
     "instagram home",
-    # 456 on this phone shows the feed without a "For you" label: its markers are the home feed's
-    # own description and the stories tray (measured 2026-11-20; "For you"/"Following" kept for
-    # older builds).
-    any_of=("For you", "Following", "Home Feed", "Your story", "reels tray container"),
+    # Feed markers only. "Following" is NOT one: a profile page shows "0 following" and an earlier
+    # version of this signature made the profile look like the feed, so the flow never went back and
+    # never found the create button (measured 2026-11-20).
+    any_of=("For you", "Home Feed", "Your story", "reels tray container"),
 )
 LOGIN = Signature("instagram login", any_of=("Log in", "Log in with Facebook", "Sign up"))
 PROFILE = Signature("instagram profile", any_of=("Edit profile", "Followers", "Following", "Posts"))
