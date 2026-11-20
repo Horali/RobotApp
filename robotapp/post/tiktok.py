@@ -29,6 +29,30 @@ log = logging.getLogger("robotapp")
 TIKTOK_US = "com.zhiliaoapp.musically"
 TIKTOK_ID = "com.ss.android.ugc.trill"
 
+# Play's "TikTok needs to download additional files to add features" sheet: the installed musically is the
+# base APK, and Play wants the dynamic modules of its bundle. Measured 2026-11-20/21: it owns the screen
+# after Create and again when the camera/editor assets are asked for.
+PLAY_PACKAGE = "com.android.vending"
+_PLAY_SHEET_WORDS = ("additional files", "download from play", "dismiss update dialog")
+
+
+def _says_play_sheet(elements: list[Element]) -> bool:
+    text = " ".join(((e.text or "") + " " + (e.desc or "")) for e in elements).lower()
+    return any(word in text for word in _PLAY_SHEET_WORDS)
+
+
+def _dismiss_control(elements: list[Element]) -> Element | None:
+    """The sheet's own way out. Its label is "Dismiss update dialog" on this Play build, and on a fresh
+    sheet the control is missing for the first seconds - so callers wait instead of reading once."""
+    for element in elements:
+        if not element.enabled:
+            continue
+        label = ((element.desc or "") + " " + (element.text or "")).lower()
+        if "dismiss" in label:
+            return element
+    return None
+
+
 
 def tiktok_package(user: int) -> str:
     """The TikTok build a space uses: G2G's trill in the owner user, the US build everywhere else."""
@@ -67,6 +91,7 @@ class TikTokPoster:
         self.shots_dir = shots_dir
         self.handle: str | None = None
         self.sound_added = False
+        self._play_dismissals = 0
 
     # -- the whole post ----------------------------------------------------------------------------
     def post(self, spec: PostSpec, dry_run: bool = False) -> PostResult:
@@ -171,12 +196,7 @@ class TikTokPoster:
             elements = self.screen.elements()
             # Play can throw its "TikTok needs to download additional files" sheet over the app
             # (measured 2026-11-20: it covered the screen for the whole 60 s wait). Dismiss it.
-            play_sheet = next(
-                (e for e in elements if e.enabled and "Dismiss" in (e.desc or "")), None
-            )
-            if play_sheet is not None:
-                self.screen.tap(play_sheet)
-                time.sleep(2.0)
+            if self._handle_play_sheet(elements):
                 stable = 0
                 continue
             if HOME.matches(elements) and self._in_front():
@@ -189,7 +209,7 @@ class TikTokPoster:
                 self._clear_dialog(elements)
             time.sleep(1.5)
         self._shot("tiktok-open")
-        raise ScreenTimeout("TikTok did not reach its home screen in 60 s")
+        raise ScreenTimeout("TikTok did not reach its home screen in 90 s")
 
     def _in_front(self) -> bool:
         """Guard against a stale hierarchy: the app actually resumed must be TikTok's."""
@@ -271,10 +291,7 @@ class TikTokPoster:
         self._step(3, "create")
         for _ in range(6):
             elements = self.screen.elements()
-            play_sheet = next((e for e in elements if e.enabled and "Dismiss" in (e.desc or "")), None)
-            if play_sheet is not None:
-                self.screen.tap(play_sheet)
-                time.sleep(2.0)
+            if self._handle_play_sheet(elements):
                 continue
             if self._tap_nav("Create"):
                 break
@@ -287,10 +304,7 @@ class TikTokPoster:
             time.sleep(12.0)
             for _ in range(20):
                 elements = self.screen.elements()
-                play_sheet = next((e for e in elements if e.enabled and "Dismiss" in (e.desc or "")), None)
-                if play_sheet is not None:
-                    self.screen.tap(play_sheet)
-                    time.sleep(2.0)
+                if self._handle_play_sheet(elements):
                     continue
                 if self._tap_nav("Create"):
                     break
@@ -312,15 +326,45 @@ class TikTokPoster:
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
             elements = self.screen.elements()
-            play = next((e for e in elements if e.enabled and "Dismiss" in (e.desc or "")), None)
-            if play is not None:
-                self.screen.tap(play)
-                time.sleep(2.0)
+            if self._handle_play_sheet(elements):
                 continue
             if signature.matches(elements):
                 return
             time.sleep(1.5)
         raise ScreenTimeout(f"waited {timeout_s:.0f}s for '{signature.name}'")
+
+    def _handle_play_sheet(self, elements: list[Element]) -> bool:
+        """Dismiss Play's "needs additional files" sheet when it owns the screen; True when it was there.
+
+        Two things this build showed: the sheet's dismiss control is missing while it animates in (so
+        wait for it rather than reading once), and its label is text, not a description. When it keeps
+        coming back, the app needs what the base APK does not have - stop before anything is pressed and
+        say which fix that is, instead of burning the whole post on it.
+        """
+        if not _says_play_sheet(elements):
+            try:
+                package, _ = self.phone.fore_app()
+            except Exception:  # noqa: BLE001 - a phone that cannot say is not a reason to raise here
+                package = ""
+            if package != PLAY_PACKAGE:
+                return False
+        deadline = time.monotonic() + 12.0
+        button = _dismiss_control(elements)
+        while button is None and time.monotonic() < deadline:
+            time.sleep(1.5)
+            button = _dismiss_control(self.screen.elements())
+        if button is None:
+            raise RuntimeError("Play's 'additional files' sheet is up but its Dismiss button never appeared")
+        self.screen.tap(button)
+        time.sleep(2.0)
+        self._play_dismissals += 1
+        if self._play_dismissals >= 4:
+            raise RuntimeError(
+                "Play's 'additional files' sheet keeps covering TikTok (4 times): the installed app is the "
+                "base APK and has no dynamic modules - install the BUNDLE variant of 47.9.1 (same signer "
+                "9041803e...cf2ab5ba) in this space, then log in again"
+            )
+        return True
 
     def _share_video(self, spec: PostSpec) -> bool:
         """Send the clip to TikTok's share activity; tap its Video button. False when that path is not there."""
