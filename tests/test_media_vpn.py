@@ -13,15 +13,56 @@ from robotapp.media import media_store, push_video, video_length
 from robotapp.vpn import Proxy, build_config, import_link, serve_once
 
 
-def test_the_clip_lands_in_the_spaces_gallery_and_is_indexed(tmp_path) -> None:
+def test_the_owner_users_clip_is_pushed_and_indexed(tmp_path) -> None:
     clip = tmp_path / "clip.mp4"
     clip.write_bytes(b"fake video")
     phone = FakePhone(guard=fake_guard())
-    remote = push_video(phone, clip, 11)
-    assert remote.startswith("/storage/emulated/11/DCIM/Robot/robot-")
+    remote = push_video(phone, clip, 0)                     # G2G's owner user: a plain adb push
+    assert remote.startswith("/storage/emulated/0/DCIM/Robot/robot-")
     assert remote.endswith(".mp4")
     assert phone.pushes == [(str(clip), remote)]
     assert any("MEDIA_SCANNER_SCAN_FILE" in command or "am broadcast" in command for command in phone.commands)
+
+
+def test_a_secondary_users_clip_goes_in_through_that_spaces_browser(tmp_path, monkeypatch) -> None:
+    """SELinux refuses `adb push` into another user's storage (“/storage/emulated/11: Permission
+    denied”, measured 2026-11-20), so the space's own Chrome downloads the clip instead: the only
+    writer that has that user's storage."""
+    from robotapp import media as media_module
+
+    clip = tmp_path / "clip.mp4"
+    clip.write_bytes(b"fake video")
+    phone = FakePhone(guard=fake_guard())
+
+    class Serving:
+        def __enter__(self):
+            return "http://192.168.1.16:9999/clip.mp4"
+
+        def __exit__(self, *exc):
+            return False
+
+    monkeypatch.setattr(media_module, "_serve_file", lambda *a, **k: Serving())
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    seen = {"n": 0}
+
+    def fake_uri(ph, user, remote):
+        seen["n"] += 1
+        return "content://media/external/video/media/7" if seen["n"] > 1 else None
+
+    monkeypatch.setattr(media_module, "find_media_uri", fake_uri)
+    remote = media_module.push_video(phone, clip, 11, name="clip.mp4")
+    assert remote == "/storage/emulated/11/Download/clip.mp4"
+    # the file is reached over device loopback (a LAN address would go through the space's VPN)
+    assert any(c.startswith("reverse tcp:") for c in phone.commands)
+    assert any("am start --user 11" in c and "http://127.0.0.1:" in c for c in phone.commands)
+    assert phone.pushes == []                               # no adb push was attempted
+
+    # the URL's port and the reverse port match: the browser reaches the laptop, not the LAN
+    import re
+
+    start = next(c for c in phone.commands if "am start --user 11" in c)
+    url_port = re.search(r"127\.0\.0\.1:(\d+)", start).group(1)
+    assert any(c == f"reverse tcp:{url_port} tcp:{url_port}" for c in phone.commands)
 
 
 def test_a_missing_clip_is_an_error(tmp_path) -> None:

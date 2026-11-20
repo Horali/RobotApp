@@ -77,6 +77,7 @@ class Phone(Protocol):
     def prop(self, name: str) -> str: ...
     def push(self, local: Path, remote: str) -> None: ...
     def pull(self, remote: str, local: Path) -> None: ...
+    def reverse_port(self, device_port: int, host_port: int) -> str: ...
     def screencap(self, local: Path) -> None: ...
     def users(self) -> list[AndroidUser]: ...
     def battery(self) -> Battery: ...
@@ -133,6 +134,15 @@ class AdbPhone:
         self.guard.check("copy a file from the phone")
         local.parent.mkdir(parents=True, exist_ok=True)
         self._run(["pull", remote, str(local)], timeout=300)
+
+    def reverse_port(self, device_port: int, host_port: int) -> str:
+        """`adb reverse`: a port on the phone that reaches this laptop.
+
+        The space's browser uses it to download a clip from the laptop. A LAN address would go
+        through the space's VPN (the proxy cannot reach 192.168.x.x); device loopback does not.
+        """
+        self.guard.check("open a port back to the laptop")
+        return self._run(["reverse", f"tcp:{device_port}", f"tcp:{host_port}"], timeout=30)
 
     def screencap(self, local: Path) -> None:
         self.guard.check("take a screenshot")

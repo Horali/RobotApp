@@ -11,6 +11,7 @@ import json
 import re
 import shutil
 import subprocess
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -56,11 +57,22 @@ def video_length(path: Path) -> float | None:
 
 
 def push_video(phone: Phone, local: Path, user_id: int, name: str | None = None) -> str:
-    """Copy the clip into the space's gallery and index it. Returns the remote path."""
+    """Copy the clip into the space's gallery and index it. Returns the remote path.
+
+    The owner user is an ordinary `adb push`. **A secondary user is not**: SELinux lets the adb
+    shell write `/storage/emulated/0` but refuses `/storage/emulated/11` ("Permission denied",
+    measured 2026-11-20 - step 1 only ever pushed into user 0, so this never showed). The way in is
+    the space's own browser: the laptop serves the file, Chrome in that user downloads it into that
+    user's Downloads (its own storage), and the space's media store indexes it.
+    """
     if not local.exists():
         raise FileNotFoundError(f"clip not found: {local}")
     stamp = datetime.now(WIB).strftime("%Y%m%d-%H%M%S")
     remote_name = name or f"robot-{stamp}.mp4"
+
+    if user_id != 0:
+        return _push_via_browser(phone, local, user_id, remote_name)
+
     remote_dir = f"{media_store(user_id)}/{ROBOT_FOLDER}"
     phone.shell(f"mkdir -p {remote_dir}")
     remote = f"{remote_dir}/{remote_name}"
@@ -75,6 +87,97 @@ def push_video(phone: Phone, local: Path, user_id: int, name: str | None = None)
     except Exception:  # noqa: BLE001 - the push already indexes it on this phone; the broadcast can hang
         pass
     return remote
+
+
+def _serve_file(path: Path, seconds: float = 180.0, host_ip: str = ""):
+    """Serve one file over HTTP with Content-Disposition: attachment, so Chrome saves it rather than plays it.
+
+    A context manager, like vpn.serve_once: yields the URL while the server runs in a thread.
+    """
+    import contextlib
+    import http.server
+    import threading
+    import urllib.parse
+
+    @contextlib.contextmanager
+    def serve():
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self) -> None:  # noqa: N802 - http.server naming
+                body = path.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "video/mp4")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Content-Disposition", f'attachment; filename="{path.name}"')
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args) -> None:  # never log paths
+                pass
+
+        server = http.server.ThreadingHTTPServer(("0.0.0.0", 0), Handler)
+        server.timeout = seconds
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            host = host_ip or _lan_ip()
+            yield f"http://{host}:{server.server_address[1]}/{urllib.parse.quote(path.name)}"
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    return serve()
+
+
+def _lan_ip() -> str:
+    """The laptop's address on the same network as the phone."""
+    import socket
+
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.connect(("192.168.1.1", 80))
+        return probe.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+    finally:
+        try:
+            probe.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _push_via_browser(phone: Phone, local: Path, user_id: int, remote_name: str, wait_s: float = 120.0) -> str:
+    """Chrome in the space downloads the clip, then the space's media store indexes it.
+
+    The file is served on a laptop port and reached through `adb reverse` (device loopback). A LAN
+    address would travel through the space's VPN, and the proxy cannot reach 192.168.x.x.
+    """
+    download = f"/storage/emulated/{user_id}/Download/{remote_name}"
+    with _serve_file(local) as url:
+        port = int(url.rsplit(":", 1)[1].split("/")[0])
+        try:
+            phone.reverse_port(port, port)
+            url = f"http://127.0.0.1:{port}/{remote_name}"
+        except Exception:  # noqa: BLE001 - a phone without reverse still tries the LAN address
+            pass
+        phone.shell(
+            f"am start --user {user_id} -a android.intent.action.VIEW -d '{url}' -p com.android.chrome",
+            timeout=30,
+        )
+        # Chrome writes the download itself; the media store picks it up (or a scan makes it)
+        deadline = time.monotonic() + wait_s
+        while time.monotonic() < deadline:
+            if find_media_uri(phone, user_id, download):
+                return download
+            time.sleep(3.0)
+            try:
+                phone.shell(
+                    f"am broadcast --user {user_id} -a android.intent.action.MEDIA_SCANNER_SCAN_FILE "
+                    f"-d file://{download}",
+                    timeout=15,
+                )
+            except Exception:  # noqa: BLE001 - the scan is a nudge, not a requirement
+                pass
+    raise FileNotFoundError(f"the clip never reached the space's Downloads: {download}")
 
 
 def find_media_uri(phone: Phone, user_id: int, remote: str) -> str | None:

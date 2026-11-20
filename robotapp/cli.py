@@ -715,6 +715,12 @@ def cmd_sitting(args: argparse.Namespace, settings: Settings) -> int:
 
     body = json.loads(Path(args.file).read_text(encoding="utf-8") if args.file else sys.stdin.read())
     sitting = Sitting.from_json(body)
+    if sitting.user is None:
+        # Never guess the space. Without it the sitting runs in whichever user is in front - the
+        # owner user, i.e. the user's own accounts (found on the phone, 2026-11-20: a throwaway's
+        # Instagram post was one step away from landing on the user's personal account).
+        emit({"t": "error", "reason": "the sitting does not say which user (space) to post in: refusing to guess"})
+        return EXIT_ERROR
     phone, _ = build(args, settings)
     screen = screen_for(phone, settings)
     chameleon = Chameleon(settings.chameleon_url, settings.chameleon_token)

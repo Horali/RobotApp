@@ -54,3 +54,22 @@ def test_another_protocol_version_is_refused() -> None:
 def test_a_sitting_without_a_job_id_is_refused() -> None:
     with pytest.raises(RobotError):
         Sitting.from_json({**BODY, "job_id": ""})
+
+
+def test_a_sitting_without_a_user_is_refused(tmp_path, capsys) -> None:
+    """Never guess the space. On 2026-11-20 a sitting with no user ran in whichever user was in front
+    - the owner user, the user's own Instagram - one step from posting there."""
+    import argparse
+    import json
+
+    from robotapp.cli import EXIT_ERROR, cmd_sitting
+    from robotapp.config import Settings
+
+    body = {k: v for k, v in BODY.items() if k != "user"}
+    path = tmp_path / "sitting.json"
+    path.write_text(json.dumps(body), encoding="utf-8")
+    args = argparse.Namespace(file=str(path), dry_run=True, fake=True, json=False)
+    settings = Settings(data_dir=tmp_path / "data")
+    assert cmd_sitting(args, settings) == EXIT_ERROR
+    out = capsys.readouterr().out
+    assert "refusing to guess" in out

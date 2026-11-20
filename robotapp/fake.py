@@ -96,6 +96,11 @@ class FakePhone:
         self.guard.check("copy a file to the phone")
         self.pushes.append((str(local), remote))
 
+    def reverse_port(self, device_port: int, host_port: int) -> str:
+        self.guard.check("open a port back to the laptop")
+        self.commands.append(f"reverse tcp:{device_port} tcp:{host_port}")
+        return ""
+
     def pull(self, remote: str, local: Path) -> None:
         self.guard.check("copy a file from the phone")
         local.parent.mkdir(parents=True, exist_ok=True)
