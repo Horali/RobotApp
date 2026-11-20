@@ -30,7 +30,13 @@ INSTAGRAM = "com.instagram.android"
 
 # The feed's own tabs mark the feed; "Search" is on the nav bar of every screen (the scripted test
 # caught the flow believing it was home while still on the profile).
-HOME = Signature("instagram home", any_of=("For you", "Following"))
+HOME = Signature(
+    "instagram home",
+    # 456 on this phone shows the feed without a "For you" label: its markers are the home feed's
+    # own description and the stories tray (measured 2026-11-20; "For you"/"Following" kept for
+    # older builds).
+    any_of=("For you", "Following", "Home Feed", "Your story", "reels tray container"),
+)
 LOGIN = Signature("instagram login", any_of=("Log in", "Log in with Facebook", "Sign up"))
 PROFILE = Signature("instagram profile", any_of=("Edit profile", "Followers", "Following", "Posts"))
 REEL_CAMERA = Signature("instagram reel camera", any_of=("REEL", "POST", "Preview", "Gallery"))

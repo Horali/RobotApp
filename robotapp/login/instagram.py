@@ -25,7 +25,7 @@ from ..ui import Element, Screen, ScreenTimeout, Signature, find, find_exact, wa
 
 log = logging.getLogger("robotapp")
 
-HOME = Signature("instagram home", any_of=("For you", "Following"))
+HOME = Signature("instagram home", any_of=("For you", "Following", "Home Feed", "Your story"))
 LOGIN = Signature("instagram login", any_of=("Log in", "Log in with Facebook", "Sign up"))
 # Never a launcher word: "Search" is on the phone's home screen, which made the flow race ahead of a
 # slow first launch (the real login run, 2026-11-19 10:37 WIB).

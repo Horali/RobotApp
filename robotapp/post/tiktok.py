@@ -79,7 +79,7 @@ class TikTokPoster:
             result.handle = self.handle
             self._step(3, "pick video")
             self._open_editor(spec)
-            wait_for(self.screen, EDITOR, 60)
+            self._wait_past_play(EDITOR, 60)
             self._step(4, "editor")
             self._add_sound_if_asked(spec)
             self._tap_exact("Next")
@@ -291,8 +291,28 @@ class TikTokPoster:
             self._tap_desc("Create")
         wait_for(self.screen, CAMERA, 30)
         self._open_gallery()
-        wait_for(self.screen, GALLERY, 30)
+        self._wait_past_play(GALLERY, 30)
         self._pick_video(spec)
+
+    def _wait_past_play(self, signature: Signature, timeout_s: float) -> None:
+        """Wait for `signature`, dismissing Play's 'TikTok needs additional files' sheet whenever it appears.
+
+        The sheet came back mid-flow on 2026-11-20 and covered the editor for the whole 60 s wait;
+        the tap that dismisses it is the only way forward (the app is installed from the APK, so Play
+        keeps offering the extra modules).
+        """
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            elements = self.screen.elements()
+            play = next((e for e in elements if e.enabled and "Dismiss" in (e.desc or "")), None)
+            if play is not None:
+                self.screen.tap(play)
+                time.sleep(2.0)
+                continue
+            if signature.matches(elements):
+                return
+            time.sleep(1.5)
+        raise ScreenTimeout(f"waited {timeout_s:.0f}s for '{signature.name}'")
 
     def _share_video(self, spec: PostSpec) -> bool:
         """Send the clip to TikTok's share activity; tap its Video button. False when that path is not there."""
