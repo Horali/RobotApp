@@ -265,8 +265,29 @@ class TikTokPoster:
         """
         if spec.media_uri and self._share_video(spec):
             return
+        # The share route can leave its own sheet on screen (measured 2026-11-20: the camera route
+        # then looked for the create button inside the share sheet and failed). Start from the feed.
+        self.phone.force_stop(self.package, self.user)
+        time.sleep(1.0)
+        self.phone.start_app(self.package, self.user)
+        time.sleep(8.0)
+        for _ in range(25):
+            elements = self.screen.elements()
+            play_sheet = next((e for e in elements if e.enabled and "Dismiss" in (e.desc or "")), None)
+            if play_sheet is not None:
+                self.screen.tap(play_sheet)
+                time.sleep(2.0)
+                continue
+            if HOME.matches(elements):
+                break
+            time.sleep(1.0)
         self._step(3, "create")
-        if not self._tap_nav("Create"):
+        tapped = False
+        for label in ("Create", "Create a video", "+"):
+            if self._tap_nav(label):
+                tapped = True
+                break
+        if not tapped:
             self._tap_desc("Create")
         wait_for(self.screen, CAMERA, 30)
         self._open_gallery()

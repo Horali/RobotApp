@@ -253,14 +253,13 @@ class InstagramPoster:
         create = None
         for element in self.screen.elements():
             desc = (element.desc or "").strip()
+            text = (element.text or "").strip()
             if not element.enabled:
                 continue
-            if desc.startswith("Create a post, story, reel"):
-                create = element          # the top-left action (this version)
-                break
-            if (element.says("Create") or desc == "Create a new post" or element.text.strip() == "+") \
-                    and element.bounds[1] >= height * 0.85:
-                create = element          # the bottom bar's + (older builds)
+            top_or_bottom = element.bounds[1] < height * 0.25 or element.bounds[1] >= height * 0.85
+            if top_or_bottom and (desc.startswith("Create a post, story, reel") or desc == "Create"
+                                  or text == "Create" or text == "+"):
+                create = element
                 break
         if create is None:
             raise RuntimeError("no create button (neither the top-left action nor a bottom-bar +)")
