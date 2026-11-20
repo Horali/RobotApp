@@ -5,10 +5,21 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-21, 04:00 WIB. **This session's handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**
-(state, the two blockers, the exact steps) and the copy-paste prompt
+Last updated: 2026-11-21, 04:55 WIB. **This session's handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**
+(state, the two blockers, the exact steps, and the 04:55 update at its end) and the copy-paste prompt
 [`docs/next-session-prompt.md`](docs/next-session-prompt.md). The three first posts are queued (Instagram,
 TikTok, **YouTube** — the user insists YouTube is in scope) and due at 06:00 WIB.
+
+**04:55 update (nothing ran: the phone's Wi-Fi went down at 04:52).** The **TikTok 47.9.1 bundle is on the
+laptop and verified** — `data/apk/musically-47.9.1-bundle.apkm`, 332 MB, base + 85 splits, signer
+`9041803e…` on the base and on three splits, same versionCode as the installed base, so
+`adb install-multiple -r --user 11` is an **in-place update** (the @vtubersclips70 login should survive; no
+Gmail code expected). The **Play-sheet fix is in** (`d2ff744`, pushed): the sheet is found by its own words
+or by Play owning the screen, its control (text, "Dismiss update dialog") is waited for, and a sheet that
+returns 4× stops before the press naming the bundle fix. 137 tests pass. The phone was unreachable
+(192.168.1.8:5555 dead), so **no sitting ran today and nothing on the phone was touched** — the three rows
+are still queued and unclaimed. Tomorrow: doctor → Instagram (closes 09:00) → TikTok (bundle if needed) →
+YouTube (channel stays "Horali Cript": the user chose post as is).
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
