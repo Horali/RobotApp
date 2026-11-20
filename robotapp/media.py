@@ -89,15 +89,19 @@ def push_video(phone: Phone, local: Path, user_id: int, name: str | None = None)
     return remote
 
 
-def _serve_file(path: Path, seconds: float = 180.0, host_ip: str = ""):
+def _serve_file(path: Path, filename: str = "", seconds: float = 180.0, host_ip: str = ""):
     """Serve one file over HTTP with Content-Disposition: attachment, so Chrome saves it rather than plays it.
 
-    A context manager, like vpn.serve_once: yields the URL while the server runs in a thread.
+    ``filename`` is the name the browser saves it under - it must be the robot's name, because the
+    media store is then searched by it (Chrome would otherwise keep the laptop's file name, and the
+    robot looked for its own: the download worked and the lookup failed, 2026-11-20).
     """
     import contextlib
     import http.server
     import threading
     import urllib.parse
+
+    saved_as = filename or path.name
 
     @contextlib.contextmanager
     def serve():
@@ -107,7 +111,7 @@ def _serve_file(path: Path, seconds: float = 180.0, host_ip: str = ""):
                 self.send_response(200)
                 self.send_header("Content-Type", "video/mp4")
                 self.send_header("Content-Length", str(len(body)))
-                self.send_header("Content-Disposition", f'attachment; filename="{path.name}"')
+                self.send_header("Content-Disposition", f'attachment; filename="{saved_as}"')
                 self.end_headers()
                 self.wfile.write(body)
 
@@ -120,7 +124,7 @@ def _serve_file(path: Path, seconds: float = 180.0, host_ip: str = ""):
         thread.start()
         try:
             host = host_ip or _lan_ip()
-            yield f"http://{host}:{server.server_address[1]}/{urllib.parse.quote(path.name)}"
+            yield f"http://{host}:{server.server_address[1]}/{urllib.parse.quote(saved_as)}"
         finally:
             server.shutdown()
             server.server_close()
@@ -152,7 +156,7 @@ def _push_via_browser(phone: Phone, local: Path, user_id: int, remote_name: str,
     address would travel through the space's VPN, and the proxy cannot reach 192.168.x.x.
     """
     download = f"/storage/emulated/{user_id}/Download/{remote_name}"
-    with _serve_file(local) as url:
+    with _serve_file(local, filename=remote_name) as url:
         port = int(url.rsplit(":", 1)[1].split("/")[0])
         try:
             phone.reverse_port(port, port)
