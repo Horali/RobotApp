@@ -239,6 +239,12 @@ class TikTokLogin:
         while time.monotonic() < deadline:
             time.sleep(1.5)
             elements = self.screen.elements()
+            # Play's "TikTok needs to download additional files" sheet sits over the app until dismissed
+            play_sheet = next((e for e in elements if e.enabled and "Dismiss" in (e.desc or "")), None)
+            if play_sheet is not None:
+                self.screen.tap(play_sheet)
+                idle = 0
+                continue
             for label in ("Skip", "Not now", "Don't allow", "Cancel", "Agree and continue"):
                 button = find_exact(elements, label)
                 if button is not None:

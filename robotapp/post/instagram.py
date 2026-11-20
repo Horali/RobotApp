@@ -238,23 +238,39 @@ class InstagramPoster:
         return False
 
     def _open_reel_camera(self) -> None:
-        """Home first (a profile's own Reels tab also matches 'Reel'), then + and its REEL tab."""
+        """Home first (a profile's own Reels tab also matches 'Reel'), then create and its REEL tab.
+
+        Instagram 456 on this phone has **no "+" in the bottom bar**: the create action is the
+        top-left button, described "Create a post, story, reel or live video" (measured 2026-11-20).
+        Both placements are tried, so an older build keeps working.
+        """
         for _ in range(4):
             if HOME.matches(self.screen.elements()):
                 break
             self.screen.press_back()
             time.sleep(1.0)
         width, height = self.screen.size()
+        create = None
         for element in self.screen.elements():
-            if element.enabled and (element.says("Create") or element.desc.strip() == "Create a new post"
-                                    or element.text.strip() == "+") and element.bounds[1] >= height * 0.85:
-                self.screen.tap(element)
-                time.sleep(2.0)
-                reel = find_exact(self.screen.elements(), "REEL") or find(self.screen.elements(), "Reel")
-                if reel is not None:
-                    self.screen.tap(reel)
-                    return
-        raise RuntimeError("the create (+) button is not on the bottom bar")
+            desc = (element.desc or "").strip()
+            if not element.enabled:
+                continue
+            if desc.startswith("Create a post, story, reel"):
+                create = element          # the top-left action (this version)
+                break
+            if (element.says("Create") or desc == "Create a new post" or element.text.strip() == "+") \
+                    and element.bounds[1] >= height * 0.85:
+                create = element          # the bottom bar's + (older builds)
+                break
+        if create is None:
+            raise RuntimeError("no create button (neither the top-left action nor a bottom-bar +)")
+        self.screen.tap(create)
+        time.sleep(2.0)
+        reel = find_exact(self.screen.elements(), "REEL") or find(self.screen.elements(), "Reel")
+        if reel is not None:
+            self.screen.tap(reel)
+            return
+        raise RuntimeError("the create sheet has no REEL tab")
 
     def _open_gallery(self) -> None:
         """The gallery button sits at the bottom left of the camera."""

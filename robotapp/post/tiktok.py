@@ -169,6 +169,16 @@ class TikTokPoster:
         deadline = time.monotonic() + 60
         while time.monotonic() < deadline:
             elements = self.screen.elements()
+            # Play can throw its "TikTok needs to download additional files" sheet over the app
+            # (measured 2026-11-20: it covered the screen for the whole 60 s wait). Dismiss it.
+            play_sheet = next(
+                (e for e in elements if e.enabled and "Dismiss" in (e.desc or "")), None
+            )
+            if play_sheet is not None:
+                self.screen.tap(play_sheet)
+                time.sleep(2.0)
+                stable = 0
+                continue
             if HOME.matches(elements) and self._in_front():
                 stable += 1
                 if stable >= 2:
