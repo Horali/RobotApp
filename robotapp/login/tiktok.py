@@ -26,6 +26,11 @@ from ..ui import Element, Screen, ScreenTimeout, Signature, find, find_exact, wa
 log = logging.getLogger("robotapp")
 
 HOME = Signature("tiktok home", any_of=("For You", "Following", "Inbox"))
+# musically in a fresh space opens straight on its login landing (measured 2026-11-21) - no guest
+# feed exists before the first login, so the flow must take this screen as a valid start too.
+LANDING = Signature(
+    "tiktok login landing", any_of=("Log in to TikTok", "Use phone / email / username", "Continue with Google")
+)
 LOGIN_CHOICE = Signature("login choice", any_of=("Use phone / email / username", "Continue with Google", "Log in"))
 EMAIL_FORM = Signature("email form", any_of=("Email / Username", "Email or username", "Log in with email"))
 PASSWORD_FORM = Signature("password form", any_of=("Password", "Forgot password"))
@@ -106,15 +111,29 @@ class TikTokLogin:
         self._birthday()
         self._first_run()
 
-        elements = wait_for(self.screen, HOME, 45)
-        self._guard_screen(elements, "the TikTok home screen")
-        self._tap_profile_tab()
-        time.sleep(1.5)
-        elements = self.screen.elements()
-        if find(elements, "Log in") is not None:
-            self.screen.tap(find(elements, "Log in"))  # type: ignore[arg-type]
-        wait_for(self.screen, LOGIN_CHOICE, 30)
-        self._tap_any(("Use phone / email / username", "Log in with email"))
+        # Either the app reaches its guest feed (then the login hides behind the Profile tab), or it
+        # opens on the login landing itself, whose "Use phone / email / username" is the way in.
+        deadline = time.monotonic() + 45
+        elements: list[Element] = []
+        while time.monotonic() < deadline:
+            elements = self.screen.elements()
+            if HOME.matches(elements) or LANDING.matches(elements):
+                break
+            time.sleep(1.5)
+        else:
+            raise ScreenTimeout("waited 45 s for the feed or the login landing")
+        self._guard_screen(elements, "the TikTok start screen")
+
+        if LANDING.matches(elements) and not HOME.matches(elements):
+            self._tap_any(("Use phone / email / username", "Log in with email"))
+        else:
+            self._tap_profile_tab()
+            time.sleep(1.5)
+            elements = self.screen.elements()
+            if find(elements, "Log in") is not None:
+                self.screen.tap(find(elements, "Log in"))  # type: ignore[arg-type]
+            wait_for(self.screen, LOGIN_CHOICE, 30)
+            self._tap_any(("Use phone / email / username", "Log in with email"))
         wait_for(self.screen, EMAIL_FORM, 30)
         self._tap_any(("Email / Username", "Email or username"))
         time.sleep(1.0)

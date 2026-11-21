@@ -2,9 +2,9 @@
 
 One class talks to the real phone (`AdbPhone`); one stands in for it in tests (`FakePhone`, in fake.py). Both
 implement `Phone`, and every phone method asks the `WindowGuard` first, so the 06:00-10:00 rule holds for every
-caller — a job, the CLI, or a test that forgot to check.
+caller â€” a job, the CLI, or a test that forgot to check.
 
-adb output is kept short on purpose (§11: "keep adb output short"): helpers return what the caller needs, not
+adb output is kept short on purpose (Â§11: "keep adb output short"): helpers return what the caller needs, not
 whole UI dumps.
 """
 
@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -40,7 +41,7 @@ class Battery:
 
     @property
     def ok(self) -> bool:
-        """PLAN §6.4 step 0: at least 30 % and below 42 °C before a sitting."""
+        """PLAN Â§6.4 step 0: at least 30 % and below 42 Â°C before a sitting."""
         return self.level >= 30 and self.temperature_c < 42.0
 
 
@@ -238,10 +239,23 @@ class AdbPhone:
         The component is quoted: YouTube's is `com.google.android.youtube/.app.honeycomb.Shell$HomeActivity`,
         and this phone's shell expands `$HomeActivity` away, so `am start` answered "Activity class ...
         Shell does not exist" and the app never opened (measured 2026-11-21).
+
+        A user that has just been switched to has no activities registered for a second or two, so
+        `resolve-activity` answers nothing and the app looked "not installed" (a login in a fresh space
+        failed that way, 2026-11-21). Wait for it, nudging with `pm install-existing`.
         """
         self.guard.check("open an app")
-        out = self.shell(f"cmd package resolve-activity --brief --user {user} {package}", timeout=30)
-        component = next((line.strip() for line in out.splitlines() if "/" in line and " " not in line.strip()), "")
+        component = ""
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline and not component:
+            out = self.shell(f"cmd package resolve-activity --brief --user {user} {package}", timeout=30)
+            component = next((line.strip() for line in out.splitlines() if "/" in line and " " not in line.strip()), "")
+            if not component:
+                try:
+                    self.shell(f"pm install-existing --user {user} {package}", timeout=30)
+                except Exception:  # noqa: BLE001 - the nudge is best effort
+                    pass
+                time.sleep(2.0)
         if not component:
             raise RuntimeError(f"{package} is not installed in user {user}")
         return self.shell(f"am start --user {user} -n '{component}'", timeout=30).strip()
