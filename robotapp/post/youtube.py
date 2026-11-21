@@ -42,6 +42,13 @@ UPLOADED = Signature("youtube uploaded", any_of=("Upload complete", "Short poste
 SHARE_SHEET = Signature("share sheet", any_of=("Copy link", "Share to", "Copy", "Links"))
 PROFILE = Signature("youtube you", any_of=("View channel", "Your videos", "Switch account", "Your channel"))
 _NEXT_OR_DETAILS = Signature("youtube editor or details", any_of=("Next", "Add details", "Upload Short"))
+# The Create tab sometimes opens the Shorts camera and sometimes the picker itself (measured
+# 2026-11-21: the same tap did both within an hour), so either one is a valid way in.
+_CAMERA_OR_PICKER = Signature(
+    "youtube camera or picker",
+    any_of=("Import video from photo library", "Record button", "Close camera",
+            "Create from gallery", "Recents", "Create video"),
+)
 
 
 class YouTubePoster:
@@ -77,23 +84,33 @@ class YouTubePoster:
             result.handle = self.channel
             self._step(3, "create")
             self._open_create()
-            wait_for(self.screen, SHORTS_CAMERA, 30)
+            elements = wait_for(self.screen, _CAMERA_OR_PICKER, 30)
+            self._clear_draft_picker()
             self._step(4, "pick video")
-            self._open_gallery()
+            if not GALLERY.matches(self.screen.elements()):
+                self._open_gallery()
             wait_for(self.screen, GALLERY, 30)
             self._pick_video(spec)
             self._step(5, "next")
-            # Picker -> editor -> details: this build shows a Next on each, and the editor keeps the
-            # full length unless the trimmer is touched. Tap Next until the details screen is up.
-            for _ in range(3):
-                elements = wait_for(self.screen, _NEXT_OR_DETAILS, 60)
+            # Picker -> editor -> details: this build shows a Next on each, and the first Shorts
+            # editor visit asks for consent ("I agree" / "No thanks") before the editor appears
+            # (measured 2026-11-21). Tap Next until the details screen is up.
+            deadline = time.monotonic() + 120
+            while time.monotonic() < deadline:
+                elements = self.screen.elements()
                 if DETAILS.matches(elements):
                     break
+                agree = find_exact(elements, "I agree")
+                if agree is not None:
+                    self.screen.tap(agree)
+                    time.sleep(3.0)
+                    continue
                 button = find_exact(elements, "Next")
-                if button is None:
-                    break
-                self.screen.tap(button)
-                time.sleep(3.0)
+                if button is not None:
+                    self.screen.tap(button)
+                    time.sleep(3.0)
+                    continue
+                time.sleep(1.5)
             wait_for(self.screen, DETAILS, 60)
             self._step(6, "title")
             self._write_title(spec)
@@ -215,18 +232,28 @@ class YouTubePoster:
         self._open_you()
         elements = self.screen.elements()
         height = self.screen.size()[1]
-        skipped = {"view channel", "get premium", "accounts", "notifications", "search", "settings"}
+        skipped = {"view channel", "get premium", "accounts", "notifications", "search", "settings", "you"}
         name = None
+        # The You tab lists "View channel" and then the channel's own name right after it, which is the
+        # only reliable way to tell the two apart from the menu items.
+        seen_marker = False
         for element in elements:
             text = (element.text or "").strip()
-            if not text or element.bounds[1] < 100 or element.bounds[1] > height * 0.30:
+            label = text or (element.desc or "").strip()
+            if not label:
                 continue
-            if text.lower() in skipped or "@" in text:
+            if not seen_marker:
+                if label.lower() == "view channel":
+                    seen_marker = True
                 continue
-            if re.fullmatch(r"\d{1,2}:\d{2}(\s*[AP]M)?", text):   # the status bar's clock
+            if label.lower() in skipped or "@" in label:
                 continue
-            if 2 <= len(text) <= 40:
-                name = text
+            if element.bounds[1] < 100 or element.bounds[1] > height * 0.60:
+                continue
+            if re.fullmatch(r"\d{1,2}:\d{2}(\s*[AP]M)?", label):   # the status bar's clock
+                continue
+            if 2 <= len(label) <= 40:
+                name = label          # on this build the channel's name is a content-desc, not a text
                 break
         # Back to the feed by tapping the bottom Home tab: Back here would leave the app.
         for element in elements:
@@ -271,12 +298,37 @@ class YouTubePoster:
             return
         self.screen.tap(create)
         time.sleep(3.0)
-        # Some builds then show a sheet ("Create a Short" / "Upload a video"); this one goes straight
-        # to the camera, so a missing sheet is not an error.
+        # This build's Create can open a chooser with two big tabs - "Drafts" and "Create video" -
+        # and the gallery grid underneath it. "Create video" on this build leads to the AI creation
+        # screen, while the grid is already the picker (measured 2026-11-21), so it is tapped only when
+        # no clip is on screen.
         elements = self.screen.elements()
-        short = find(elements, "Create a Short") or find(elements, "Upload a video")
-        if short is not None and SHORTS_CAMERA.matches(elements) is False:
-            self.screen.tap(short)
+        has_clips = any((e.desc or e.text or "").strip().lower().endswith(".mp4") for e in elements)
+        chooser = find_exact(elements, "Create video") or find_exact(elements, "Create a Short")
+        if chooser is not None and not has_clips:
+            self.screen.tap(chooser)
+            time.sleep(3.0)
+        # A "Back / Continue" prompt can sit between Create and the picker (measured 2026-11-21).
+        for _ in range(3):
+            elements = self.screen.elements()
+            cont = find_exact(elements, "Continue")
+            if cont is None:
+                break
+            self.screen.tap(cont)
+            time.sleep(3.0)
+
+    def _clear_draft_picker(self) -> None:
+        """Leave the draft list that an interrupted run can leave behind; it blocks a new Short.
+
+        Measured 2026-11-21: after a stopped run, Create can land on the drafts ("Edited 50 minutes
+        ago") instead of the camera, and every later step then waits for a screen that never comes.
+        """
+        for _ in range(3):
+            elements = self.screen.elements()
+            close = find_exact(elements, "Close draft picker") or find(elements, "Close draft picker")
+            if close is None:
+                return
+            self.screen.tap(close)
             time.sleep(2.0)
 
     def _open_gallery(self) -> None:
@@ -291,6 +343,8 @@ class YouTubePoster:
         self.phone.tap(int(width * 0.10), int(height * 0.73))
 
     def _pick_video(self, spec: PostSpec) -> None:
+        # The tiles are the gallery itself; "Create from gallery" in that header leads to YouTube's AI
+        # creation page (measured 2026-11-21), so it must not be tapped.
         elements = self.screen.elements()
         self._assert_length(elements, spec)
         width, height = self.screen.size()
@@ -426,12 +480,18 @@ class YouTubePoster:
         return None
 
     def _open_you(self) -> None:
-        elements = self.screen.elements()
-        you = next((e for e in elements if e.enabled and (e.text.strip() == "You" or "You" in (e.desc or ""))), None)
-        if you is not None:
-            self.screen.tap(you)
-            time.sleep(2.5)
-            return
+        """The bottom bar's "You" tab (exact label in the bottom bar).
+
+        A substring match is wrong here: the top-left logo's description is "YouTube", which contains
+        "You", and tapping it opens Search (measured 2026-11-21).
+        """
+        height = self.screen.size()[1]
+        for element in self.screen.elements():
+            label = (element.desc or element.text or "").strip()
+            if label == "You" and element.bounds[1] > height * 0.85:
+                self.screen.tap(element)
+                time.sleep(2.5)
+                return
         raise RuntimeError("the 'You' tab is not on the bottom bar")
 
     def _pin_comment(self, spec: PostSpec) -> None:

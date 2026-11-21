@@ -160,6 +160,7 @@ def _push_via_browser(phone: Phone, local: Path, user_id: int, remote_name: str,
     download = f"/storage/emulated/{user_id}/Download/{remote_name}"
     if find_media_uri(phone, user_id, download):
         return download                      # a previous attempt already delivered it
+    intent = f"am start --user {user_id} -a android.intent.action.VIEW -d '{{url}}' -p com.android.chrome"
     with _serve_file(local, filename=remote_name) as url:
         port = int(url.rsplit(":", 1)[1].split("/")[0])
         try:
@@ -167,16 +168,20 @@ def _push_via_browser(phone: Phone, local: Path, user_id: int, remote_name: str,
             url = f"http://127.0.0.1:{port}/{remote_name}"
         except Exception:  # noqa: BLE001 - a phone without reverse still tries the LAN address
             pass
-        phone.shell(
-            f"am start --user {user_id} -a android.intent.action.VIEW -d '{url}' -p com.android.chrome",
-            timeout=30,
-        )
-        # Chrome writes the download itself; the media store picks it up (or a scan makes it)
-        deadline = time.monotonic() + wait_s
+        phone.shell(intent.format(url=url), timeout=30)
+        # Chrome writes the download itself; the media store picks it up (or a scan makes it).
+        # Measured 2026-11-21: Chrome sometimes sits on a stale tab and never starts a download at all,
+        # while the same URL works when it is opened again - so the intent is repeated once, halfway.
+        start = time.monotonic()
+        deadline = start + wait_s
+        retried = False
         while time.monotonic() < deadline:
             time.sleep(5.0)
             if find_media_uri(phone, user_id, download):
                 return download
+            if not retried and time.monotonic() - start > wait_s / 2:
+                retried = True
+                phone.shell(intent.format(url=url), timeout=30)
             try:
                 phone.shell(
                     f"am broadcast --user {user_id} -a android.intent.action.MEDIA_SCANNER_SCAN_FILE "

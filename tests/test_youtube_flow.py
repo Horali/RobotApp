@@ -39,8 +39,8 @@ SCREENS = {
     "you": [el("View channel", bounds=(24, 300, 500, 360)), el("Horali Cript", bounds=(24, 360, 500, 420)),
             el("Get Premium"), el("Accounts"), el("Notifications"), el("Search"), el("Settings", bounds=(24, 1500, 500, 1560)),
             *NAV],
-    "you_signed_out": [el("View channel"), el("Sign in", bounds=(300, 1200, 800, 1300), clickable=True),
-                       el("Accounts"), *NAV],
+    "you_signed_out": [el("Sign in", bounds=(300, 1200, 800, 1300), clickable=True),
+                       el("Accounts"), el("Settings"), *NAV],
     "camera": [
         el("", desc="Deselect", bounds=(456, 1729, 624, 1849), clickable=True),
         el("", desc="Record button", bounds=(431, 1681, 647, 1897), clickable=True),
