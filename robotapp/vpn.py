@@ -94,13 +94,13 @@ def build_config(proxy: Proxy, dns_server: str = "1.1.1.1") -> dict:
         ],
         "outbounds": [outbound],
         "route": {
-            # All UDP refused at once. The quic/protocol rule below never matched: protocol rules need
-            # packet sniffing, which this config never turned on, so the app's UDP fell through to the
-            # proxy outbound - which speaks HTTP (TCP CONNECT) and cannot carry UDP. SFA's own log said
-            # "UDP is not supported by outbound: proxy" and TikTok's login called itself "No internet
-            # connection" (2026-11-22). A refused port makes apps fall back to TCP; a black hole makes
-            # them believe the network is down. DNS is unaffected: it rides HTTPS/TCP via the proxy.
-            "rules": [{"network": "udp", "action": "reject"}],
+            # Measured 2026-11-22: a `{"network": "udp", "action": "reject"}` rule - which looked like
+            # the correct way to refuse UDP cleanly - BROKE the tunnel's TCP in one space (every page
+            # ERR_CONNECTION_REFUSED until the rule was rolled back; SFA 1.14). The old quic rule never
+            # matches (protocol rules need sniffing, which this config never enables), so UDP falls
+            # through to the proxy outbound and fails with a logged error instead. That is the state
+            # every proven flow has run under - keep it until the UDP question is understood.
+            "rules": [{"protocol": "quic", "action": "reject"}],
             "final": "proxy",
             "auto_detect_interface": True,
         },
