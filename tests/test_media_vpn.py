@@ -88,7 +88,8 @@ def test_an_http_proxy_becomes_an_http_outbound() -> None:
     assert outbound["username"] == "user1"
     assert outbound["password"] == "proxy-pass"  # the config must carry it: sing-box needs it
     assert config["route"]["final"] == "proxy"
-    assert any(rule.get("protocol") == "quic" for rule in config["route"]["rules"])
+    assert any(rule.get("network") == "udp" and rule.get("action") == "reject"
+               for rule in config["route"]["rules"])
 
 
 def test_a_socks_proxy_becomes_a_socks_outbound() -> None:
