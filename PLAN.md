@@ -5,27 +5,24 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-22, 03:00 WIB. **The root cause of every login failure is found and proven: the
-brand proxies are TCP-only.** Both `us-ps-1-virginia` and `us-ps-2-newyork` accept SOCKS5 greetings but
-refuse UDP ASSOCIATE (reply `0x07`, measured 2026-11-22), and an HTTP outbound cannot carry UDP at all.
-TikTok's app reaches its CDN fine over TCP (its feed, Chrome, everything) but its **login** flow will not
-proceed without UDP/QUIC - it answers "No internet connection" in any tunnel whose UDP is dead, on either
-proxy, while the same submit works in a browser. The Nov 19 login worked when the outbound was socks5,
-i.e. the proxy must then have carried UDP; that capability is gone. All three platforms' sign-ins
-(Instagram "unexpected error", Google "Something went wrong", TikTok "no internet") are consistent with
-their QUIC-first clients. The fix on the phone's side is in and pushed (`52fd57f`): the config now
-**rejects all UDP cleanly** (a route `network:udp` rule; the old `protocol:quic` rule never matched - it
-needs sniffing, which the config never enabled, so UDP fell through to the HTTP outbound and died as
-"UDP is not supported", visible in SFA's own log). A clean refusal lets TCP-only flows work perfectly;
-what it cannot do is give UDP to apps that require it. **The decision that remains is a proxy with UDP
-support (SOCKS5 UDP ASSOCIATE) for the brand spaces.** Also measured tonight: newyork's exit cannot
-reach Instagram/YouTube/TikTok/Google **at all from the phone's tunnel** while the same sites load fine
-from the laptop through the same proxy and fine from the phone through virginia - both brand spaces are
-therefore on virginia for now (a linking cluster of four brands, the plan's §3.4 risk, accepted by the
-user's "use the existing proxy"). Spaces built and leak-green: user 10 "Speed Clips", user 12 "Timmy
-Clips" (both America/New_York), user 11 "US 1" the throwaway (untouched config, tunnel verified up +
-locked). The 06:00 posts are unaffected by all of this (existing sessions, TCP works); the one at risk is
-the TikTok upload, whose UDP needs are unknown until the window. Handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md).
+Last updated: 2026-11-22, 03:20 WIB. **Correction to the 03:00 entry: UDP never explained the
+logins — it has been dead in every config since Nov 18, including the day the logins worked.** The
+Chameleon record has said `protocol: http` since at least its Nov 9 health check, so the Nov 18-19
+outbound was HTTP too, with the same dead UDP — and the throwaway's TikTok login succeeded through it.
+Measured tonight (user 10, one submit each): through the HTTP outbound the app answers "No internet
+connection"; through a SOCKS5 outbound the answer becomes **"Please try again or log in with a
+different method"** — TikTok's server responding, i.e. the login request completes and is *refused*.
+What actually differs between Nov 19 (worked) and now (refused) is therefore NOT the tunnel: it is
+the risk engine on the other side — a fresh device making its 5th-6th login attempt in three hours
+through an ISP-range proxy exit, after the night's debugging retries. The honest conclusion: the
+login refusals are rate/risk refusals, and further attempts tonight only deepen them. **Stop; one
+attempt per account in the morning window.** Still true from tonight: newyork's exit cannot reach
+the platforms from the phone's tunnel (even TCP; laptop through the same proxy is fine) so both brand
+spaces stay on virginia; the clean-UDP rule (`52fd57f`) stays (it removed the tunnel's black-hole
+errors); SOCKS5 UDP ASSOCIATE is refused by both gateways (measured, `0x07`) — a fact for the proxy
+vendor, not the login blocker. Spaces: user 10 Speed (socks5 profile, virginia), user 12 Timmy
+(virginia), user 11 throwaway (untouched, up + locked). The 06:00 posts are unaffected (existing
+sessions, TCP works).
 
 **23:00 update — the two real-brand spaces are BUILT and leak-green; their logins are refused, almost
 certainly by the proxy.** `robot provision` made **user 10 "Speed Clips"** and **user 12 "Timmy Clips"**

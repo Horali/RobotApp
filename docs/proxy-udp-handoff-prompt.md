@@ -72,43 +72,41 @@ FAILS:
    Both proxies. UDP is refused at the vendor's gateway, not by the exit IP's reputation.
 4. HTTP CONNECT through the same gateways works fine (that is the whole TCP story above).
 
-## HYPOTHESIS (verify, don't assume)
+## What the evidence actually supports (corrected 2026-11-22 03:15 — read this before the older text below)
 
-The three platforms' **sign-in flows** (TikTok's app login, Instagram's app login, Google's GMS
-account-add) are QUIC-first and treat dead UDP as "no network", so they refuse to proceed in a tunnel
-whose UDP is dead — while their browsing/posting flows fall back to TCP and work.
+A second round of measurements killed the UDP theory, and the Chameleon record's `last_check_at`
+(2026-11-09, protocol already "http") shows the Nov 18-19 configs were HTTP outbounds too — with the
+same dead UDP — **and the throwaway's TikTok login succeeded through exactly that on 2026-11-19.**
+UDP has been dead in every config since day one; it never gated the logins.
 
-Supporting facts: TikTok's login says "No internet connection" only on the login submit (everything
-else in the app works over TCP); Google's GMS and Instagram are also QUIC-heavy clients; all three
-sign-ins fail in the UDP-dead tunnel while their browsing works.
+The discriminative test (2026-11-22 03:13, user 10, hand-driven, one submit each):
+- HTTP outbound → the app answers **"No internet connection"** (TTNet's connectivity precheck failing
+  over dead UDP; the request may never even leave).
+- **SOCKS5 outbound (TCP works — byte-level verified: greeting `05 02`, auth `01 00`, CONNECT
+  `05 00`, data flows) → the app answers "Please try again or log in with a different method."** —
+  TikTok's *server* answering and refusing the login.
 
-The historical puzzle: on 2026-11-19 the throwaway's TikTok login SUCCEEDED in user 11 through
-virginia, when `build_config` wrote a **socks5** outbound (Chameleon's records said `socks5` then;
-they say `http` now). Either the vendor's gateway carried UDP ASSOCIATE on those days and has since
-disabled it, or the socks outbound's UDP failure mode then was different from the http one. I cannot
-verify the past state of the vendor's gateway; I can only prove tonight's (0x07, twice).
+So the login request completes through SOCKS5 and is refused server-side. With the user's own test
+proving the credentials are good (logged in from the Chameleon browser through the same proxy), the
+remaining variable is TikTok's risk engine: a fresh Android user, a datacenter-ish ISP exit, and
+**5-6 login attempts for the same email within three hours of debugging** (my own doing tonight).
+The Nov 19 successes were first-or-second attempts on a fresh device. The honest conclusion: rate /
+risk refusals that every extra attempt deepens.
 
-## Your tasks, in order
-
-1. **Verify the UDP hypothesis cheaply.** E.g.: stand up any UDP-capable tunnel (a local socks5 with
-   UDP ASSOCIATE — `3proxy`, `microsocks` does NOT do UDP, dante does; or a WireGuard endpoint) and
-   prove that TikTok's app login proceeds when UDP works and fails when UDP is dead. Or find
-   authoritative documentation of TikTok's TTNet requiring QUIC for login.
-2. **Check the vendor for a UDP path.** The user bought these as "residential" proxies; the exits
-   are Verizon Business/UUNET. Many residential vendors keep UDP disabled by default and enable it
-   per-customer, or expose a separate UDP-capable SOCKS5 endpoint/plan. The vendor's name is not in
-   our records (check Chameleon's proxy records and the purchase history/email on this laptop if you
-   can find it — do not guess). Draft the support ticket text if needed.
-3. **If UDP can be carried (any endpoint)**: the fix is `build_config` writing the UDP-capable
-   outbound (socks5 with a UDP-capable server, or a sing-box outbound type that fits the vendor's
-   offering) + re-importing profiles into the three spaces (user 10, 12 first; user 11 last — its
-   sessions must not be disturbed close to the 06:00-10:00 posting window).
-4. **If no UDP path exists at all**: say so plainly, with the evidence, and list what the user must
-   buy instead (a mobile/residential proxy with documented SOCKS5 UDP support). Do NOT route UDP
-   "direct" (outside the tunnel) — it would leak the home IP and link the accounts to it.
-5. While you are in there: newyork's exit failing even **TCP** to the big platforms from the phone's
-   tunnel (but not from the laptop) is unexplained — if you can afford it, capture what differs
-   (connection volume? the gateway rate-limiting bursty tunneled traffic?) and put it in the report.
+**Your tasks changed accordingly:**
+1. Do NOT chase UDP as the login blocker (the measurements above close that path; the UDP facts stay
+   in this document only as tunnel plumbing truths).
+2. Figure out what makes a TikTok app login *acceptable* to the risk engine from this phone: attempt
+   pacing (how long do refusals take to age out?), the outbound choice (http vs socks — the socks
+   profile in user 10 changed the error from "no internet" to a server refusal, so keep it), device
+   registration (does musically need its full first-run journey — birthdate wall, ToS, feed — before
+   login, the way the throwaway's Nov 19 install had?), and whether logging the account in ONCE in the
+   Chameleon browser first (which the user has already done successfully) softens the app's next
+   attempt.
+3. Check the vendor support angle if you find anything provider-side (UDP ASSOCIATE refused is a
+   fact, but it is not the login blocker).
+4. One attempt per account per several hours. The night's retries are spent; do not add more
+   tonight.
 
 ## Hard rules (from the project's PLAN.md — they are not negotiable)
 
