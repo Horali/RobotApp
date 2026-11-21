@@ -5,10 +5,27 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-21, 23:00 WIB. **This session's handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**
-(state, the two blockers, the exact steps, and the 04:55 update at its end) and the copy-paste prompt
-[`docs/next-session-prompt.md`](docs/next-session-prompt.md). The three first posts are queued (Instagram,
-TikTok, **YouTube** — the user insists YouTube is in scope) and due at 06:00 WIB.
+Last updated: 2026-11-22, 03:00 WIB. **The root cause of every login failure is found and proven: the
+brand proxies are TCP-only.** Both `us-ps-1-virginia` and `us-ps-2-newyork` accept SOCKS5 greetings but
+refuse UDP ASSOCIATE (reply `0x07`, measured 2026-11-22), and an HTTP outbound cannot carry UDP at all.
+TikTok's app reaches its CDN fine over TCP (its feed, Chrome, everything) but its **login** flow will not
+proceed without UDP/QUIC - it answers "No internet connection" in any tunnel whose UDP is dead, on either
+proxy, while the same submit works in a browser. The Nov 19 login worked when the outbound was socks5,
+i.e. the proxy must then have carried UDP; that capability is gone. All three platforms' sign-ins
+(Instagram "unexpected error", Google "Something went wrong", TikTok "no internet") are consistent with
+their QUIC-first clients. The fix on the phone's side is in and pushed (`52fd57f`): the config now
+**rejects all UDP cleanly** (a route `network:udp` rule; the old `protocol:quic` rule never matched - it
+needs sniffing, which the config never enabled, so UDP fell through to the HTTP outbound and died as
+"UDP is not supported", visible in SFA's own log). A clean refusal lets TCP-only flows work perfectly;
+what it cannot do is give UDP to apps that require it. **The decision that remains is a proxy with UDP
+support (SOCKS5 UDP ASSOCIATE) for the brand spaces.** Also measured tonight: newyork's exit cannot
+reach Instagram/YouTube/TikTok/Google **at all from the phone's tunnel** while the same sites load fine
+from the laptop through the same proxy and fine from the phone through virginia - both brand spaces are
+therefore on virginia for now (a linking cluster of four brands, the plan's §3.4 risk, accepted by the
+user's "use the existing proxy"). Spaces built and leak-green: user 10 "Speed Clips", user 12 "Timmy
+Clips" (both America/New_York), user 11 "US 1" the throwaway (untouched config, tunnel verified up +
+locked). The 06:00 posts are unaffected by all of this (existing sessions, TCP works); the one at risk is
+the TikTok upload, whose UDP needs are unknown until the window. Handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md).
 
 **23:00 update — the two real-brand spaces are BUILT and leak-green; their logins are refused, almost
 certainly by the proxy.** `robot provision` made **user 10 "Speed Clips"** and **user 12 "Timmy Clips"**
