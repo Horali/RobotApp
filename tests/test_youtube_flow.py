@@ -1,7 +1,9 @@
 """The YouTube Shorts flow and the Google sign-in on a scripted screen (PLAN sections 6.7, 5.6).
 
-Like the other scripted tests: a screen that moves when the right thing is tapped catches a wrong
-label or a signature that never arrives, without touching the phone or any account.
+The posting screens are the ones **measured on YouTube 21.46 on 2026-11-21**: Create opens the Shorts
+camera directly (no sheet), the way in is "Import video from photo library", the picker and the editor
+each carry a Next, and the details screen's rows are "Add details" / "Upload Short". The Google
+sign-in's screens are the plan's and are exercised against the login, which has not changed.
 """
 
 from pathlib import Path
@@ -24,22 +26,61 @@ def el(text: str = "", desc: str = "", bounds=(0, 0, 100, 100), clickable: bool 
     return Element(text=text, desc=desc, bounds=bounds, clickable=clickable)
 
 
+NAV = [
+    el("Home", desc="Home", bounds=(0, 2316, 270, 2460), clickable=True),
+    el("Shorts", desc="Shorts", bounds=(270, 2316, 540, 2460), clickable=True),
+    el("", desc="Create", bounds=(540, 2316, 810, 2460), clickable=True),
+    el("You", desc="You", bounds=(810, 2316, 1080, 2460), clickable=True),
+]
+
 SCREENS = {
-    "home": [el("Home"), el("Shorts"), el(desc="Create a video or Short", bounds=(432, 2193, 648, 2340), clickable=True), el("You")],
-    "create_sheet": [el("Create a Short", bounds=(100, 1700, 500, 1800), clickable=True), el("Upload a video"), el("Go live")],
-    "shorts_camera": [el("Add sound"), el("Upload", bounds=(100, 2100, 400, 2200), clickable=True), el("Record")],
-    "gallery": [
-        el("Recents", bounds=(100, 200, 300, 300), clickable=True),
-        el("1:02", bounds=(100, 400, 200, 450)),
-        el("", desc="video thumbnail", bounds=(100, 500, 540, 900), clickable=True),
+    "home": [el("Home", bounds=(48, 292, 192, 357)), el("Shorts", bounds=(270, 292, 540, 357)), *NAV],
+    # the You tab: the channel's name sits right under "View channel" (no avatar in this build's top bar)
+    "you": [el("View channel", bounds=(24, 300, 500, 360)), el("Horali Cript", bounds=(24, 360, 500, 420)),
+            el("Get Premium"), el("Accounts"), el("Notifications"), el("Search"), el("Settings", bounds=(24, 1500, 500, 1560)),
+            *NAV],
+    "you_signed_out": [el("View channel"), el("Sign in", bounds=(300, 1200, 800, 1300), clickable=True),
+                       el("Accounts"), *NAV],
+    "camera": [
+        el("", desc="Deselect", bounds=(456, 1729, 624, 1849), clickable=True),
+        el("", desc="Record button", bounds=(431, 1681, 647, 1897), clickable=True),
+        el("", desc="Import video from photo library", bounds=(0, 1662, 216, 1926), clickable=True),
+        el("", desc="Close camera", bounds=(0, 60, 120, 180), clickable=True),
+        el("Add", bounds=(900, 1700, 1050, 1800), clickable=True),
     ],
-    "trim": [el("Done", bounds=(900, 2200, 1050, 2320), clickable=True), el("1:02"), el("Preview")],
+    "picker": [
+        el("Close", bounds=(0, 60, 120, 180), clickable=True),
+        el("Create video", bounds=(0, 200, 300, 300)),
+        el("Create from gallery", bounds=(300, 200, 700, 300)),
+        el("Recents", bounds=(700, 200, 900, 300), clickable=True),
+        el("0:48", bounds=(10, 600, 120, 640)),
+        el("", desc="", bounds=(3, 641, 357, 1270), clickable=True),
+        el("", desc="", bounds=(363, 641, 717, 1270), clickable=True),
+        el("Next", bounds=(552, 2272, 1032, 2419), clickable=True),
+    ],
+    "editor": [
+        el("Swipe up to edit", bounds=(0, 300, 1080, 400)),
+        el("Text", bounds=(0, 2100, 200, 2200)),
+        el("Effects", bounds=(200, 2100, 400, 2200)),
+        el("More tools", bounds=(400, 2100, 700, 2200)),
+        el("Exit editor", bounds=(0, 60, 200, 180), clickable=True),
+        el("Next", bounds=(558, 2310, 1032, 2430), clickable=True),
+    ],
     "details": [
-        el("Title", bounds=(100, 1700, 900, 1800), clickable=True),
-        el("Upload Short", bounds=(900, 2200, 1050, 2320), clickable=True),
+        el("", desc="Navigate up", bounds=(24, 120, 120, 220), clickable=True),
+        el("Add details", bounds=(216, 139, 520, 220), clickable=True),
+        el("Edit thumbnail", bounds=(700, 139, 1000, 220)),
+        el("Caption your Short", bounds=(300, 260, 780, 320), clickable=True),
+        el("Show more", bounds=(36, 1518, 1044, 1662), clickable=True),
+        el("Save draft", bounds=(36, 2170, 520, 2290), clickable=True),
+        el("Upload Short", bounds=(540, 2170, 1044, 2290), clickable=True),
     ],
-    "uploaded": [el("Upload complete"), el("Home"), el("Shorts"), el("You")],
-    "you": [el("View channel"), el("Your videos", bounds=(100, 900, 500, 1000), clickable=True), el("Switch account")],
+    "title_sheet": [
+        el("Title", bounds=(48, 700, 1000, 760)),
+        el("", desc="Title", bounds=(48, 760, 1000, 900), clickable=True),
+        el("Done", bounds=(900, 200, 1040, 300), clickable=True),
+    ],
+    "uploaded": [el("Upload complete"), el("Home"), el("Shorts"), el("You"), *NAV],
     "videos": [el("Your videos"), el("", desc="Big win #shorts", bounds=(100, 700, 900, 850), clickable=True)],
     "video": [el(desc="More options", bounds=(900, 200, 1050, 350), clickable=True), el("Like")],
     "share_sheet": [el("Copy link", bounds=(100, 1800, 900, 1900), clickable=True), el("Share to")],
@@ -51,8 +92,8 @@ SCREENS = {
     "terms": [el("Google Terms of Service"), el("I agree", bounds=(100, 1900, 500, 2000), clickable=True)],
     "services": [el("Backup to Google Drive"), el("ON", bounds=(300, 1300, 400, 1360)), el("Accept", bounds=(100, 2000, 500, 2100), clickable=True)],
     "done": [el("Account added"), el("Done")],
-    # YouTube after the sign-in: an avatar, and the account sheet it opens
-    "youtube_after": [el("Home"), el("Shorts"), el("You"),
+    # YouTube after the sign-in: the You tab carries the account's own name
+    "youtube_after": [el("Home"), el("Shorts"), el("You", bounds=(810, 2316, 1080, 2460), clickable=True),
                       el(desc="Account and Notifications", bounds=(900, 100, 1050, 250), clickable=True)],
     "account_sheet": [el("Timmy Clips"), el("timmy.clips@gmail.com"), el("Switch account")],
 }
@@ -72,18 +113,23 @@ class ScriptedScreen:
         return SCREENS[self.state]
 
     def tap(self, element: Element) -> None:
-        label = element.text or element.desc
-        self.taps.append(label)
+        label = (element.text or element.desc).strip()
+        if not label:
+            label = "video thumbnail"
+            self.taps.append(label)
+        else:
+            self.taps.append(label)
         moves = {
-            ("home", "Create a video or Short"): "create_sheet",
-            ("home", "Create"): "create_sheet",
-            ("create_sheet", "Create a Short"): "shorts_camera",
-            ("shorts_camera", "Upload"): "gallery",
-            ("gallery", "video thumbnail"): "trim",
-            ("trim", "Done"): "details",
+            ("home", "You"): "you",
+            ("you", "Home"): "home",
+            ("home", "Create"): "camera",
+            ("camera", "Import video from photo library"): "picker",
+            ("picker", "Next"): "editor",
+            ("editor", "Next"): "details",
+            ("details", "Add details"): "title_sheet",
+            ("title_sheet", "Done"): "details",
             ("details", "Upload Short"): "uploaded",
             ("uploaded", "You"): "you",
-            ("home", "You"): "you",
             ("you", "Your videos"): "videos",
             ("video", "More options"): "share_sheet",
             ("settings", "Add account"): "account_pick",
@@ -128,10 +174,13 @@ class ScriptedScreen:
     def clear_field(self) -> None:
         self.typed.clear()
 
+    def hide_keyboard(self) -> None:
+        self.taps.append("hide_keyboard")
+
     def press_back(self) -> None:
         self.taps.append("back")
-        if self.state in ("details", "trim", "gallery", "shorts_camera", "create_sheet"):
-            self.state = "home"
+        if self.state in ("details", "editor", "picker", "camera", "title_sheet"):
+            self.state = "details" if self.state == "title_sheet" else "home"
         elif self.state == "you":
             self.state = "home"
 
@@ -172,41 +221,27 @@ def journal(tmp_path):
 
 
 def spec() -> PostSpec:
-    return PostSpec(upload_id="u1", platform="youtube", video=Path("x.mp4"), length_s=62.0,
+    return PostSpec(upload_id="u1", platform="youtube", video=Path("x.mp4"), length_s=48.0,
                     title="Big win #shorts", caption="Big win #shorts", hashtags=["#shorts"])
 
 
 def test_the_short_flow_walks_youtube_screens_and_stops_before_upload(journal) -> None:
     screen = ScriptedScreen()
-    # The account avatar: the flow taps it to read the channel name, then comes back.
-    original = screen.elements
-
-    def with_avatar():
-        elements = original()
-        return elements + [el(desc="Account and Notifications", bounds=(900, 100, 1050, 250), clickable=True)]
-
-    screen.elements = with_avatar
     poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-1")
     result = poster.post(spec(), dry_run=True)
 
     assert result.outcome == "dry_run"
     assert screen.state == "details"
     assert "Upload Short" not in screen.taps
-    # the channel check (avatar -> back), then create -> Create a Short -> gallery -> the tile -> Done -> Title
-    assert screen.taps[:9] == ["Account and Notifications", "Account and Notifications", "back",
-                               "Create a video or Short", "Create a Short", "Upload",
-                               "video thumbnail", "Done", "Title"]
+    # You tab -> the channel's own name -> back to Home -> Create (straight to the camera) ->
+    # import -> the newest tile -> Next (picker) -> Next (editor) -> the title row
+    assert screen.taps[:10] == ["You", "Home", "Create", "Import video from photo library",
+                                "video thumbnail", "Next", "Next", "Add details", "hide_keyboard", "Done"]
     assert journal.pressed("job-1", "u1") is False
 
 
 def test_a_wrong_length_video_is_refused_before_upload(journal) -> None:
     screen = ScriptedScreen()
-    original = screen.elements
-
-    def with_avatar():
-        return original() + [el(desc="Account and Notifications", bounds=(900, 100, 1050, 250), clickable=True)]
-
-    screen.elements = with_avatar
     poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-1")
     bad = PostSpec(upload_id="u2", platform="youtube", video=Path("x.mp4"), length_s=9.0, title="T")
     result = poster.post(bad)
@@ -218,12 +253,6 @@ def test_a_wrong_length_video_is_refused_before_upload(journal) -> None:
 def test_upload_is_pressed_once_and_the_link_is_read(journal, monkeypatch) -> None:
     monkeypatch.setattr("robotapp.post.youtube.engage", lambda phone: 5.0)
     screen = ScriptedScreen()
-    original = screen.elements
-
-    def with_avatar():
-        return original() + [el(desc="Account and Notifications", bounds=(900, 100, 1050, 250), clickable=True)]
-
-    screen.elements = with_avatar
     poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-1")
     result = poster.post(spec())
     assert result.outcome == "posted"
@@ -233,8 +262,8 @@ def test_upload_is_pressed_once_and_the_link_is_read(journal, monkeypatch) -> No
     assert journal.outcome("job-1", "u1") == "posted"
 
 
-def test_no_avatar_means_not_signed_in(journal) -> None:
-    screen = ScriptedScreen()          # no avatar element: YouTube not signed in
+def test_a_signed_out_youtube_stops_the_post(journal) -> None:
+    screen = ScriptedScreen("you_signed_out")     # the You tab has no channel name on it
     poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-1")
     result = poster.post(spec())
     assert result.outcome == "failed_before_post"
@@ -256,7 +285,7 @@ def test_the_google_sign_in_walks_its_screens_and_never_prints_the_password(capl
         def start_app(self, package, user=0):
             super().start_app(package, user)
             if package == "com.google.android.youtube":
-                screen.state = "youtube_after"   # YouTube opens signed in, with the avatar
+                screen.state = "youtube_after"   # YouTube opens signed in
             return "started"
 
     login = GoogleLogin(AfterPhone(guard=fake_guard()), screen, FakeChameleon(),

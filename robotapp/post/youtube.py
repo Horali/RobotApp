@@ -29,16 +29,19 @@ log = logging.getLogger("robotapp")
 YOUTUBE = "com.google.android.youtube"
 
 HOME = Signature("youtube home", any_of=("Home", "Shorts", "Subscriptions", "You"))
-CREATE_SHEET = Signature("youtube create sheet", any_of=("Create a Short", "Create", "Upload a video", "Go live"))
-SHORTS_CAMERA = Signature("youtube shorts camera", any_of=("Add sound", "Record", "Upload", "Gallery"))
-GALLERY = Signature("youtube gallery", any_of=("Recents", "Gallery", "Next", "Done"))
-TRIM = Signature("youtube trim", any_of=("Done", "Next", "trim", "Preview"))
-DETAILS = Signature("youtube details", any_of=("Title", "Caption", "Describe your Short", "Shorts"))
+CREATE_SHEET = Signature("youtube create sheet", any_of=("Create a Short", "Upload a video", "Go live"))
+# Measured 2026-11-21 (YouTube 21.46): Create opens the Shorts camera directly - there is no sheet -
+# and the only way to a clip is the labelled "Import video from photo library" tile.
+SHORTS_CAMERA = Signature("youtube shorts camera", any_of=("Import video from photo library", "Record button",
+                                                          "Close camera"))
+GALLERY = Signature("youtube gallery", any_of=("Create from gallery", "Recents", "Next", "Create video"))
+EDITOR = Signature("youtube editor", any_of=("Swipe up to edit", "More tools", "Exit editor", "Next"))
+DETAILS = Signature("youtube details", any_of=("Add details", "Caption your Short", "Upload Short", "Save draft"))
 VISIBILITY = Signature("youtube visibility", any_of=("Public", "Private", "Unlisted", "Save"))
 UPLOADED = Signature("youtube uploaded", any_of=("Upload complete", "Short posted", "processing", "uploaded", "Done"))
 SHARE_SHEET = Signature("share sheet", any_of=("Copy link", "Share to", "Copy", "Links"))
 PROFILE = Signature("youtube you", any_of=("View channel", "Your videos", "Switch account", "Your channel"))
-_NEXT_OR_DETAILS = Signature("youtube editor or details", any_of=("Next", "Title", "Describe your Short", "Upload Short"))
+_NEXT_OR_DETAILS = Signature("youtube editor or details", any_of=("Next", "Add details", "Upload Short"))
 
 
 class YouTubePoster:
@@ -79,17 +82,22 @@ class YouTubePoster:
             self._open_gallery()
             wait_for(self.screen, GALLERY, 30)
             self._pick_video(spec)
-            self._step(5, "trim")
-            self._keep_full_length(spec)
-            self._step(6, "next")
-            # Some builds show an editor with a Next between the trim and the details; some don't.
-            elements = wait_for(self.screen, _NEXT_OR_DETAILS, 60)
-            if find_exact(elements, "Next") is not None:
-                self._tap_exact("Next")
-                wait_for(self.screen, DETAILS, 60)
-            self._step(7, "title")
+            self._step(5, "next")
+            # Picker -> editor -> details: this build shows a Next on each, and the editor keeps the
+            # full length unless the trimmer is touched. Tap Next until the details screen is up.
+            for _ in range(3):
+                elements = wait_for(self.screen, _NEXT_OR_DETAILS, 60)
+                if DETAILS.matches(elements):
+                    break
+                button = find_exact(elements, "Next")
+                if button is None:
+                    break
+                self.screen.tap(button)
+                time.sleep(3.0)
+            wait_for(self.screen, DETAILS, 60)
+            self._step(6, "title")
             self._write_title(spec)
-            self._step(8, "visibility")
+            self._step(7, "visibility")
             self._set_visibility()
         except Exception as exc:  # noqa: BLE001 - anything here is before the press
             result.reason = str(exc)
@@ -106,7 +114,7 @@ class YouTubePoster:
             return result
 
         # From here on, never press Upload twice.
-        self._step(9, "press upload")
+        self._step(8, "press upload")
         if not self.journal.mark(self.job_id, PRESSED, spec.upload_id, spec.platform):
             result.outcome = UNSURE
             result.reason = "Upload was already pressed for this upload; not pressing again"
@@ -122,7 +130,7 @@ class YouTubePoster:
             return result
 
         try:
-            self._step(10, "wait for upload")
+            self._step(9, "wait for upload")
             self._wait_uploaded()
             result.outcome = POSTED
         except Exception as exc:  # noqa: BLE001 - the Short may well be out; look, don't repeat
@@ -132,7 +140,7 @@ class YouTubePoster:
             self._shot("youtube-upload")
             return result
 
-        self._step(11, "read link")
+        self._step(10, "read link")
         try:
             result.url = self._read_link()
         except Exception as exc:  # noqa: BLE001 - the Short is out; the link can be asked for
@@ -144,13 +152,13 @@ class YouTubePoster:
             result.reason = result.reason or "posted, link not readable"
             self.journal.mark(self.job_id, UNSURE, spec.upload_id, spec.platform, {"reason": result.reason})
 
-        self._step(12, "pinned comment")
+        self._step(11, "pinned comment")
         if spec.pinned_comment:
             try:
                 self._pin_comment(spec)
             except Exception as exc:  # noqa: BLE001 - the laptop pins it today when the robot cannot
                 log.warning("youtube: pinning the comment failed (%s); pin it by hand as today", exc)
-        self._step(13, "engage")
+        self._step(12, "engage")
         try:
             self._back_to_feed()
             result.engaged_s = engage(self.phone)
@@ -198,25 +206,38 @@ class YouTubePoster:
         return False
 
     def _check_channel(self) -> str | None:
-        """The avatar -> the account sheet: the signed-in account's name must be the brand's."""
+        """The signed-in channel's own name, read from the You tab.
+
+        Measured 2026-11-21 (YouTube 21.46): the home top bar has **no account avatar** any more - only
+        the logo, Notifications and Search - so the old avatar check failed on a signed-in app. The You
+        tab shows the channel name right under "View channel".
+        """
+        self._open_you()
         elements = self.screen.elements()
-        avatar = next((e for e in elements if "Account" in (e.desc or "")), None)
-        if avatar is None:
-            # Not signed in at all: no account avatar on the home screen.
-            raise RuntimeError("YouTube shows no account avatar (not signed in?)")
-        self.screen.tap(avatar)
-        time.sleep(2.5)
-        name = self._account_name(self.screen.elements())
-        if name is None:
-            # The account sheet may hide behind a second tap on the avatar's sheet.
-            avatar2 = next((e for e in self.screen.elements() if "Account" in (e.desc or "")), None)
-            if avatar2 is not None:
-                self.screen.tap(avatar2)
+        height = self.screen.size()[1]
+        skipped = {"view channel", "get premium", "accounts", "notifications", "search", "settings"}
+        name = None
+        for element in elements:
+            text = (element.text or "").strip()
+            if not text or element.bounds[1] < 100 or element.bounds[1] > height * 0.30:
+                continue
+            if text.lower() in skipped or "@" in text:
+                continue
+            if re.fullmatch(r"\d{1,2}:\d{2}(\s*[AP]M)?", text):   # the status bar's clock
+                continue
+            if 2 <= len(text) <= 40:
+                name = text
+                break
+        # Back to the feed by tapping the bottom Home tab: Back here would leave the app.
+        for element in elements:
+            if (element.desc or element.text or "").strip() == "Home" and element.bounds[1] > height * 0.85:
+                self.screen.tap(element)
                 time.sleep(2.0)
-            name = self._account_name(self.screen.elements())
-        # Back to the feed.
-        self.screen.press_back()
-        time.sleep(1.0)
+                break
+        else:
+            self._back_to_feed()
+        if name is None:
+            raise RuntimeError("YouTube shows no account name (not signed in?)")
         return name
 
     @staticmethod
@@ -224,36 +245,50 @@ class YouTubePoster:
         for element in elements:
             if element.text.strip() and "@" in element.text:
                 return element.text.split("@")[0].strip()
-        for element in elements:
-            text = element.text.strip()
-            if text and 2 <= len(text) <= 40 and text.replace(" ", "").isalpha():
-                continue
         return None
 
     def _open_create(self) -> None:
-        """The + in the middle of the bottom bar, then 'Create a Short' in the sheet."""
-        elements = self.screen.elements()
-        create = next((e for e in elements if e.enabled and ("Create" in (e.desc or "") or e.text.strip() == "+"
-                                                            or "Create a video" in (e.desc or ""))), None)
+        """The Create tab in the bottom bar; on this build it opens the Shorts camera directly."""
+        deadline = time.monotonic() + 20
+        create = None
+        while time.monotonic() < deadline and create is None:
+            elements = self.screen.elements()
+            height = self.screen.size()[1]
+            create = next(
+                (
+                    e for e in elements
+                    if e.enabled and e.bounds[1] > height * 0.85
+                    and "create" in ((e.desc or "") + " " + (e.text or "")).lower()
+                ),
+                None,
+            )
+            if create is None:
+                time.sleep(1.5)
         if create is None:
-            raise RuntimeError("the create (+) button is not on YouTube's bottom bar")
+            width, height = self.screen.size()
+            self.phone.tap(int(width * 0.625), int(height * 0.96))
+            time.sleep(3.0)
+            return
         self.screen.tap(create)
-        wait_for(self.screen, CREATE_SHEET, 30)
-        short = find(self.screen.elements(), "Create a Short") or find(self.screen.elements(), "Short")
-        if short is None:
-            raise RuntimeError("'Create a Short' is not in the create sheet")
-        self.screen.tap(short)
+        time.sleep(3.0)
+        # Some builds then show a sheet ("Create a Short" / "Upload a video"); this one goes straight
+        # to the camera, so a missing sheet is not an error.
+        elements = self.screen.elements()
+        short = find(elements, "Create a Short") or find(elements, "Upload a video")
+        if short is not None and SHORTS_CAMERA.matches(elements) is False:
+            self.screen.tap(short)
+            time.sleep(2.0)
 
     def _open_gallery(self) -> None:
-        """The shorts camera's gallery entry, bottom left."""
+        """The camera's import tile (this build labels it "Import video from photo library")."""
         elements = self.screen.elements()
-        for label in ("Gallery", "Upload", "Recents", "Pick"):
+        for label in ("Import video from photo library", "Import", "Gallery", "Upload", "Recents", "Pick"):
             button = find_exact(elements, label) or find(elements, label)
             if button is not None:
                 self.screen.tap(button)
                 return
         width, height = self.screen.size()
-        self.phone.tap(int(width * 0.10), int(height * 0.72))
+        self.phone.tap(int(width * 0.10), int(height * 0.73))
 
     def _pick_video(self, spec: PostSpec) -> None:
         elements = self.screen.elements()
@@ -279,41 +314,58 @@ class YouTubePoster:
                 return
 
     def _keep_full_length(self, spec: PostSpec) -> None:
-        """The plan's step 4: the trimmer may default shorter; the shown length must be the clip's."""
+        """The plan's step 4: the trimmer may default shorter; the shown length must be the clip's.
+
+        Kept for a build that opens a trimmer; this one goes from the picker to the editor without one,
+        and the length was already checked on the picker's own tile.
+        """
         deadline = time.monotonic() + 20
         while time.monotonic() < deadline:
             elements = self.screen.elements()
-            if TRIM.matches(elements):
-                self._assert_length(elements, spec)
-                done = find_exact(elements, "Done") or find(elements, "Done")
-                if done is not None:
-                    self.screen.tap(done)
-                    time.sleep(1.5)
-                    return
+            self._assert_length(elements, spec)
+            done = find_exact(elements, "Done")
+            if done is not None:
+                self.screen.tap(done)
+                time.sleep(1.5)
+                return
             time.sleep(1.0)
 
     def _write_title(self, spec: PostSpec) -> None:
-        """The Short's title = ClipMaker's title (the same one the laptop would use)."""
+        """The Short's title = ClipMaker's title, typed into the details row.
+
+        This build labels the row "Add details". If no editor opens, the post carries on: a missing
+        title can be fixed on the video afterwards, a stopped post cannot.
+        """
         wanted = (spec.title or spec.full_caption).strip()[:100]
         elements = self.screen.elements()
-        field = (find(elements, "Title") or find(elements, "Describe your Short")
-                 or find(elements, "Caption"))
-        if field is None:
-            raise RuntimeError("the title field is not on the details screen")
-        self.screen.tap(field)
-        time.sleep(0.8)
-        for attempt in (0, 1):
+        row = find(elements, "Add details") or find(elements, "Title") or find(elements, "Caption your Short")
+        if row is None:
+            log.warning("youtube: no title row on the details screen; posting with YouTube's default")
+            return
+        self.screen.tap(row)
+        time.sleep(2.0)
+        edited = False
+        for _ in range(2):
             try:
                 self.screen.clear_field()
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001 - an empty field may refuse a clear
                 pass
             self.screen.set_text(wanted)
             time.sleep(1.0)
             actual = (self.screen.focused_text() or "").strip()
-            if actual and actual[:20].lower() in wanted.lower():
-                return
-            log.warning("youtube: the title did not stick (attempt %d): %r", attempt + 1, actual[:50])
-        raise RuntimeError("the title could not be written into the details screen")
+            if actual and (actual[:20].lower() in wanted.lower() or wanted[:20].lower() in actual.lower()):
+                edited = True
+                break
+        self.screen.hide_keyboard()
+        done = find_exact(self.screen.elements(), "Done") or find_exact(self.screen.elements(), "Save")
+        if done is not None:
+            self.screen.tap(done)
+            time.sleep(2.0)
+        elif edited:
+            self.screen.press_back()
+            time.sleep(1.5)
+        if not edited:
+            log.warning("youtube: the title did not stick; the Short will carry YouTube's default title")
 
     def _set_visibility(self) -> None:
         """Public, and 'No, it's not made for kids' (the same as the laptop uploader)."""
@@ -435,5 +487,5 @@ class YouTubePoster:
             pass
 
     def _step(self, n: int, name: str) -> None:
-        self.emit({"t": "step", "job": self.job_id, "n": n, "of": 13, "name": name})
-        log.info("youtube step %d/13: %s", n, name)
+        self.emit({"t": "step", "job": self.job_id, "n": n, "of": 12, "name": name})
+        log.info("youtube step %d/12: %s", n, name)
