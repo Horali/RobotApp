@@ -5,21 +5,37 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-21, 04:55 WIB. **This session's handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**
+Last updated: 2026-11-21, 15:45 WIB. **This session's handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**
 (state, the two blockers, the exact steps, and the 04:55 update at its end) and the copy-paste prompt
 [`docs/next-session-prompt.md`](docs/next-session-prompt.md). The three first posts are queued (Instagram,
 TikTok, **YouTube** — the user insists YouTube is in scope) and due at 06:00 WIB.
 
-**04:55 update (nothing ran: the phone's Wi-Fi went down at 04:52).** The **TikTok 47.9.1 bundle is on the
-laptop and verified** — `data/apk/musically-47.9.1-bundle.apkm`, 332 MB, base + 85 splits, signer
-`9041803e…` on the base and on three splits, same versionCode as the installed base, so
-`adb install-multiple -r --user 11` is an **in-place update** (the @vtubersclips70 login should survive; no
-Gmail code expected). The **Play-sheet fix is in** (`d2ff744`, pushed): the sheet is found by its own words
-or by Play owning the screen, its control (text, "Dismiss update dialog") is waited for, and a sheet that
-returns 4× stops before the press naming the bundle fix. 137 tests pass. The phone was unreachable
-(192.168.1.8:5555 dead), so **no sitting ran today and nothing on the phone was touched** — the three rows
-are still queued and unclaimed. Tomorrow: doctor → Instagram (closes 09:00) → TikTok (bundle if needed) →
-YouTube (channel stays "Horali Cript": the user chose post as is).
+**15:45 update — all three flows were walked to the pre-press point on the phone, by the robot.** After
+fixing every known bug (140 tests green, commits `8d35379`…`acdce62`), three dry runs ran on the real phone
+(build mode, nothing pressed):
+
+| flow | dry run | reached |
+|---|---|---|
+| Instagram | `dry_run` | the caption/share screen of a Reel (create → picker with the newest clip preselected → editor → caption) |
+| TikTok | `dry_run` | the post screen, caption written, handle **@vtubersclips70**, "Everyone can view" |
+| YouTube | `dry_run` | the details screen with **Upload Short** on it, channel **Horali Cript**, 48 s clip |
+
+**What is live:** Instagram has **2 Reels** on @vtubersclips90 — the first post worked, but the flow's
+confirmation check missed the success and it posted a duplicate (one must be deleted). TikTok's Post was
+pressed at 07:57 and never confirmed; YouTube has 0 videos.
+
+**Bugs found and fixed today (all measured, each with a test where a test can hold it):** Instagram 456's
+create goes straight to the post picker (no REEL tab) and its one-time sheets (OK / Continue) cover the
+share screen; the share is the bottom Next then the "About Reels" Share; TikTok's gallery tile has no label,
+the editor's Next needs a settle-and-retry, and Post sits under the keyboard; YouTube has no avatar in the
+top bar (the channel name is a content-desc on the You tab), Create can open a Drafts/Create-video chooser
+whose "Create from gallery" leads to the **AI creation page**, the first editor visit asks for consent
+("I agree"), and its launcher component contains a `$` that the phone's shell ate (`am start` never ran);
+Chrome can need the clip URL opened twice.
+
+**Known warts:** YouTube's title row ("Add details") does not open its editor for uiautomator2, so the
+Short goes out with YouTube's default title; TikTok's upload confirmation has never been seen; Instagram's
+share confirmation is unreliable, so the verdict must come from the profile's post count.
 
 **Done**
 - **P1 — the Chameleon route. Done 2026-11-18.** `GET /v1/profiles/:id/platform-password?platform=tiktok|instagram`
