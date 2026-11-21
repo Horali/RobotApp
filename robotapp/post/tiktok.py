@@ -432,7 +432,9 @@ class TikTokPoster:
             timeout=30,
         )
         try:
-            elements = wait_for(self.screen, SHARE_ON_TIKTOK, 25)
+            # Short wait: on musically 47.9.1 this activity has never appeared (three tries on
+            # 2026-11-21), so a long wait is 25 s wasted on every post before the camera route.
+            elements = wait_for(self.screen, SHARE_ON_TIKTOK, 6)
         except ScreenTimeout:
             log.warning("tiktok: the share sheet did not appear; trying the camera's gallery")
             return False
@@ -700,5 +702,9 @@ class TikTokPoster:
             pass
 
     def _step(self, n: int, name: str) -> None:
-        self.emit({"t": "step", "job": self.job_id, "n": n, "of": 12, "name": name})
-        log.info("tiktok step %d/12: %s", n, name)
+        # ms = how long the *previous* step took, so a slow screen is visible in every run.
+        now = time.monotonic()
+        spent = int((now - getattr(self, "_last_step_at", now)) * 1000)
+        self._last_step_at = now
+        self.emit({"t": "step", "job": self.job_id, "n": n, "of": 12, "name": name, "ms": spent})
+        log.info("tiktok step %d/12: %s (%.1fs since the last step)", n, name, spent / 1000.0)

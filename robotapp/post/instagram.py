@@ -543,5 +543,9 @@ class InstagramPoster:
             pass
 
     def _step(self, n: int, name: str) -> None:
-        self.emit({"t": "step", "job": self.job_id, "n": n, "of": 10, "name": name})
-        log.info("instagram step %d/10: %s", n, name)
+        # ms = how long the *previous* step took, so a slow screen is visible in every run.
+        now = time.monotonic()
+        spent = int((now - getattr(self, "_last_step_at", now)) * 1000)
+        self._last_step_at = now
+        self.emit({"t": "step", "job": self.job_id, "n": n, "of": 10, "name": name, "ms": spent})
+        log.info("instagram step %d/10: %s (%.1fs since the last step)", n, name, spent / 1000.0)

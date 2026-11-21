@@ -385,19 +385,27 @@ class YouTubePoster:
             time.sleep(1.0)
 
     def _write_title(self, spec: PostSpec) -> None:
-        """The Short's title = ClipMaker's title, typed into the details row.
+        """The Short's title = ClipMaker's title, when the build exposes a title field at all.
 
-        This build labels the row "Add details". If no editor opens, the post carries on: a missing
-        title can be fixed on the video afterwards, a stopped post cannot.
+        Measured 2026-11-21 twice: tapping the row ("Add details") changes the screen but no text field
+        appears, and then clear_text / set_text / hide_keyboard each block for about a minute - the step
+        cost 142 s of a 190 s run for nothing. So the title is typed only when the screen actually shows
+        a title field ("Add a title", "Describe your Short"); otherwise it is skipped in a second and
+        YouTube's default title stands (it can be edited on the video afterwards).
         """
         wanted = (spec.title or spec.full_caption).strip()[:100]
         elements = self.screen.elements()
+        hint = any(
+            needle in ((e.text or "") + " " + (e.desc or "")).lower()
+            for e in elements
+            for needle in ("add a title", "describe your short", "title that describes")
+        )
         row = find(elements, "Add details") or find(elements, "Title") or find(elements, "Caption your Short")
-        if row is None:
-            log.warning("youtube: no title row on the details screen; posting with YouTube's default")
+        if not hint or row is None:
+            log.warning("youtube: this build exposes no title field; YouTube's default title is used")
             return
         self.screen.tap(row)
-        time.sleep(2.0)
+        time.sleep(1.5)
         edited = False
         for _ in range(2):
             try:
@@ -405,21 +413,19 @@ class YouTubePoster:
             except Exception:  # noqa: BLE001 - an empty field may refuse a clear
                 pass
             self.screen.set_text(wanted)
-            time.sleep(1.0)
+            time.sleep(0.8)
             actual = (self.screen.focused_text() or "").strip()
             if actual and (actual[:20].lower() in wanted.lower() or wanted[:20].lower() in actual.lower()):
                 edited = True
                 break
-        self.screen.hide_keyboard()
-        done = find_exact(self.screen.elements(), "Done") or find_exact(self.screen.elements(), "Save")
-        if done is not None:
-            self.screen.tap(done)
-            time.sleep(2.0)
-        elif edited:
-            self.screen.press_back()
-            time.sleep(1.5)
-        if not edited:
-            log.warning("youtube: the title did not stick; the Short will carry YouTube's default title")
+        if edited:
+            self.screen.hide_keyboard()
+            done = find_exact(self.screen.elements(), "Done") or find_exact(self.screen.elements(), "Save")
+            if done is not None:
+                self.screen.tap(done)
+                time.sleep(1.5)
+        else:
+            log.warning("youtube: the title did not stick; YouTube's default title is used")
 
     def _set_visibility(self) -> None:
         """Public, and 'No, it's not made for kids' (the same as the laptop uploader)."""
@@ -547,5 +553,9 @@ class YouTubePoster:
             pass
 
     def _step(self, n: int, name: str) -> None:
-        self.emit({"t": "step", "job": self.job_id, "n": n, "of": 12, "name": name})
-        log.info("youtube step %d/12: %s", n, name)
+        # ms = how long the *previous* step took, so a slow screen is visible in every run.
+        now = time.monotonic()
+        spent = int((now - getattr(self, "_last_step_at", now)) * 1000)
+        self._last_step_at = now
+        self.emit({"t": "step", "job": self.job_id, "n": n, "of": 12, "name": name, "ms": spent})
+        log.info("youtube step %d/12: %s (%.1fs since the last step)", n, name, spent / 1000.0)

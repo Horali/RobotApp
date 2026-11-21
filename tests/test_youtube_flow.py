@@ -100,8 +100,9 @@ SCREENS = {
 
 
 class ScriptedScreen:
-    def __init__(self, state: str = "home") -> None:
+    def __init__(self, state: str = "home", title_hint: bool = False) -> None:
         self.state = state
+        self.title_hint = title_hint        # a build whose details screen exposes "Add a title"
         self.taps: list[str] = []
         self.typed: list[str] = []
         self.secrets: list[str] = []
@@ -110,6 +111,8 @@ class ScriptedScreen:
         self._clipboard = "https://youtube.com/shorts/j1a7ETNYOAI"
 
     def elements(self) -> list[Element]:
+        if self.title_hint and self.state == "details":
+            return SCREENS["details"] + [el("Add a title that describes your video", bounds=(300, 700, 780, 760))]
         return SCREENS[self.state]
 
     def tap(self, element: Element) -> None:
@@ -235,9 +238,22 @@ def test_the_short_flow_walks_youtube_screens_and_stops_before_upload(journal) -
     assert "Upload Short" not in screen.taps
     # You tab -> the channel's own name -> back to Home -> Create (straight to the camera) ->
     # import -> the newest tile -> Next (picker) -> Next (editor) -> the title row
-    assert screen.taps[:10] == ["You", "Home", "Create", "Import video from photo library",
-                                "video thumbnail", "Next", "Next", "Add details", "hide_keyboard", "Done"]
+    assert screen.taps[:7] == ["You", "Home", "Create", "Import video from photo library",
+                               "video thumbnail", "Next", "Next"]
+    assert "Add details" not in screen.taps     # this build exposes no title field to type into
     assert journal.pressed("job-1", "u1") is False
+
+
+def test_a_build_with_a_title_field_gets_the_title_typed(journal) -> None:
+    """When the details screen does expose a title field, the flow types ClipMaker's title into it."""
+    screen = ScriptedScreen(title_hint=True)
+    poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-1")
+    result = poster.post(spec(), dry_run=True)
+
+    assert result.outcome == "dry_run"
+    assert "Add details" in screen.taps
+    assert "hide_keyboard" in screen.taps
+    assert screen.typed and "Big win #shorts" in screen.typed[-1]
 
 
 def test_a_wrong_length_video_is_refused_before_upload(journal) -> None:
