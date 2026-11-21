@@ -107,8 +107,17 @@ class TikTokPoster:
             self._wait_past_play(EDITOR, 60)
             self._step(4, "editor")
             self._add_sound_if_asked(spec)
-            self._tap_exact("Next")
-            wait_for(self.screen, POST_SCREEN, 45)
+            # The editor animates in; a tap read while it settles lands on nothing (measured
+            # 2026-11-21: "Next" was in the tree, the tap did not advance). Wait, then retry Next.
+            time.sleep(2.0)
+            for attempt in range(3):
+                self._tap_exact("Next")
+                try:
+                    wait_for(self.screen, POST_SCREEN, 20)
+                    break
+                except ScreenTimeout:
+                    if attempt == 2:
+                        raise
             self._step(7, "caption")
             self._write_caption(spec)
             self._step(8, "settings")
@@ -334,7 +343,7 @@ class TikTokPoster:
         for _ in range(6):
             elements = self.screen.elements()
             if self._handle_play_sheet(elements):
-                self._back_to_tiktok()   # Play keeps its own app in front after the sheet
+                self._leave_play()   # Back only: a restart here would lose the camera we just opened
                 continue
             if self._tap_nav("Create"):
                 break
@@ -434,7 +443,12 @@ class TikTokPoster:
         return True
 
     def _open_gallery(self) -> None:
-        """The camera's gallery entry: usually an 'Upload' label, else the square at the bottom left."""
+        """The camera's gallery entry: an "Upload" label, else the thumbnail at the bottom left.
+
+        Measured 2026-11-21: this build labels nothing there - the tile is clickable with no text and
+        no description, at (0, 2100)-(240, 2280) - so it is found by being a tile in the bottom-left
+        corner, and the coordinate tap is the last resort.
+        """
         elements = self.screen.elements()
         for label in ("Upload", "Gallery", "Uploads"):
             button = find_exact(elements, label) or find(elements, label)
@@ -442,7 +456,15 @@ class TikTokPoster:
                 self.screen.tap(button)
                 return
         width, height = self.screen.size()
-        self.phone.tap(int(width * 0.10), int(height * 0.72))
+        tiles = [
+            e for e in elements
+            if e.clickable and e.bounds[0] < width * 0.30 and e.bounds[1] > height * 0.80
+            and (e.bounds[2] - e.bounds[0]) > width * 0.10 and (e.bounds[3] - e.bounds[1]) > height * 0.04
+        ]
+        if tiles:
+            self.screen.tap(tiles[0])
+            return
+        self.phone.tap(int(width * 0.09), int(height * 0.89))
 
     def _pick_video(self, spec: PostSpec) -> None:
         elements = self.screen.elements()
@@ -530,11 +552,13 @@ class TikTokPoster:
             flat_actual = actual.replace("\n", "").replace("\r", "").lower()
             # The box scrolls to the end while the keyboard is up, so only its tail may be readable.
             if actual and (head in flat_actual or tail in flat_actual):
+                self.screen.hide_keyboard()   # the Post button sits under the IME on this build
                 return
             if not actual:
                 # Some fields report no text while focused; the screen's own text is the fallback check.
                 page = " ".join(e.text for e in self.screen.elements()).replace("\n", "").lower()
                 if head in page or tail in page:
+                    self.screen.hide_keyboard()
                     return
             log.warning("tiktok: the caption did not stick (attempt %d): %r", attempt + 1, actual[:60])
         raise RuntimeError("the caption could not be written into the post screen")

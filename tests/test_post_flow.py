@@ -106,6 +106,9 @@ class ScriptedScreen:
         if self.state == "video":
             self.state = "home"
 
+    def hide_keyboard(self) -> None:
+        self.taps.append("hide_keyboard")
+
     def swipe_up(self) -> None:
         self.taps.append("swipe")
 
