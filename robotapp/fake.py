@@ -285,6 +285,9 @@ class FakeScreen:
     def press_back(self) -> None:
         self.taps.append("back")
 
+    def hide_keyboard(self) -> None:
+        self.taps.append("hide_keyboard")
+
     def swipe_up(self) -> None:
         self.taps.append("swipe")
 

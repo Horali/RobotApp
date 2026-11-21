@@ -104,17 +104,44 @@ class U2Screen:
         self.guard = guard or WindowGuard()
 
     @classmethod
-    def connect(cls, serial: str, guard: WindowGuard | None = None) -> "U2Screen":
+    def connect(cls, serial: str, guard: WindowGuard | None = None, attempts: int = 3) -> "U2Screen":
+        """Attach uiautomator2, retrying the first start.
+
+        Measured 2026-11-21: the first attach right after a previous robot process ended can fail with
+        "server quit unexpectedly / Timeout while connecting UiAutomation" while the old server is still
+        shutting down; the very next attempt works. A post must not stop for that.
+        """
         import uiautomator2 as u2  # imported here so tests and the FakePhone never need it
 
-        return cls(u2.connect(serial), guard)
+        last: Exception | None = None
+        for attempt in range(attempts):
+            try:
+                device = u2.connect(serial)
+                device.window_size()   # makes the server answer once, so a dead server fails here
+                return cls(device, guard)
+            except Exception as exc:  # noqa: BLE001 - retried, then raised
+                last = exc
+                if attempt + 1 < attempts:
+                    time.sleep(3.0)
+        raise RuntimeError(f"uiautomator2 did not attach to {serial}: {last}")
 
     def elements(self) -> list[Element]:
         self.guard.check("read the screen")
         import xml.etree.ElementTree as ET
 
+        xml = ""
+        for attempt in (0, 1):
+            try:
+                xml = self.device.dump_hierarchy()
+                break
+            except ET.ParseError:
+                return []
+            except Exception:  # noqa: BLE001 - the server can drop between two reads; one retry is cheap
+                if attempt:
+                    raise
+                time.sleep(2.0)
         try:
-            root = ET.fromstring(self.device.dump_hierarchy())
+            root = ET.fromstring(xml)
         except ET.ParseError:
             return []
         out: list[Element] = []
@@ -217,6 +244,14 @@ class U2Screen:
 
     def press_back(self) -> None:
         self.device.press("back")
+        jitter(250, 600)
+
+    def hide_keyboard(self) -> None:
+        """Close the IME so the screen's own buttons (a bottom "Next") can be tapped."""
+        try:
+            self.device.hide_keyboard()
+        except Exception:  # noqa: BLE001 - Android refuses when no IME is up; not an error
+            pass
         jitter(250, 600)
 
     def swipe_up(self) -> None:
