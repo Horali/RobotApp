@@ -5,10 +5,27 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-21, 15:45 WIB. **This session's handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**
+Last updated: 2026-11-21, 23:00 WIB. **This session's handoff: [`docs/handoff-2026-11-21.md`](docs/handoff-2026-11-21.md)**
 (state, the two blockers, the exact steps, and the 04:55 update at its end) and the copy-paste prompt
 [`docs/next-session-prompt.md`](docs/next-session-prompt.md). The three first posts are queued (Instagram,
 TikTok, **YouTube** — the user insists YouTube is in scope) and due at 06:00 WIB.
+
+**23:00 update — the two real-brand spaces are BUILT and leak-green; their logins are refused, almost
+certainly by the proxy.** `robot provision` made **user 10 "Speed Clips"** and **user 12 "Timmy Clips"**
+(both `us-ps-2-newyork`, New York time, VPN up + locked, leak checks green after two real bugs were fixed:
+Chrome's first-run screen blocks the first leak check, and SFA's imported profile does not start itself —
+`vpn` and a hand-tap of Start are both needed; the spaces also had gesture navigation while the owner has
+3-button, now all spaces are 3-button and a dry run confirmed the flows still pass). The logins all refused:
+Speed's Instagram (a CAPTCHA the user could not solve in time, then three "unexpected error" refusals —
+and note its Chameleon login identity is the user's own faizchess55@gmail.com), Speed's TikTok (the app
+does not recognise horalixscripts3@gmail.com as a login — the account's real username is recorded nowhere),
+and Speed's Google ("Something went wrong", twice, with DNS verified clean). The isolation evidence:
+the SAME Google sign-in reached "Checking info" from the throwaway's Virginia space on the same phone
+today. **Conclusion: us-ps-2-newyork is likely flagged for account sign-ins (Instagram and Google both
+refuse it; posting and browsing work fine through it). Next step: a third proxy, or the user's own hand
+on the phone, which is also the plan's answer to sign-in challenges.** TikTok needs the account's real
+login name first. Fixes pushed tonight: musically's login landing is taken as a start screen (`0a616ec`),
+and the flows' step timings from the evening are in the events.
 
 **15:45 update — all three flows were walked to the pre-press point on the phone, by the robot.** After
 fixing every known bug (140 tests green, commits `8d35379`…`acdce62`), three dry runs ran on the real phone
