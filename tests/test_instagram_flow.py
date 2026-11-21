@@ -34,12 +34,19 @@ NAV = [
 SCREENS = {
     "home": [el("For you"), el("Following"), *NAV],
     "profile": [el("Edit profile"), el("Followers"), el("@g2g.clips"), el("Reels", bounds=(100, 1200, 300, 1300)), *NAV],
-    "create_sheet": [el("REEL", bounds=(100, 1800, 400, 1900), clickable=True), el("POST"), el("LIVE")],
-    "reel_camera": [el("Preview"), el("Recents", bounds=(100, 2100, 400, 2200), clickable=True), el("Gallery")],
-    "gallery": [
-        el("Select", bounds=(100, 200, 300, 300), clickable=True),
-        el("1:02", bounds=(100, 400, 200, 450)),
-        el("", desc="video thumbnail", bounds=(100, 500, 540, 900), clickable=True),
+    # IG 456 (measured 2026-11-21): the top-left Create goes straight to the post picker, the newest
+    # video is already selected, and there is no REEL tab anywhere in this flow.
+    "new_post": [
+        el("Cancel", bounds=(20, 60, 140, 200), clickable=True),
+        el("New post", bounds=(300, 60, 700, 200)),
+        el("Next", bounds=(900, 60, 1050, 200), clickable=True),
+        el("Recents", bounds=(40, 1300, 300, 1400), clickable=True),
+        el("Select", bounds=(40, 600, 300, 700), clickable=True),
+        el("1:02", bounds=(40, 2100, 200, 2160)),
+        el("", desc="Selected Video thumbnail created on November 21, 2026 6:01 AM",
+           bounds=(0, 1450, 353, 1750), clickable=True),
+        el("", desc="Unselected Video thumbnail created on November 21, 2026 5:34 AM",
+           bounds=(360, 1450, 713, 1750), clickable=True),
     ],
     "editor": [el("Next", bounds=(900, 2200, 1050, 2320), clickable=True), el("Edit"), el("Audio")],
     "caption": [
@@ -49,6 +56,14 @@ SCREENS = {
     "shared": [el("Your reel has been shared", bounds=(300, 1200, 800, 1300)), *NAV],
     "reel": [el(desc="More options", bounds=(900, 150, 1050, 300), clickable=True), el("Like")],
     "share_sheet": [el("Copy link", bounds=(100, 1800, 900, 1900), clickable=True), el("Share to")],
+    # an older build's way in, kept tested: a create sheet with a REEL tab, then the reel camera
+    "create_sheet": [el("REEL", bounds=(100, 1800, 400, 1900), clickable=True), el("POST"), el("LIVE")],
+    "reel_camera": [el("Preview"), el("Recents", bounds=(100, 2100, 400, 2200), clickable=True), el("Gallery")],
+    "gallery": [
+        el("Select", bounds=(100, 200, 300, 300), clickable=True),
+        el("1:02", bounds=(100, 400, 200, 450)),
+        el("", desc="video thumbnail", bounds=(100, 500, 540, 900), clickable=True),
+    ],
     # login screens
     "login": [el("Log in", bounds=(100, 2000, 900, 2100), clickable=True), el("Sign up"), el("Log in with Facebook")],
     "login_form": [el("Username", bounds=(100, 900, 900, 1000), clickable=True), el("Phone"), el("Email"),
@@ -62,11 +77,16 @@ SCREENS = {
 
 
 class ScriptedScreen:
-    """A fake screen that moves to the next screen when the right thing is tapped."""
+    """A fake screen that moves to the next screen when the right thing is tapped.
 
-    def __init__(self, state: str = "home", captcha_after_password: bool = False) -> None:
+    ``legacy`` replays the older way in (create sheet -> REEL -> the reel camera -> its gallery), so
+    both routes stay covered while the real app moves on.
+    """
+
+    def __init__(self, state: str = "home", captcha_after_password: bool = False, legacy: bool = False) -> None:
         self.state = state
         self.captcha_after_password = captcha_after_password
+        self.legacy = legacy
         self.taps: list[str] = []
         self.typed: list[str] = []
         self.secrets: list[str] = []
@@ -84,11 +104,12 @@ class ScriptedScreen:
             return
         moves = {
             ("home", "Profile"): "profile",
-            ("home", "Create"): "create_sheet",
+            ("home", "Create"): "create_sheet" if self.legacy else "new_post",
             ("create_sheet", "REEL"): "reel_camera",
             ("reel_camera", "Recents"): "gallery",
             ("reel_camera", "Gallery"): "gallery",
             ("gallery", "video thumbnail"): "editor",
+            ("new_post", "Next"): "editor",
             ("editor", "Next"): "caption",
             ("caption", "Share"): "shared",
             ("reel", "More options"): "share_sheet",
@@ -127,6 +148,9 @@ class ScriptedScreen:
 
     def clear_field(self) -> None:
         self.typed.clear()
+
+    def hide_keyboard(self) -> None:
+        self.taps.append("hide_keyboard")
 
     def press_back(self) -> None:
         self.taps.append("back")
@@ -188,9 +212,21 @@ def test_the_reel_flow_walks_instagram_screens_and_stops_before_share(journal) -
     assert result.outcome == "dry_run"
     assert screen.state == "caption"           # the caption screen, nothing pressed
     assert "Share" not in screen.taps
-    # the handle check (Profile -> back), then create: + -> REEL -> gallery -> the newest tile
-    assert screen.taps[:6] == ["Profile", "back", "Create", "REEL", "Gallery", "video thumbnail"]
+    # the handle check (Profile -> back), then create: Create -> the picker (newest preselected)
+    # -> Next -> the editor's Next -> the caption field. No REEL tab exists on this build.
+    assert screen.taps[:6] == ["Profile", "back", "Create", "Next", "Next", "Write a caption"]
+    assert "REEL" not in screen.taps
     assert journal.pressed("job-1", "u1") is False
+
+
+def test_an_older_build_still_walks_the_reel_sheet(journal) -> None:
+    """The way in the plan described (a REEL tab, then the reel camera's gallery) must keep working."""
+    screen = ScriptedScreen(legacy=True)
+    poster = InstagramPoster(LinkedPhone(screen), screen, journal, "job-1")
+    result = poster.post(spec(), dry_run=True)
+
+    assert result.outcome == "dry_run"
+    assert screen.taps[:6] == ["Profile", "back", "Create", "REEL", "Gallery", "video thumbnail"]
 
 
 def test_a_wrong_length_video_is_refused_before_share(journal) -> None:
