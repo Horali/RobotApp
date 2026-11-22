@@ -132,9 +132,10 @@ class YouTubePoster:
 
         # From here on, never press Upload twice.
         self._step(8, "press upload")
-        if not self.journal.mark(self.job_id, PRESSED, spec.upload_id, spec.platform):
+        may_press, why_not = self.journal.claim_press(self.job_id, spec.upload_id, spec.platform)
+        if not may_press:
             result.outcome = UNSURE
-            result.reason = "Upload was already pressed for this upload; not pressing again"
+            result.reason = why_not
             log.warning("youtube: %s", result.reason)
             return result
         try:

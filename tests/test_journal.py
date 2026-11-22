@@ -53,6 +53,40 @@ def test_failed_before_post_is_recorded(tmp_path) -> None:
     j.close()
 
 
+def test_a_press_claimed_in_one_job_is_refused_by_the_next(tmp_path) -> None:
+    """One upload is one post. ClipMaker starts a new job per sitting, so the guard must outlive the job.
+
+    Measured 2026-11-22: before this, TikTok's Post was pressed at 07:52, 07:57 and again at 06:03 the
+    next morning, and Instagram's Share four times — each press was a fresh job.
+    """
+    j = journal(tmp_path)
+    j.start_job("job-1", "post")
+    assert j.claim_press("job-1", "upload-1", "tiktok") == (True, None)
+
+    j.start_job("job-2", "post")
+    may_press, why = j.claim_press("job-2", "upload-1", "tiktok")
+    assert may_press is False
+    assert "job-1" in (why or "")          # the operator can see where the press came from
+    assert j.pressed("job-2", "upload-1") is False   # nothing was claimed by job-2
+    j.close()
+
+    again = Journal(tmp_path / "robot.db")           # and it survives a restart
+    assert again.claim_press("job-3", "upload-1", "tiktok")[0] is False
+    again.close()
+
+
+def test_a_claim_is_released_only_on_purpose(tmp_path) -> None:
+    """The one way back: a human looked at the account and saw that nothing was published."""
+    j = journal(tmp_path)
+    j.start_job("job-1", "post")
+    assert j.claim_press("job-1", "upload-1", "tiktok")[0] is True
+    assert j.release_press("upload-1", "looked: the profile has no video") == 1
+    j.start_job("job-2", "post")
+    assert j.claim_press("job-2", "upload-1", "tiktok") == (True, None)
+    assert any(e.event == "press_released" for e in j.events("release-press-1"))
+    j.close()
+
+
 def test_status_file_is_written_atomically(tmp_path) -> None:
     path = tmp_path / "status.json"
     write_status(path, {"job": "post", "state": "running"})

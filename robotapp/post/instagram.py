@@ -129,9 +129,10 @@ class InstagramPoster:
 
         # From here on, never press Share twice.
         self._step(7, "press share")
-        if not self.journal.mark(self.job_id, PRESSED, spec.upload_id, spec.platform):
+        may_press, why_not = self.journal.claim_press(self.job_id, spec.upload_id, spec.platform)
+        if not may_press:
             result.outcome = UNSURE
-            result.reason = "Share was already pressed for this upload; not pressing again"
+            result.reason = why_not
             log.warning("instagram: %s", result.reason)
             return result
         try:

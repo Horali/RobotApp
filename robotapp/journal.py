@@ -120,6 +120,49 @@ class Journal:
             return False
         return True
 
+    def claim_press(self, job_id: str, upload_id: str | None, platform: str | None = None) -> tuple[bool, str | None]:
+        """Ask permission to tap Post and write the record in one step. (True, None) or (False, why).
+
+        The guard is **per upload, not per job**: one upload is one post, and ClipMaker starts a new job
+        for every sitting. Until 2026-11-22 the unique index only stopped a second press inside one job,
+        so the same row was pressed again by the next job (TikTok's Post: 07:52, 07:57, then 06:03 the
+        next morning; Instagram's Share: four times). A press is now claimed for the upload forever;
+        `release_press` is the one deliberate way back.
+        """
+        row = self.db.execute(
+            "SELECT job_id, at FROM journal WHERE event = ? AND upload_id IS ? ORDER BY id LIMIT 1",
+            (PRESSED, upload_id),
+        ).fetchone()
+        if row is not None:
+            if row["job_id"] == job_id:
+                return False, "Post was already pressed for this upload; not pressing again"
+            return False, (
+                f"Post was already pressed for this upload in job {row['job_id']} at {row['at']}; "
+                "not pressing again — look for the post on the account instead"
+            )
+        if not self.mark(job_id, PRESSED, upload_id, platform):
+            return False, "Post was already pressed for this upload; not pressing again"
+        return True, None
+
+    def release_press(self, upload_id: str, reason: str) -> int:
+        """Undo a press claim — only for a human who has looked and seen that nothing was published.
+
+        Keeps the old rows (they are the audit trail) but deletes the claim so the next job may press.
+        Returns how many claim rows were removed.
+        """
+        rows = self.db.execute(
+            "SELECT id FROM journal WHERE event = ? AND upload_id IS ?", (PRESSED, upload_id)
+        ).fetchall()
+        self.db.execute("DELETE FROM journal WHERE event = ? AND upload_id IS ?", (PRESSED, upload_id))
+        for row in rows:
+            self.mark(
+                f"release-press-{row['id']}",
+                "press_released",
+                upload_id,
+                detail={"reason": reason},
+            )
+        return len(rows)
+
     def has(self, job_id: str, event: str, upload_id: str | None = None) -> bool:
         row = self.db.execute(
             "SELECT 1 FROM journal WHERE job_id = ? AND event = ? AND (upload_id IS ? OR upload_id = ?)",
