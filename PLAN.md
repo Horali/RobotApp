@@ -5,7 +5,26 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-22, 03:20 WIB. **Correction to the 03:00 entry: UDP never explained the
+Last updated: 2026-11-22, 15:35 WIB. **The throwaway's Instagram and TikTok posts are live; YouTube is
+the one left.** Proven from the laptop (real headless Chrome, no phone): `@vtubersclips90` has two
+Reels (`Df-8W5tKYqT` newest, `Df-5g6oK9uc` duplicate), `@vtubersclips70` has `videoCount: 2` —
+`7710764478886907166` = today 06:04:16 WIB, `7710422808341384478` = 2026-11-21 07:58:25 — and
+`@HoraliCript` still has no videos. **Both "unsure" TikTok verdicts were wrong**: yesterday's 07:57
+press did publish, 27 s later, and today's 06:03:58 press published in 18 s; the profile reads that
+followed were misread (the "Drafts: 1" page was an older draft). So the robot's presses work; the
+robot's *confirmation* did not. ClipMaker's Instagram and TikTok rows are now `posted` with those
+links, which leaves **only the YouTube row queued** — the 06:00 tick can no longer repost either.
+
+Three real bugs fixed with tests (**146 pass**): the press guard only covered one job, so a new
+sitting could press the same upload again (TikTok's Post three times, Instagram's Share four times) —
+`claim_press()` is now per upload across jobs, `release_press()` the deliberate way back; TikTok's
+link read tapped the fixed (16 %, 40 %) point that lands on the Drafts row, so the tile is now found
+on the screen and every tap must prove it opened a video page; TikTok's upload confirmation accepted
+a stale hierarchy after 1.3 s, so it now needs the composer gone on three consecutive reads. Commits
+`8a0a60f`, `5faab39`, `28d863c`; the full story is in `docs/report-2026-11-22.md`. **Tomorrow:
+YouTube's first real press** (its poster has never posted — expect 1–2 selector fixes).
+
+Previous entry — 2026-11-22, 03:20 WIB. **Correction to the 03:00 entry: UDP never explained the
 logins — it has been dead in every config since Nov 18, including the day the logins worked.** The
 Chameleon record has said `protocol: http` since at least its Nov 9 health check, so the Nov 18-19
 outbound was HTTP too, with the same dead UDP — and the throwaway's TikTok login succeeded through it.
