@@ -307,7 +307,14 @@ class GoogleLogin:
             if avatar is not None:
                 self.screen.tap(avatar)
                 time.sleep(2.5)
-                name = self._account_name(self.screen.elements())
+                sheet = self.screen.elements()
+                name = self._account_name(sheet)
+                if not name:
+                    accounts_btn = find_exact(sheet, "Accounts") or find_exact(sheet, "Switch account")
+                    if accounts_btn is not None:
+                        self.screen.tap(accounts_btn)
+                        time.sleep(2.0)
+                        name = self._account_name(self.screen.elements())
                 if name:
                     self.screen.press_back()      # close the account sheet, back to the feed
                     time.sleep(1.0)
@@ -322,13 +329,15 @@ class GoogleLogin:
         """The account sheet: the signed-in account's email, its name part, or @handle. A Gmail address is
         the strongest marker of the signed-in account (names can be anything)."""
         for element in elements:
-            text = element.text.strip()
-            if "@" in text and "." in text.split("@")[-1]:
-                return text.split("@")[0].strip()
+            for raw in (element.text, element.desc):
+                text = (raw or "").strip()
+                if "@" in text and "." in text.split("@")[-1]:
+                    return text.split("@")[0].strip()
         for element in elements:
-            text = element.text.strip()
-            if text.startswith("@") and " " not in text and len(text) > 1:
-                return text
+            for raw in (element.text, element.desc):
+                text = (raw or "").strip()
+                if text.startswith("@") and " " not in text and len(text) > 1:
+                    return text
         return None
 
     # -- helpers ---------------------------------------------------------------------------------

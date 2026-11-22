@@ -209,3 +209,16 @@ def test_account_present_and_check_channel_dismisses_notification_dialog() -> No
     assert gl_ui._check_channel(10) == "@SpeedExpediaClips"
     assert "DON\u2019T ALLOW" in screen.taps
     assert "You" in screen.taps
+
+    # When You tab omits @handle from uiautomator2, tap "Accounts" to read the Gmail address.
+    screen2 = Screen([el("You", bounds=(864, 2180, 1080, 2320))])
+
+    def you_to_accounts_tap(element) -> None:
+        Screen.tap(screen2, element)
+        if element.text == "You":
+            screen2.current = [el("Speed Travel Fan"), el("", bounds=(36, 120, 406, 240)), el("Accounts")]
+        elif element.text == "Accounts":
+            screen2.current = [el("horalixscripts3@gmail.com")]
+
+    screen2.tap = you_to_accounts_tap  # type: ignore[method-assign]
+    assert GoogleLogin(phone=phone, screen=screen2, chameleon=None)._check_channel(10) == "horalixscripts3"
