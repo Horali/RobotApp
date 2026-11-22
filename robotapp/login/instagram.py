@@ -47,8 +47,12 @@ CONFIRM_DEVICE = Signature(
     any_of=("Choose a way to confirm it", "Approve the login from another device",
             "Notification on another device", "Text message, We'll send a code"),
 )
-CAPTCHA = Signature("captcha", any_of=("Confirm you're human", "Slide to verify", "Verify you are human",
-                                       "puzzle", "Rotate the image", "drag the slider"))
+CAPTCHA = Signature(
+    "captcha",
+    any_of=("Confirm you're human", "Slide to verify", "Verify you are human",
+            "puzzle", "Rotate the image", "drag the slider",
+            "Enter the characters", "real human behind this"),
+)
 PROFILE = Signature("instagram profile", any_of=("Edit profile", "Followers", "Following", "Posts"))
 
 # Only the email code is taken automatically; anything else asks for the user (section 5.4).

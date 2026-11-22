@@ -390,3 +390,19 @@ def test_mobile_number_or_email_placeholder_is_tapped_before_typing(monkeypatch)
     assert result.handle == "@timmy.clips"
     assert "Mobile number or email" in screen.taps
     assert "hide_keyboard" in screen.taps
+
+
+def test_instagram_character_captcha_stops_immediately(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda s: None)
+    screen = ScriptedScreen("login")
+    orig_elements = screen.elements
+
+    def elements_with_chars() -> list[Element]:
+        if screen.state == "code_form":
+            return [el("Enter the characters you see"), el("We just need to make sure there's a real human behind this login attempt.")]
+        return orig_elements()
+
+    screen.elements = elements_with_chars  # type: ignore[method-assign]
+    login = InstagramLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+    with pytest.raises(NeedsHuman, match="CAPTCHA"):
+        login.login("profile-1", "g2g.clips", INSTAGRAM)
