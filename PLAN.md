@@ -5,7 +5,23 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-22, 15:35 WIB. **The throwaway's Instagram and TikTok posts are live; YouTube is
+Last updated: 2026-11-22, 17:20 WIB. **The login blocker is the exit, not the accounts — measured.**
+One attempt was spent on Speed's TikTok (`login-speed-tt6`, 17:05): the flow reached TikTok's login
+screen, typed `horalixscripts3@gmail.com`, tapped Continue — and the button **spun forever**. In the
+same space, Chrome to `www.tiktok.com` and to `1.1.1.1` gives **ERR_CONNECTION_REFUSED**; the tunnel is
+up (always-on + lockdown), so the requests are being refused, not blocked by the app. The control: the
+throwaway's space on the **same phone** (us-ps-1-**virginia**, 208.214.162.185) posted to TikTok at
+06:04 today and its leak check was green at 05:22. **Both brand spaces point at us-ps-2-newyork**
+(65.195.107.138) — the exit the 03:20 entry already recorded as unable to reach the platforms from the
+phone. So the earlier "these are rate/risk refusals" was wrong, or at least premature: on this exit
+nothing gets past the TCP handshake, which no amount of cooling fixes. The 02:16 swap of Speed's space
+onto virginia **failed** (`data/vpn-swap-u10.jsonl`: "the phone did not fetch the profile") — that is a
+robot-side bug, and the reason the space is still on newyork. Evidence and the vendor question are in
+`docs/proxy-vendor-ticket-2026-11-22.md`; the lead decision (2026-11-22) is to file it with the vendor
+rather than share the throwaway's exit. Also fixed today: a login that dies now closes its job
+(`c401ec3`) instead of staying "running" — all 36 stale rows are closed.
+
+Previous entry — 2026-11-22, 15:35 WIB. **The throwaway's Instagram and TikTok posts are live; YouTube is
 the one left.** Proven from the laptop (real headless Chrome, no phone): `@vtubersclips90` has two
 Reels (`Df-8W5tKYqT` newest, `Df-5g6oK9uc` duplicate), `@vtubersclips70` has `videoCount: 2` —
 `7710764478886907166` = today 06:04:16 WIB, `7710422808341384478` = 2026-11-21 07:58:25 — and
