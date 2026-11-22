@@ -559,6 +559,12 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
         emit(exc.as_event())
         journal.set_state(job_id, "needs_code")
         return EXIT_NEEDS
+    except Exception as exc:
+        # A flow that dies (a screen that never came, a phone that dropped) must not leave the job
+        # "running": the next session reads that state to decide whether a login is already happening.
+        journal.set_state(job_id, "failed")
+        emit({"t": "error", "job": job_id, "reason": f"{type(exc).__name__}: {exc}"})
+        raise
     journal.set_state(job_id, "done" if result.logged_in else "failed")
     handle = result.channel if args.platform == "youtube" else result.handle
     emit({"t": "done", "job": job_id, "handle": handle, "logged_in": result.logged_in})
