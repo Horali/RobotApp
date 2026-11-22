@@ -336,3 +336,57 @@ def test_single_page_instagram_form_and_topbar_handle_fallback(monkeypatch) -> N
     assert result.handle == "@speedexpediaclips"
     assert screen.secrets == [PASSWORD]
     assert screen.taps.count("Log in") == 1
+
+
+def test_mobile_number_or_email_placeholder_is_tapped_before_typing(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    class MetaBloksScreen(ScriptedScreen):
+        def __init__(self) -> None:
+            super().__init__(state="meta_login")
+            self.field_tapped = False
+
+        def elements(self) -> list[Element]:
+            extra = {
+                "meta_login": [
+                    el("Mobile number or email", bounds=(96, 1038, 607, 1095)),
+                    el("Password", bounds=(96, 1254, 312, 1311)),
+                    el("Log in", bounds=(48, 1410, 1032, 1542), clickable=True),
+                    el("Create new account", bounds=(48, 2058, 1032, 2190), clickable=True),
+                ],
+                "profile_no_at": [
+                    el("Edit profile"),
+                    el("Followers"),
+                    el("timmy.clips", bounds=(80, 130, 500, 190)),
+                    *NAV,
+                ],
+            }
+            return extra[self.state] if self.state in extra else super().elements()
+
+        def tap(self, element: Element) -> None:
+            label = element.text or element.desc
+            if label == "Mobile number or email":
+                self.taps.append(label)
+                self.field_tapped = True
+                return
+            if self.state == "meta_login" and label == "Log in":
+                self.taps.append(label)
+                self.state = "logged_in_feed"
+                return
+            if self.state == "logged_in_feed" and label == "Profile":
+                self.taps.append(label)
+                self.state = "profile_no_at"
+                return
+            super().tap(element)
+
+        def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
+            assert self.field_tapped is True
+            super().type_text(text, min_ms=min_ms, max_ms=max_ms)
+
+    screen = MetaBloksScreen()
+    login = InstagramLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+    result = login.login("profile-1", "horalixscripts6@gmail.com", INSTAGRAM)
+    assert result.logged_in is True
+    assert result.handle == "@timmy.clips"
+    assert "Mobile number or email" in screen.taps
+    assert "hide_keyboard" in screen.taps

@@ -31,10 +31,13 @@ LOGIN = Signature("instagram login", any_of=("Log in", "Log in with Facebook", "
 # slow first launch (the real login run, 2026-11-19 10:37 WIB).
 ONBOARD = Signature(
     "instagram login or feed",
-    any_of=("Instagram from Meta", "Username, email or mobile number", "Forgot password?",
-            "Log in with Facebook", "Create new account", "For you"),
+    any_of=("Instagram from Meta", "Username, email or mobile number", "Mobile number or email",
+            "Forgot password?", "Log in with Facebook", "Create new account", "For you"),
 )
-FORM = Signature("instagram login form", any_of=("Username, email or mobile number", "Username", "Email"))
+FORM = Signature(
+    "instagram login form",
+    any_of=("Username, email or mobile number", "Mobile number or email", "Username", "Email"),
+)
 PASSWORD_FORM = Signature("instagram password form", any_of=("Password", "Log in"))
 CODE_FORM = Signature("instagram code form", any_of=("Enter code", "Verification code", "code", "Security code"))
 UNUSUAL = Signature("instagram unusual login", any_of=("Unusual login attempt", "unusual", "Verify"))
@@ -279,25 +282,40 @@ class InstagramLogin:
         return fore == package
 
     def _type_into(self, value: str, label: str) -> None:
-        field = find(self.screen.elements(), label)
+        els = self.screen.elements()
+        field = (
+            find(els, label)
+            or find(els, "Mobile number or email")
+            or find(els, "email")
+            or find(els, "Username")
+        )
         if field is not None:
             self.screen.tap(field)
             time.sleep(0.6)
+            self._handle_terms()
         self.screen.type_text(value, min_ms=60, max_ms=160)
+        self._handle_terms()
 
     def _type_secret(self, secret) -> None:
         field = find(self.screen.elements(), "Password")
         if field is not None:
             self.screen.tap(field)
             time.sleep(0.5)
+            self._handle_terms()
         self.screen.type_secret(secret)
 
     def _tap_any(self, labels: tuple[str, ...]) -> None:
-        for label in labels:
-            button = find(self.screen.elements(), label)
-            if button is not None:
-                self.screen.tap(button)
-                return
+        for _ in range(2):
+            self._handle_terms()
+            if hasattr(self.screen, "hide_keyboard"):
+                self.screen.hide_keyboard()
+                time.sleep(0.4)
+            elements = self.screen.elements()
+            for label in labels:
+                button = find_exact(elements, label) or find(elements, label)
+                if button is not None:
+                    self.screen.tap(button)
+                    return
         raise RuntimeError(f"none of {labels} is on screen")
 
     def _guard(self, elements: list[Element]) -> None:
