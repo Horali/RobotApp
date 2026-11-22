@@ -179,3 +179,150 @@ def test_the_config_is_served_once_at_a_random_path() -> None:
         with pytest.raises(urllib.error.HTTPError) as caught:
             urllib.request.urlopen(base + "/config.json", timeout=5)
         assert caught.value.code == 404
+
+
+def test_vpn_state_matches_only_the_requested_user() -> None:
+    """User 10's connected tunnel must not make user 12 look connected (measured 2026-11-23)."""
+    from robotapp.vpn import vpn_state
+
+    connectivity = (
+        "  4: VpnNetworkProvider:0\n"
+        "  35: VpnNetworkProvider:10\n"
+        "  34: VpnNetworkProvider:12\n"
+        "  NetworkAgentInfo{network{153} ni{VPN CONNECTED extra: } "
+        "Uids: <{1000000-1099999}> OwnerUid: 1010238 AdminUids: [1010238]}\n"
+    )
+    phone = FakePhone(guard=fake_guard())
+    phone.expect(r"dumpsys connectivity", connectivity)
+    phone.expect(r"settings get --user 10 secure always_on_vpn_app", "io.nekohasekai.sfa")
+    phone.expect(r"settings get --user 10 secure always_on_vpn_lockdown", "1")
+    phone.expect(r"settings get --user 12 secure always_on_vpn_app", "io.nekohasekai.sfa")
+    phone.expect(r"settings get --user 12 secure always_on_vpn_lockdown", "1")
+    phone.expect(r"settings get --user 11 secure always_on_vpn_app", "io.nekohasekai.sfa")
+    phone.expect(r"settings get --user 11 secure always_on_vpn_lockdown", "1")
+
+    assert vpn_state(phone, 10)["up"] is True
+    assert vpn_state(phone, 12)["up"] is False
+    assert vpn_state(phone, 11)["up"] is False
+
+
+def test_vpn_state_still_accepts_output_without_uids() -> None:
+    from robotapp.vpn import vpn_state
+
+    phone = FakePhone(guard=fake_guard())
+    phone.expect(r"dumpsys connectivity", "NetworkAgentInfo{ni{VPN CONNECTED}}")
+    phone.expect(r"settings get --user 11 secure always_on_vpn_app", "io.nekohasekai.sfa")
+    phone.expect(r"settings get --user 11 secure always_on_vpn_lockdown", "1")
+    assert vpn_state(phone, 11)["up"] is True
+
+
+def test_sfa_import_raises_on_error_dialog_instead_of_tapping_ok() -> None:
+    from robotapp.ui import Element
+    from robotapp.vpn import sfa_import
+
+    def el(text: str) -> Element:
+        return Element(text=text, bounds=(0, 1400, 1080, 1560), clickable=True)
+
+    class ErrorScreen:
+        def __init__(self) -> None:
+            self.taps: list[str] = []
+
+        def elements(self) -> list[Element]:
+            return [el("Error"), el("connect: connection refused"), el("OK")]
+
+        def tap(self, element) -> None:
+            self.taps.append(element.text or "")
+
+    screen = ErrorScreen()
+    phone = FakePhone(guard=fake_guard())
+    with pytest.raises(RuntimeError, match="import failed"):
+        sfa_import(phone, screen, "http://127.0.0.1:50877/tok/config.json", 10)
+    assert "OK" not in screen.taps
+
+
+def test_setup_vpn_uses_adb_reverse_loopback_for_import(monkeypatch) -> None:
+    from robotapp.cli import setup_vpn
+    from robotapp.config import Settings
+    from robotapp.fake import FakeScreen
+    from robotapp.vpn import SFA_PACKAGE, vpn_state as real_vpn_state  # noqa: F401
+    import robotapp.vpn as vpn_module
+
+    phone = FakePhone(guard=fake_guard())
+    imported_urls: list[str] = []
+
+    class FakeChameleon:
+        def proxy(self, proxy_id: str) -> dict:
+            return {
+                "host": "65.195.107.138",
+                "port": 50100,
+                "username": "u",
+                "password": Secret("p"),
+                "protocol": "http",
+            }
+
+    def fake_sfa_import(ph, scr, url, user, emit):
+        imported_urls.append(url)
+        urllib.request.urlopen(url, timeout=5).read()
+        return True
+
+    monkeypatch.setattr(vpn_module, "sfa_import", fake_sfa_import)
+    monkeypatch.setattr(
+        vpn_module,
+        "vpn_state",
+        lambda ph, u: {"up": True, "always_on_app": "io.nekohasekai.sfa", "lockdown": True, "detail": "ok"},
+    )
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    events: list[dict] = []
+    state = setup_vpn(phone, FakeScreen(), FakeChameleon(), Settings(), 10, "proxy-1", events.append)
+    assert state["up"] is True
+    assert imported_urls and imported_urls[0].startswith("http://127.0.0.1:")
+    assert any(c.startswith("reverse tcp:") for c in phone.commands)
+    assert any("settings delete --user 10 secure always_on_vpn_app" in c for c in phone.commands)
+    assert any(f"pm clear --user 10 {SFA_PACKAGE}" in c for c in phone.commands)
+    assert phone.commands.count(f"am force-stop --user 10 {SFA_PACKAGE}") >= 2
+    assert f"monkey -p {SFA_PACKAGE} --user 10 1" in phone.commands
+    assert any(e.get("name") == "profile import" and e.get("fetched") is True and str(e.get("url_host", "")).startswith("127.0.0.1:") for e in events)
+
+
+def test_tap_start_ignores_disconnected_vpn_notification() -> None:
+    from robotapp.cli import _tap_start_if_present
+    from robotapp.ui import Element
+
+    class RecordingScreen:
+        def __init__(self, elems: list[Element]) -> None:
+            self._elems = elems
+            self.taps: list[Element] = []
+
+        def elements(self) -> list[Element]:
+            return self._elems
+
+        def tap(self, element: Element) -> None:
+            self.taps.append(element)
+
+    notif = Element(
+        text="",
+        desc="Android System notification: Disconnected from always-on VPN",
+        bounds=(204, 30, 252, 78),
+        enabled=True,
+    )
+    dash = Element(text="Dashboard", bounds=(0, 2200, 270, 2350), clickable=True)
+    events: list[dict] = []
+    screen1 = RecordingScreen([notif, dash])
+    _tap_start_if_present(screen1, events.append)
+    assert screen1.taps == [dash]
+    assert events[-1].get("label") == "Dashboard"
+
+    start_fab = Element(text="", desc="Start", bounds=(864, 1950, 1020, 2106), clickable=True)
+    events2: list[dict] = []
+    screen2 = RecordingScreen([notif, start_fab, dash])
+    _tap_start_if_present(screen2, events2.append)
+    assert screen2.taps == [start_fab]
+    assert events2[-1].get("label") == "Start"
+
+    enable_fab = Element(text="Enable", desc="", bounds=(864, 1950, 1020, 2106), clickable=True)
+    events3: list[dict] = []
+    screen3 = RecordingScreen([notif, enable_fab, dash])
+    _tap_start_if_present(screen3, events3.append)
+    assert screen3.taps == [enable_fab]
+    assert events3[-1].get("label") == "Enable"

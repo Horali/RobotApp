@@ -288,7 +288,7 @@ def setup_vpn(phone, screen, chameleon, settings, user: int, proxy_id: str, emit
     Order matters: lockdown off first (it would block the download), then the import, then wait for the tunnel,
     then always-on + lockdown. Returns the VPN state the phone reports.
     """
-    from .vpn import always_on, clear_lockdown, serve_once, sfa_import, vpn_state
+    from .vpn import SFA_PACKAGE, always_on, clear_lockdown, reset_sfa, serve_once, sfa_import, vpn_state
 
     emit({"t": "step", "name": "vpn"})
     proxy_body = chameleon.proxy(proxy_id)
@@ -300,11 +300,20 @@ def setup_vpn(phone, screen, chameleon, settings, user: int, proxy_id: str, emit
         protocol=str(proxy_body.get("protocol") or "socks5"),
     )
     clear_lockdown(phone, user)
+    reset_sfa(phone, user)
     config = build_config(proxy)
     phone_host = settings.serial.split(":")[0]
     with serve_once(config, phone_host=phone_host) as (url, served):
+        port = int(url.split("://", 1)[1].split("/", 1)[0].rsplit(":", 1)[1])
+        path = "/" + url.split("://", 1)[1].split("/", 1)[1]
+        import_url = url
         try:
-            sfa_import(phone, screen, url, user, emit)
+            phone.reverse_port(port, port)
+            import_url = f"http://127.0.0.1:{port}{path}"
+        except Exception:  # noqa: BLE001 - a phone without reverse falls back to the LAN address
+            pass
+        try:
+            sfa_import(phone, screen, import_url, user, emit)
         except RuntimeError as exc:
             emit({"t": "error", "reason": str(exc)})
             return {"up": False, "reason": str(exc)}
@@ -312,16 +321,22 @@ def setup_vpn(phone, screen, chameleon, settings, user: int, proxy_id: str, emit
             if served["done"]:
                 break
             time.sleep(1.0)
-        emit({"t": "info", "name": "profile import", "fetched": served["done"], "url_host": url.split("/")[2]})
+        emit({"t": "info", "name": "profile import", "fetched": served["done"], "url_host": import_url.split("/")[2]})
         if not served["done"]:
             return {"up": False, "reason": "the phone did not fetch the profile (SFA would not open the link?)"}
 
+    time.sleep(2.0)
+    phone.force_stop(SFA_PACKAGE, user)
+    time.sleep(1.0)
+    phone.start_app(SFA_PACKAGE, user)
+    time.sleep(2.0)
+
     state: dict = {}
-    for _ in range(int(wait_s)):
+    for i in range(int(wait_s)):
         state = vpn_state(phone, user)
         if state["up"]:
             break
-        if screen is not None and _ > 2:
+        if screen is not None and i >= 2 and i % 5 == 2:
             _tap_start_if_present(screen, emit)
         time.sleep(1.0)
     if not state.get("up"):
@@ -335,15 +350,40 @@ def setup_vpn(phone, screen, chameleon, settings, user: int, proxy_id: str, emit
 
 def _tap_start_if_present(screen, emit) -> None:
     """SFA's big button is the only tap the robot needs on this app; names differ between versions."""
-    from .ui import find, find_exact
+    from .ui import find_exact
 
     elements = screen.elements()
-    for label in ("Start", "Connect", "Turn on", "Start service"):
-        button = find_exact(elements, label) or find(elements, label)
+    text = " ".join((e.text or "") + " " + (e.desc or "") for e in elements).lower()
+    if "are you sure to import" in text:
+        cancel = find_exact(elements, "Cancel")
+        if cancel is not None:
+            screen.tap(cancel)
+            emit({"t": "info", "name": "tapped", "label": "Cancel (stale import)"})
+            return
+    if "connection request" in text or "wants to set up a vpn" in text:
+        ok = find_exact(elements, "OK")
+        if ok is not None:
+            screen.tap(ok)
+            emit({"t": "info", "name": "tapped", "label": "OK (VPN permission)"})
+            return
+    if find_exact(elements, "Started") is not None:
+        return
+    for label in ("No, thanks", "Allow"):
+        prompt_btn = find_exact(elements, label)
+        if prompt_btn is not None:
+            screen.tap(prompt_btn)
+            emit({"t": "info", "name": "tapped", "label": label})
+            return
+    for label in ("Start", "Enable", "Connect", "Turn on", "Start service"):
+        button = find_exact(elements, label)
         if button is not None:
             screen.tap(button)
             emit({"t": "info", "name": "tapped", "label": label})
             return
+    dash = find_exact(elements, "Dashboard")
+    if dash is not None:
+        screen.tap(dash)
+        emit({"t": "info", "name": "tapped", "label": "Dashboard"})
 
 
 def cmd_vpn(args: argparse.Namespace, settings: Settings) -> int:

@@ -5,7 +5,31 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-22, 17:20 WIB. **The login blocker is the exit, not the accounts — measured.**
+Last updated: 2026-11-23, 03:20 WIB. **User 10 and User 12 VPN blocker solved — proxies are healthy, bug was RobotApp/SFA state.**
+Direct probes from the laptop via Chameleon showed both `us-ps-1-virginia` (`208.214.162.185:50100`) and
+`us-ps-2-newyork` (`65.195.107.138:50100`) reach `1.1.1.1`, TikTok, Instagram, YouTube (`200`), and Google
+(`302`) cleanly. Inside the phone, neither space was actually using `us-ps-2-newyork`: User 10 (`Speed Clips`)
+still had a broken `socks5`+`udp reject` profile (`192.168.1.16:59168` -> `208.214.162.185`, causing
+`ERR_CONNECTION_REFUSED` in Chrome), and User 12 (`Timmy Clips`) had a stale `http`+`udp reject` profile
+(`192.168.1.16:51967` -> `208.214.162.185`) with SFA stopped while global `vpn_state` falsely matched
+User 10's connected tunnel.
+
+Fixes in `robotapp/vpn.py`, `robotapp/cli.py`, and `tests/test_media_vpn.py`:
+- `setup_vpn` resets SFA (`pm clear --user`, deletes stale `always_on_vpn_app`), imports via `adb reverse`
+  (`http://127.0.0.1:<port>/...`) instead of relying on phone->LAN HTTP, then force-stops and relaunches SFA
+  onto Dashboard to clear the `VIEW` import intent.
+- `sfa_import` handles ANR/USB popups, raises on SFA error dialogs instead of tapping OK, and accepts
+  `Edit Profile` after `Create`; `_tap_start_if_present` uses `find_exact` only so `"Connect"` no longer taps
+  the `"Disconnected from always-on VPN"` status-bar notification.
+- `vpn_state` scopes `dumpsys connectivity` lines per user (`OwnerUid` / `Uids` range `user * 100000`).
+
+Live-verified on the phone (build mode): both **User 10** and **User 12** imported via loopback, started
+automatically with always-on lockdown, passed leak checks on **`65.195.107.138` (`US`, 0 problems)**, and
+User 10 loaded `https://www.tiktok.com` in Chrome (`data/shots/verify-u10-tiktok.png`). Left User 0 in front
+on `Asia/Jakarta` with `lock=free`. **Before Speed/Timmy logins** (with the user nearby): confirm Speed IG
+(`faizchess55@gmail.com` in Chameleon) and Speed TikTok's login username.
+
+Previous entry — 2026-11-22, 17:20 WIB. **The login blocker is the exit, not the accounts — measured.**
 One attempt was spent on Speed's TikTok (`login-speed-tt6`, 17:05): the flow reached TikTok's login
 screen, typed `horalixscripts3@gmail.com`, tapped Continue — and the button **spun forever**. In the
 same space, Chrome to `www.tiktok.com` and to `1.1.1.1` gives **ERR_CONNECTION_REFUSED**; the tunnel is

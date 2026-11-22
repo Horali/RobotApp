@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import http.server
 import json
+import re
 import secrets as py_secrets
 import socket
 import threading
@@ -200,11 +201,28 @@ def sfa_import(phone: Phone, screen, url: str, user: int, emit=lambda event: Non
         time.sleep(1.0)
         elements = screen.elements()
         text = " ".join(e.text + " " + e.desc for e in elements)
-        if "decode config" in text or "parse config" in text:
+        low = text.lower()
+        if "decode config" in low or "parse config" in low:
             raise RuntimeError(f"sing-box refused the profile: {text.strip()[:300]}")
 
+        # Android ANR or Infinix USB charging popups can cover SFA right after a user switch.
+        if "isn't responding" in low:
+            wait_btn = find_exact(elements, "Wait")
+            if wait_btn is not None:
+                screen.tap(wait_btn)
+                time.sleep(1.5)
+                continue
+        usb_cancel = next(
+            (e for e in elements if (e.text or "").startswith("Cancel(") or e.resource_id == "com.android.settings:id/btn_negative"),
+            None,
+        )
+        if usb_cancel is not None:
+            screen.tap(usb_cancel)
+            time.sleep(1.0)
+            continue
+
         # The remote-import confirmation, before anything else: its OK is the only way forward.
-        if "are you sure to import" in text.lower():
+        if "are you sure to import" in low:
             button = find_exact(elements, "OK") or find(elements, "OK")
             if button is not None:
                 if "import OK" not in seen:
@@ -213,6 +231,10 @@ def sfa_import(phone: Phone, screen, url: str, user: int, emit=lambda event: Non
                 screen.tap(button)
                 time.sleep(1.5)
                 continue
+
+        # Surface SFA's own import errors instead of dismissing them with "OK".
+        if any(word in low for word in ("error", "failed", "connection refused")) and find_exact(elements, "OK") is not None:
+            raise RuntimeError(f"sing-box import failed: {text.strip()[:300]}")
 
         tapped = False
         for label in ("No, thanks", "Create", "Allow", "Done", "OK"):
@@ -226,7 +248,11 @@ def sfa_import(phone: Phone, screen, url: str, user: int, emit=lambda event: Non
                 break
         if tapped:
             continue
-        if find(elements, "Profiles") is not None or find(elements, "Dashboard") is not None:
+        if (
+            find(elements, "Profiles") is not None
+            or find(elements, "Dashboard") is not None
+            or ("Create" in seen and find(elements, "Edit Profile") is not None)
+        ):
             return True
     return False
 
@@ -243,14 +269,56 @@ def always_on(phone: Phone, user: int, package: str = SFA_PACKAGE) -> dict[str, 
 
 
 def clear_lockdown(phone: Phone, user: int) -> None:
-    """Before importing a profile there must be no lockdown: it would block the very download it needs.
-
-    The always-on app is left in place, so the system starts SFA by itself once the profile is there.
-    """
+    """Before importing a profile there must be no lockdown or active always-on app: either would
+    keep or restart the old broken tunnel and block or swallow the new import."""
     try:
         phone.settings_put("secure", "always_on_vpn_lockdown", "0", user)
     except Exception:  # noqa: BLE001 - nothing to clear is fine
         pass
+    try:
+        phone.shell(f"settings delete --user {user} secure always_on_vpn_app")
+    except Exception:  # noqa: BLE001 - nothing to clear is fine
+        pass
+
+
+def reset_sfa(phone: Phone, user: int) -> None:
+    """Clear SFA's stored profiles and cached intents so only the newly imported profile exists."""
+    try:
+        phone.force_stop(SFA_PACKAGE, user)
+    except Exception:  # noqa: BLE001 - best effort before clearing
+        pass
+    phone.shell(f"pm clear --user {user} {SFA_PACKAGE}")
+    try:
+        phone.appops(SFA_PACKAGE, "RUN_ANY_IN_BACKGROUND", "allow", user)
+    except Exception:  # noqa: BLE001 - best effort
+        pass
+
+
+def _vpn_lines_for_user(connectivity: str, user: int) -> list[str]:
+    """Filter `dumpsys connectivity` VPN lines to those belonging to `user`.
+
+    Multiple Android spaces can hold separate VPN tunnels simultaneously; matching globally caused
+    user 10's tunnel to mask user 12's disconnected VPN (`Service not started`).
+    """
+    uid_base = user * 100000
+    matched: list[str] = []
+    for line in connectivity.splitlines():
+        if "VPN CONNECTED" not in line and "TRANSPORT_VPN" not in line:
+            continue
+        owner = re.search(r"OwnerUid:\s*(\d+)", line)
+        if owner is not None:
+            if int(owner.group(1)) // 100000 == user:
+                matched.append(line.strip())
+            continue
+        uids = re.search(r"Uids:\s*<([^>]+)>", line)
+        if uids is not None:
+            ranges = re.findall(r"(\d+)-(\d+)", uids.group(1))
+            if any(int(lo) <= uid_base <= int(hi) for lo, hi in ranges):
+                matched.append(line.strip())
+            continue
+        # Minimal mock / older Android lines with no UID ownership still count as a match.
+        matched.append(line.strip())
+    return matched
 
 
 def vpn_state(phone: Phone, user: int) -> dict[str, object]:
@@ -261,12 +329,12 @@ def vpn_state(phone: Phone, user: int) -> dict[str, object]:
     """
     try:
         connectivity = phone.shell(
-            "dumpsys connectivity | grep -i -m6 -E 'VPN CONNECTED|TRANSPORT_VPN|VpnNetworkProvider'"
+            "dumpsys connectivity | grep -i -E 'VPN CONNECTED|TRANSPORT_VPN|VpnNetworkProvider'"
         )
     except Exception as exc:  # noqa: BLE001 - an unreadable phone is not a working tunnel
         return {"up": False, "always_on_app": "", "lockdown": False, "detail": f"could not read it: {exc}"}
-    # "VpnNetworkProvider" alone is a system network provider, not our tunnel: only a connected VPN counts.
-    up = "VPN CONNECTED" in connectivity or "TRANSPORT_VPN" in connectivity
+    matched = _vpn_lines_for_user(connectivity, user)
+    up = bool(matched)
     try:
         app = phone.settings_get("secure", "always_on_vpn_app", user).strip()
         lockdown = phone.settings_get("secure", "always_on_vpn_lockdown", user).strip()
@@ -276,5 +344,5 @@ def vpn_state(phone: Phone, user: int) -> dict[str, object]:
         "up": up,
         "always_on_app": app,
         "lockdown": lockdown == "1",
-        "detail": " ".join(connectivity.split())[:200],
+        "detail": " ".join(" ".join((matched or [connectivity])[:2]).split())[:200],
     }
