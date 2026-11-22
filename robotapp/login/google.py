@@ -220,7 +220,7 @@ class GoogleLogin:
         """The Google services screen: Backup off, Location off; then Accept/Save."""
         for label in ("Backup to Google Drive", "Backup", "Back up to Google Drive"):
             toggle = find_exact(elements, label) or find(elements, label)
-            if toggle is not None and not self._is_on(elements, label):
+            if toggle is not None and self._is_on(elements, label):
                 self.screen.tap(toggle)
                 time.sleep(1.0)
                 break
@@ -240,7 +240,7 @@ class GoogleLogin:
 
     # -- YouTube ---------------------------------------------------------------------------------
     def _check_channel(self, user: int) -> str | None:
-        """YouTube's avatar -> the account sheet: the signed-in account's name, or None.
+        """YouTube's avatar or You tab -> the account sheet: the signed-in account's name, or None.
 
         A None here means the sign-in did not take (or the account sheet could not be read); the
         caller reports it as a failed login, never as a success.
@@ -253,6 +253,12 @@ class GoogleLogin:
         while time.monotonic() < deadline:
             elements = self.screen.elements()
             avatar = next((e for e in elements if "Account" in (e.desc or "")), None)
+            if avatar is None:
+                height = self.screen.size()[1] if hasattr(self.screen, "size") else 2400
+                avatar = next(
+                    (e for e in elements if e.enabled and e.says("You") and e.bounds[1] >= height * 0.80),
+                    None,
+                )
             if avatar is not None:
                 self.screen.tap(avatar)
                 time.sleep(2.5)
@@ -268,12 +274,16 @@ class GoogleLogin:
 
     @staticmethod
     def _account_name(elements: list[Element]) -> str | None:
-        """The account sheet: the signed-in account's email, its name part. A Gmail address is the
-        one certain marker of the signed-in account (names can be anything)."""
+        """The account sheet: the signed-in account's email, its name part, or @handle. A Gmail address is
+        the strongest marker of the signed-in account (names can be anything)."""
         for element in elements:
             text = element.text.strip()
             if "@" in text and "." in text.split("@")[-1]:
                 return text.split("@")[0].strip()
+        for element in elements:
+            text = element.text.strip()
+            if text.startswith("@") and " " not in text and len(text) > 1:
+                return text
         return None
 
     # -- helpers ---------------------------------------------------------------------------------
@@ -295,7 +305,16 @@ class GoogleLogin:
                 self.screen.tap(button)
                 time.sleep(2.5)
                 after = self.screen.elements()
-                if PASSWORD_FORM.matches(after) or CODE_FORM.matches(after) or TERMS.matches(after):
+                after_text = " ".join(e.text + " " + e.desc for e in after).lower()
+                if (
+                    PASSWORD_FORM.matches(after)
+                    or CODE_FORM.matches(after)
+                    or TERMS.matches(after)
+                    or SERVICES.matches(after)
+                    or DONE.matches(after)
+                    or CAPTCHA.matches(after)
+                    or any(word in after_text for word in STOP_WORDS)
+                ):
                     return
                 # still on the same form: the keyboard most likely ate the tap
                 if attempt < tries - 1:

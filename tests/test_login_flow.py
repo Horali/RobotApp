@@ -244,3 +244,94 @@ def test_a_stuck_birthdate_wheel_stops_for_a_human(monkeypatch) -> None:
     with pytest.raises(NeedsHuman) as caught:
         login._birthday()
     assert "wheels" in str(caught.value) or "birthdate" in str(caught.value)
+
+
+def test_email_step_stops_immediately_on_account_not_found_or_captcha(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    class ImmediateStopScreen(LoginScreen):
+        def __init__(self, landing_state: str) -> None:
+            super().__init__(state="home")
+            self.landing_state = landing_state
+
+        def elements(self) -> list[Element]:
+            if self.state == "account_missing":
+                return [el("Couldn't find this account")]
+            return super().elements()
+
+        def tap(self, element: Element) -> None:
+            label = element.text or element.desc
+            if self.state == "email_entry" and label == "Continue":
+                self.taps.append(label)
+                self.state = self.landing_state
+                return
+            super().tap(element)
+
+    for landing in ("captcha", "account_missing"):
+        screen = ImmediateStopScreen(landing)
+        login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+        with pytest.raises(NeedsHuman):
+            login.login("profile-1", "nobody@example.com", "com.zhiliaoapp.musically")
+
+
+def test_cmd_login_resolves_account_id_with_explicit_email_and_leaves_space(tmp_path, monkeypatch) -> None:
+    import argparse
+    import robotapp.cli as cli_mod
+    from robotapp.config import Settings
+
+    phone = FakePhone(guard=fake_guard())
+    phone.current = 0
+    seen_calls: list[tuple] = []
+
+    class StubChameleon:
+        def __init__(self, url, token) -> None:
+            pass
+
+        def login_identity(self, profile_id: str, platform: str):
+            return ("horalixscripts3@gmail.com", "email-acct-3")
+
+    class FailingGoogleLogin:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def login(self, email: str, account_id: str, user: int):
+            seen_calls.append((email, account_id, user))
+            raise NeedsHuman("blocked by test")
+
+    monkeypatch.setattr(cli_mod, "build", lambda args, settings: (phone, "fake:5555"))
+    monkeypatch.setattr(cli_mod, "screen_for", lambda ph, settings: object())
+    monkeypatch.setattr(cli_mod, "Chameleon", StubChameleon)
+    monkeypatch.setattr("robotapp.login.google.GoogleLogin", FailingGoogleLogin)
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    args = argparse.Namespace(
+        platform="youtube",
+        user=10,
+        profile_id="prof-yt-10",
+        email="override@gmail.com",
+        package="",
+        job="test-login-1",
+        code="",
+        code_file="",
+        fake=False,
+        json=True,
+    )
+    settings = Settings(data_dir=tmp_path)
+    code = cli_mod.cmd_login(args, settings)
+    assert code == cli_mod.EXIT_NEEDS
+    assert seen_calls == [("override@gmail.com", "email-acct-3", 10)]
+    assert "am switch-user 0" in phone.commands
+
+
+def test_extract_gmail_code_reads_six_digit_otp_only() -> None:
+    from robotapp.cli import _extract_gmail_code
+
+    dump = (
+        "  NotificationRecord(0x1: pkg=com.other.app user=10)\n"
+        "    android.title=Delivery update 123456\n"
+        "  NotificationRecord(0x2: pkg=com.google.android.gm user=10)\n"
+        "    android.title=TikTok\n"
+        "    android.text=482910 is your verification code\n"
+    )
+    assert _extract_gmail_code(dump) == "482910"
+    assert _extract_gmail_code("NotificationRecord(0x2: pkg=com.google.android.gm)\nandroid.text=hello") == ""

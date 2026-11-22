@@ -291,3 +291,48 @@ def test_a_captcha_stops_the_login_and_asks_for_a_human() -> None:
     with pytest.raises(NeedsHuman) as caught:
         login.login("profile-1", "g2g.clips", INSTAGRAM)
     assert "CAPTCHA" in str(caught.value)
+
+
+def test_single_page_instagram_form_and_topbar_handle_fallback(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    class SinglePageScreen(ScriptedScreen):
+        def __init__(self) -> None:
+            super().__init__(state="single_page")
+
+        def elements(self) -> list[Element]:
+            extra = {
+                "single_page": [
+                    el("Username, email or mobile number", bounds=(100, 900, 980, 1000), clickable=True),
+                    el("Password", bounds=(100, 1050, 980, 1150), clickable=True),
+                    el("Log in", bounds=(100, 1250, 980, 1360), clickable=True),
+                    el("Forgot password?", bounds=(300, 1400, 780, 1480), clickable=True),
+                ],
+                "profile_no_at": [
+                    el("Edit profile"),
+                    el("Followers"),
+                    el("speedexpediaclips", bounds=(80, 130, 500, 190)),
+                    *NAV,
+                ],
+            }
+            return extra[self.state] if self.state in extra else super().elements()
+
+        def tap(self, element: Element) -> None:
+            label = element.text or element.desc
+            if self.state == "single_page" and label == "Log in":
+                self.taps.append(label)
+                self.state = "logged_in_feed"
+                return
+            if self.state == "logged_in_feed" and label == "Profile":
+                self.taps.append(label)
+                self.state = "profile_no_at"
+                return
+            super().tap(element)
+
+    screen = SinglePageScreen()
+    login = InstagramLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+    result = login.login("profile-1", "faizchess55@gmail.com", INSTAGRAM)
+    assert result.logged_in is True
+    assert result.handle == "@speedexpediaclips"
+    assert screen.secrets == [PASSWORD]
+    assert screen.taps.count("Log in") == 1

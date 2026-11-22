@@ -70,6 +70,7 @@ STOP_WORDS = (
     "too many attempts",
     "suspicious",
     "try again later",
+    "please try again",
     "couldn't find this account",
     "account is disabled",
     "tap yes",
@@ -149,6 +150,12 @@ class TikTokLogin:
             elements = self.screen.elements()
             if PASSWORD_FORM.matches(elements) or CODE_FORM.matches(elements):
                 break
+            if CAPTCHA.matches(elements):
+                raise NeedsHuman("TikTok shows a CAPTCHA", self._shot("tiktok-captcha"))
+            text = " ".join(e.text + " " + e.desc for e in elements).lower()
+            for word in STOP_WORDS:
+                if word in text:
+                    raise NeedsHuman(f"TikTok says: {word}", self._shot("tiktok-stop"))
             time.sleep(1.5)
         else:
             raise ScreenTimeout("waited 30 s for the password or the code form")

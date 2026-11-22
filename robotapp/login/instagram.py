@@ -54,6 +54,8 @@ STOP_WORDS = (
     "couldn't find your account",
     "too many attempts",
     "try again later",
+    "unexpected error",
+    "sorry, there was a problem",
     "suspicious",
     "disabled",
     "your phone number",
@@ -120,7 +122,7 @@ class InstagramLogin:
             time.sleep(1.5)
         else:
             raise ScreenTimeout("Instagram did not show its login screen in 150 s")
-        if LOGIN.matches(elements):
+        if LOGIN.matches(elements) and not FORM.matches(elements):
             button = find_exact(elements, "Log in") or find(elements, "Log in")
             if button is not None:
                 self.screen.tap(button)
@@ -131,8 +133,9 @@ class InstagramLogin:
 
         self._type_into(username, "Username, email or mobile number")
         self._require_typed(username)
-        self._tap_any(("Log in", "Next", "Continue"))
-        wait_for(self.screen, PASSWORD_FORM, 30)
+        if find(self.screen.elements(), "Password") is None:
+            self._tap_any(("Log in", "Next", "Continue"))
+            wait_for(self.screen, PASSWORD_FORM, 30)
         self._guard(self.screen.elements())
 
         # The secret exists only inside this block.
@@ -180,7 +183,7 @@ class InstagramLogin:
             if CODE_FORM.matches(elements):
                 self._enter_code()
                 continue
-            for label in ("Not now", "Skip", "Later", "Cancel"):
+            for label in ("Not now", "Skip", "Later", "Cancel", "Don't allow", "Allow", "Save"):
                 button = find_exact(elements, label)
                 if button is not None:
                     self.screen.tap(button)
@@ -216,6 +219,16 @@ class InstagramLogin:
         for element in elements:
             if element.text.startswith("@"):
                 return element.text.strip()
+        skip = {"profile", "instagram", "posts", "followers", "following", "edit"}
+        for element in elements:
+            text = (element.text or "").strip()
+            if (
+                80 <= element.bounds[1] < 320
+                and not text.isdigit()
+                and text.lower() not in skip
+                and re.fullmatch(r"[A-Za-z0-9._]{3,30}", text)
+            ):
+                return f"@{text}"
         return None
 
     # -- helpers -----------------------------------------------------------------------------------

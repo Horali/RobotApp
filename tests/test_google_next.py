@@ -81,3 +81,40 @@ def test_advance_notices_the_tap_was_eaten_and_tries_again() -> None:
     screen = SwallowingScreen([el("Next", bounds=(756, 2280, 1020, 2424))])
     GoogleLogin(phone=None, screen=screen, chameleon=None)._advance("google email", tries=4)
     assert screen.swallowed == 1 and "back" in screen.taps      # first tap eaten, then the keyboard closed
+
+
+def test_advance_accepts_services_done_or_captcha_without_backing_out() -> None:
+    for landing in (
+        [el("Backup to Google Drive"), el("Accept")],
+        [el("Account added"), el("Done")],
+        [el("Confirm you're human"), el("Slide to verify")],
+        [el("Couldn't find your Google Account")],
+    ):
+        screen = Screen([el("Next", bounds=(756, 2280, 1020, 2424))])
+        orig_tap = screen.tap
+
+        def move_to_landing(element, dest=landing, s=screen, base=orig_tap) -> None:
+            base(element)
+            s.current = dest
+
+        screen.tap = move_to_landing  # type: ignore[method-assign]
+        GoogleLogin(phone=None, screen=screen, chameleon=None)._advance("google step", tries=3)
+        assert screen.taps == ["Next"]
+
+
+def test_services_off_only_taps_backup_toggle_when_on() -> None:
+    on_screen = Screen([
+        el("Backup to Google Drive", bounds=(80, 900, 700, 980)),
+        el("ON", bounds=(880, 900, 1000, 980)),
+        el("Accept", bounds=(750, 2200, 1020, 2320)),
+    ])
+    GoogleLogin(phone=None, screen=on_screen, chameleon=None)._services_off(on_screen.elements())
+    assert on_screen.taps == ["Backup to Google Drive", "Accept"]
+
+    off_screen = Screen([
+        el("Backup to Google Drive", bounds=(80, 900, 700, 980)),
+        el("OFF", bounds=(880, 900, 1000, 980)),
+        el("Accept", bounds=(750, 2200, 1020, 2320)),
+    ])
+    GoogleLogin(phone=None, screen=off_screen, chameleon=None)._services_off(off_screen.elements())
+    assert off_screen.taps == ["Accept"]

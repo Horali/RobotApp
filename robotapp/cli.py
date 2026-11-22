@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 import sys
 import time
 import uuid
@@ -522,8 +523,9 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
 
     # The login name comes from Chameleon (the email assigned to the profile) unless given.
     email = args.email
+    looked_up_email, account_id = chameleon.login_identity(args.profile_id, args.platform)
     if not email:
-        email, account_id = chameleon.login_identity(args.profile_id, args.platform)
+        email = looked_up_email
         if not email:
             emit({"t": "error", "reason": "no email assigned to this profile in Chameleon: pass --email, "
                                           "or link the account on the brand page"})
@@ -532,6 +534,11 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
             return EXIT_ERROR
         emit({"t": "info", "name": "login name", "email": email})
         args.email = email
+    if args.platform == "youtube" and not account_id:
+        emit({"t": "error", "reason": "no Gmail account assigned to this YouTube profile in Chameleon"})
+        journal.set_state(job_id, "failed")
+        leave_space(phone)
+        return EXIT_ERROR
 
     def code_provider() -> str:
         if args.code:
@@ -554,6 +561,8 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
                 time.sleep(5.0)
             print("the code file never appeared; giving up", file=sys.stderr, flush=True)
             return ""
+        if not sys.stdin.isatty():
+            return _poll_gmail_notification_code(phone, emit)
         emit({"t": "needs", "kind": "email_code", "platform": args.platform})
         print("Type the 6-digit code from the account's email and press Enter:", file=sys.stderr, flush=True)
         return sys.stdin.readline().strip()
@@ -587,29 +596,81 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
             user=args.user,
         )
     try:
-        if args.platform == "youtube":
-            result = login.login(args.email, account_id, args.user)
-        else:
-            result = login.login(args.profile_id, args.email, args.package)
-    except NeedsHuman as exc:
-        emit(exc.as_event())
-        journal.set_state(job_id, "needs_human")
-        return EXIT_NEEDS
-    except NeedsCode as exc:
-        emit(exc.as_event())
-        journal.set_state(job_id, "needs_code")
-        return EXIT_NEEDS
-    except Exception as exc:
-        # A flow that dies (a screen that never came, a phone that dropped) must not leave the job
-        # "running": the next session reads that state to decide whether a login is already happening.
-        journal.set_state(job_id, "failed")
-        emit({"t": "error", "job": job_id, "reason": f"{type(exc).__name__}: {exc}"})
-        raise
-    journal.set_state(job_id, "done" if result.logged_in else "failed")
-    handle = result.channel if args.platform == "youtube" else result.handle
-    emit({"t": "done", "job": job_id, "handle": handle, "logged_in": result.logged_in})
-    leave_space(phone)
-    return EXIT_OK if result.logged_in else EXIT_ERROR
+        try:
+            if args.platform == "youtube":
+                result = login.login(args.email, account_id, args.user)
+            else:
+                result = login.login(args.profile_id, args.email, args.package)
+        except NeedsHuman as exc:
+            emit(exc.as_event())
+            journal.set_state(job_id, "needs_human")
+            return EXIT_NEEDS
+        except NeedsCode as exc:
+            emit(exc.as_event())
+            journal.set_state(job_id, "needs_code")
+            return EXIT_NEEDS
+        except Exception as exc:
+            # A flow that dies (a screen that never came, a phone that dropped) must not leave the job
+            # "running": the next session reads that state to decide whether a login is already happening.
+            journal.set_state(job_id, "failed")
+            emit({"t": "error", "job": job_id, "reason": f"{type(exc).__name__}: {exc}"})
+            raise
+        journal.set_state(job_id, "done" if result.logged_in else "failed")
+        handle = result.channel if args.platform == "youtube" else result.handle
+        emit({"t": "done", "job": job_id, "handle": handle, "logged_in": result.logged_in})
+        return EXIT_OK if result.logged_in else EXIT_ERROR
+    finally:
+        leave_space(phone)
+
+
+def _extract_gmail_code(dump: str) -> str:
+    """Return a 6-digit verification code from a Gmail notification block, if present."""
+    keywords = ("verify", "verification", "code", "tiktok", "instagram", "google", "security", "confirm", "login")
+    in_gmail = False
+    block_lines: list[str] = []
+    for raw in dump.splitlines():
+        if "NotificationRecord(" in raw:
+            if in_gmail and block_lines:
+                found = _code_from_lines(block_lines, keywords)
+                if found:
+                    return found
+            in_gmail = "pkg=com.google.android.gm" in raw
+            block_lines = [raw] if in_gmail else []
+        elif in_gmail:
+            block_lines.append(raw)
+    if in_gmail and block_lines:
+        return _code_from_lines(block_lines, keywords)
+    return ""
+
+
+def _code_from_lines(lines: list[str], keywords: tuple[str, ...]) -> str:
+    relevant = [
+        line for line in lines
+        if any(k in line for k in ("android.title", "android.text", "android.bigText", "tickerText"))
+    ]
+    text = " ".join(relevant)
+    low = text.lower()
+    if not any(word in low for word in keywords):
+        return ""
+    match = re.search(r"\b(\d{6})\b", text)
+    return match.group(1) if match else ""
+
+
+def _poll_gmail_notification_code(phone, emit, wait_s: float = 45.0) -> str:
+    """Poll Android's Gmail notifications when stdin is non-interactive so unattended logins read OTPs or fail cleanly."""
+    emit({"t": "info", "name": "code", "note": "polling Gmail notifications for 6-digit code (45s)"})
+    deadline = time.monotonic() + wait_s
+    while time.monotonic() < deadline:
+        try:
+            dump = phone.shell("dumpsys notification --noredact", timeout=20)
+            code = _extract_gmail_code(dump)
+            if code:
+                emit({"t": "info", "name": "code", "source": "gmail_notification"})
+                return code
+        except Exception:  # noqa: BLE001 - unreadable notification service falls through cleanly
+            pass
+        time.sleep(3.0)
+    return ""
 
 
 def cmd_post(args: argparse.Namespace, settings: Settings) -> int:
