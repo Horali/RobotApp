@@ -95,13 +95,13 @@ def build_config(proxy: Proxy, dns_server: str = "1.1.1.1") -> dict:
         ],
         "outbounds": [outbound],
         "route": {
-            # Measured 2026-11-22: a `{"network": "udp", "action": "reject"}` rule - which looked like
-            # the correct way to refuse UDP cleanly - BROKE the tunnel's TCP in one space (every page
-            # ERR_CONNECTION_REFUSED until the rule was rolled back; SFA 1.14). The old quic rule never
-            # matches (protocol rules need sniffing, which this config never enables), so UDP falls
-            # through to the proxy outbound and fails with a logged error instead. That is the state
-            # every proven flow has run under - keep it until the UDP question is understood.
-            "rules": [{"protocol": "quic", "action": "reject"}],
+            # Sniff packets so protocol rules match DNS (routed to proxy-dns DoH) and QUIC (rejected
+            # cleanly so mobile apps fall back to TCP/HTTPS instead of hanging or stalling in HTTP).
+            "rules": [
+                {"action": "sniff"},
+                {"protocol": "dns", "action": "hijack-dns"},
+                {"protocol": "quic", "action": "reject"},
+            ],
             "final": "proxy",
             "auto_detect_interface": True,
         },
