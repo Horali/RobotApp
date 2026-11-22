@@ -155,7 +155,9 @@ class GoogleLogin:
         if field is not None:
             self.screen.tap(field)
             time.sleep(0.6)
+            self._dismiss_keyboard_terms(self.screen.elements())
         self.screen.type_text(email, min_ms=60, max_ms=160)
+        self._dismiss_keyboard_terms(self.screen.elements())
         self._require_typed(email)
         self._advance("google email")
         wait_for(self.screen, PASSWORD_FORM, 45)
@@ -176,12 +178,14 @@ class GoogleLogin:
         if field is not None:
             self.screen.tap(field)
             time.sleep(0.6)
+            self._dismiss_keyboard_terms(self.screen.elements())
         password = self.chameleon.email_password(email_account_id)
         try:
             self.screen.type_secret(password, index=0)
         finally:
             del password
         time.sleep(0.8)
+        self._dismiss_keyboard_terms(self.screen.elements())
         if not (self.screen.focused_text() or "").strip():
             raise NeedsHuman("Google's password field stayed empty after typing",
                              self._shot("google-password-empty"))
@@ -341,6 +345,18 @@ class GoogleLogin:
         return None
 
     # -- helpers ---------------------------------------------------------------------------------
+    def _dismiss_keyboard_terms(self, elements: list[Element]) -> bool:
+        """Dismiss the Emoji Keyboard privacy modal that hijacks focus in fresh spaces."""
+        text = " ".join((e.text or "") + " " + (e.desc or "") for e in elements).lower()
+        if "emoji keyboard" not in text and "using this keyboard" not in text:
+            return False
+        btn = find_exact(elements, "Agree And Continue") or find(elements, "Agree And Continue") or find_exact(elements, "Close")
+        if btn is not None:
+            self.screen.tap(btn)
+            time.sleep(1.5)
+            return True
+        return False
+
     def _advance(self, where: str, tries: int = 5) -> None:
         """Press Next/Continue and make sure the screen actually moved on.
 
@@ -350,6 +366,8 @@ class GoogleLogin:
         """
         for attempt in range(tries):
             elements = self.screen.elements()
+            if self._dismiss_keyboard_terms(elements):
+                continue
             button = None
             for label in ("Next", "Continue", "Sign in"):
                 button = find_exact(elements, label) or find(elements, label)
@@ -359,6 +377,8 @@ class GoogleLogin:
                 self.screen.tap(button)
                 time.sleep(2.5)
                 after = self.screen.elements()
+                if self._dismiss_keyboard_terms(after):
+                    after = self.screen.elements()
                 after_text = " ".join(e.text + " " + e.desc for e in after).lower()
                 if (
                     PASSWORD_FORM.matches(after)
@@ -367,6 +387,7 @@ class GoogleLogin:
                     or SERVICES.matches(after)
                     or DONE.matches(after)
                     or CAPTCHA.matches(after)
+                    or "already exists" in after_text
                     or any(word in after_text for word in STOP_WORDS)
                 ):
                     return
@@ -375,6 +396,8 @@ class GoogleLogin:
                     self.screen.press_back()
                     time.sleep(1.5)
             else:
+                if attempt < tries - 1 and self._keyboard_open(elements):
+                    self.screen.press_back()
                 time.sleep(1.5)
         raise ScreenTimeout(f"Google did not move past {where}")
 

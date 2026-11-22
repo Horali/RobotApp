@@ -222,3 +222,23 @@ def test_account_present_and_check_channel_dismisses_notification_dialog() -> No
 
     screen2.tap = you_to_accounts_tap  # type: ignore[method-assign]
     assert GoogleLogin(phone=phone, screen=screen2, chameleon=None)._check_channel(10) == "horalixscripts3"
+
+
+def test_advance_dismisses_emoji_keyboard_terms_overlay() -> None:
+    screen = Screen([
+        el("Terms and Conditions"),
+        el("By using this keyboard, you agree to Privacy Policy and Terms of Use Agreement of Emoji Keyboard"),
+        el("Agree And Continue", bounds=(72, 2000, 1008, 2140)),
+    ])
+    orig_tap = screen.tap
+
+    def flow(element) -> None:
+        orig_tap(element)
+        if element.text == "Agree And Continue":
+            screen.current = [el("Next", bounds=(756, 2160, 1020, 2304))]
+        elif element.text == "Next":
+            screen.current = [el("Enter your password"), el("Next")]
+
+    screen.tap = flow  # type: ignore[method-assign]
+    GoogleLogin(phone=None, screen=screen, chameleon=None)._advance("google email", tries=3)
+    assert screen.taps == ["Agree And Continue", "Next"]

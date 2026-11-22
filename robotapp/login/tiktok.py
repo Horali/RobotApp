@@ -355,12 +355,21 @@ class TikTokLogin:
         self.screen.type_text(value, min_ms=60, max_ms=160)
 
     def _tap_any(self, labels: tuple[str, ...]) -> None:
-        elements = self.screen.elements()
-        for label in labels:
-            button = find(elements, label)
-            if button is not None:
-                self.screen.tap(button)
-                return
+        for _ in range(2):
+            elements = self.screen.elements()
+            text = " ".join((e.text or "") + " " + (e.desc or "") for e in elements).lower()
+            if "emoji keyboard" in text or "using this keyboard" in text:
+                agree = find_exact(elements, "Agree And Continue") or find(elements, "Agree And Continue")
+                if agree is not None:
+                    self.screen.tap(agree)
+                    time.sleep(1.5)
+                    continue
+            for label in labels:
+                button = find(elements, label)
+                if button is not None:
+                    self.screen.tap(button)
+                    return
+            break
         raise RuntimeError(f"none of {labels} is on screen")
 
     def _tap_desc(self, desc: str) -> None:

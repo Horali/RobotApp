@@ -367,3 +367,32 @@ def test_ensure_vpn_up_wakes_sleeping_sfa_before_login(monkeypatch) -> None:
     assert f"monkey -p {SFA_PACKAGE} --user 10 1" in phone.commands
     assert screen.taps == ["Start"]
     assert any(e.get("name") == "vpn wake" and e.get("up") is True for e in events)
+
+
+def test_tiktok_tap_any_dismisses_emoji_keyboard_terms_overlay(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    class OverlayScreen(LoginScreen):
+        def __init__(self) -> None:
+            super().__init__(state="overlay")
+
+        def elements(self) -> list[Element]:
+            if self.state == "overlay":
+                return [
+                    el("By using this keyboard, you agree to Privacy Policy of Emoji Keyboard"),
+                    el("Agree And Continue", bounds=(72, 2000, 1008, 2140), clickable=True),
+                ]
+            return super().elements()
+
+        def tap(self, element: Element) -> None:
+            label = element.text or element.desc
+            if self.state == "overlay" and label == "Agree And Continue":
+                self.taps.append(label)
+                self.state = "email_entry"
+                return
+            super().tap(element)
+
+    screen = OverlayScreen()
+    login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+    login._tap_any(("Continue",))
+    assert screen.taps == ["Agree And Continue", "Continue"]
