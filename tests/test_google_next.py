@@ -118,3 +118,30 @@ def test_services_off_only_taps_backup_toggle_when_on() -> None:
     ])
     GoogleLogin(phone=None, screen=off_screen, chameleon=None)._services_off(off_screen.elements())
     assert off_screen.taps == ["Accept"]
+
+
+def test_add_google_account_does_not_tap_forgot_email_when_hint_is_blank() -> None:
+    from robotapp.fake import FakePhone, fake_guard
+
+    phone = FakePhone(guard=fake_guard())
+    screen = Screen([
+        el("Google", bounds=(210, 663, 894, 728)),
+        el("Sign in"),
+        el("Forgot email?", bounds=(72, 1080, 320, 1140)),
+        el("", bounds=(72, 860, 1000, 1000), resource_id="identifierId"),
+        el("Next", bounds=(756, 2280, 1020, 2424)),
+    ])
+    typed: list[str] = []
+    screen.typed = typed
+    screen.focused_text = lambda: "user@gmail.com"  # type: ignore[attr-defined]
+    screen.type_text = lambda txt, **kw: typed.append(txt)  # type: ignore[attr-defined]
+
+    def adv_tap(element) -> None:
+        Screen.tap(screen, element)
+        if element.text == "Next":
+            screen.current = [el("Enter your password"), el("Next")]
+
+    screen.tap = adv_tap  # type: ignore[method-assign]
+    GoogleLogin(phone=phone, screen=screen, chameleon=None)._add_google_account("user@gmail.com")
+    assert "Forgot email?" not in screen.taps
+    assert typed == ["user@gmail.com"]

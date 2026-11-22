@@ -89,6 +89,9 @@ class GoogleLogin:
     def login(self, email: str, email_account_id: str, user: int) -> LoginResult:
         """Add the brand's Google account to a space, for YouTube. Never types the Gmail password
         anywhere but Google's own password field."""
+        self.phone.force_stop(GMS, user)
+        self.phone.force_stop("com.android.settings", user)
+        time.sleep(1.0)
         self._open_accounts(user)
         self._add_google_account(email)
         self._password(email_account_id)
@@ -125,7 +128,12 @@ class GoogleLogin:
         self.screen.tap(google)
         # A "checking info" spinner can sit between the pick and the email form.
         wait_for(self.screen, EMAIL_FORM, 60)
-        field = find(self.screen.elements(), "Email or phone") or find(self.screen.elements(), "email")
+        els = self.screen.elements()
+        field = (
+            find_exact(els, "Email or phone")
+            or find(els, "Email or phone")
+            or next((e for e in els if e.resource_id == "identifierId"), None)
+        )
         if field is not None:
             self.screen.tap(field)
             time.sleep(0.6)
