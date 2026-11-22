@@ -158,6 +158,7 @@ class TikTokLogin:
                     raise NeedsHuman(f"TikTok says: {word}", self._shot("tiktok-stop"))
             time.sleep(1.5)
         else:
+            self._shot("tiktok-email-timeout")
             raise ScreenTimeout("waited 30 s for the password or the code form")
 
         if CODE_FORM.matches(elements) and not PASSWORD_FORM.matches(elements):
@@ -348,11 +349,18 @@ class TikTokLogin:
         raise ScreenTimeout("the Profile tab is not on screen")
 
     def _type_into_field(self, value: str, label: str) -> None:
-        field = find(self.screen.elements(), label) or find(self.screen.elements(), "email")
+        elements = self.screen.elements()
+        # Avoid re-tapping the top "Email / Username" tab (y < 420); tap the lower EditText field if needed.
+        field = next(
+            (e for e in elements if e.bounds[1] >= 420 and (e.matches(label) or e.matches("email"))),
+            None,
+        )
         if field is not None:
             self.screen.tap(field)
             time.sleep(0.6)
         self.screen.type_text(value, min_ms=60, max_ms=160)
+        if hasattr(self.screen, "hide_keyboard"):
+            self.screen.hide_keyboard()
 
     def _tap_any(self, labels: tuple[str, ...]) -> None:
         for _ in range(2):
@@ -367,6 +375,12 @@ class TikTokLogin:
             for label in labels:
                 button = find(elements, label)
                 if button is not None:
+                    if label in ("Continue", "Next", "Log in") and hasattr(self.screen, "hide_keyboard") and button.bounds[1] > 1400:
+                        self.screen.hide_keyboard()
+                        time.sleep(0.5)
+                        refreshed = find(self.screen.elements(), label)
+                        if refreshed is not None:
+                            button = refreshed
                     self.screen.tap(button)
                     return
             break

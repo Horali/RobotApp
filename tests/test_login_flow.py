@@ -396,3 +396,30 @@ def test_tiktok_tap_any_dismisses_emoji_keyboard_terms_overlay(monkeypatch) -> N
     login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
     login._tap_any(("Continue",))
     assert screen.taps == ["Agree And Continue", "Continue"]
+
+
+def test_tiktok_type_into_field_skips_top_tab_and_hides_keyboard() -> None:
+    class KbScreen(LoginScreen):
+        def __init__(self) -> None:
+            super().__init__(state="email_form")
+            self.hid = 0
+
+        def elements(self) -> list[Element]:
+            return [
+                el("Email / Username", bounds=(602, 296, 977, 353), clickable=True),
+                el("Email address", bounds=(138, 498, 852, 562), clickable=True),
+                el("Continue", bounds=(96, 2148, 984, 2304), clickable=True),
+            ]
+
+        def hide_keyboard(self) -> None:
+            self.hid += 1
+
+    screen = KbScreen()
+    login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+    login._type_into_field("user@gmail.com", label="Email")
+    assert "Email / Username" not in screen.taps
+    assert "Email address" in screen.taps
+    assert screen.hid >= 1
+    login._tap_any(("Continue",))
+    assert screen.hid >= 2
+    assert screen.taps[-1] == "Continue"
