@@ -5,7 +5,25 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-23, 03:20 WIB. **User 10 and User 12 VPN blocker solved — proxies are healthy, bug was RobotApp/SFA state.**
+Last updated: 2026-11-23, 05:30 WIB. **Both YouTubes (Speed + Timmy) are logged in & verified; app DNS + 8 login bugs fixed; 4 social logins need morning attention.**
+Overnight work (commits `1b7df3a`..`42398e8`) found and fixed why all secondary-space logins were stalling or failing:
+- **VPN / DNS (`0c79ea2`, `181b482`)**: Laptop TLS probes confirmed `us-ps-2-newyork` (`65.195.107.138:50100`) reaches `i.instagram.com`, `b.i.instagram.com`, `graph.instagram.com`, `api16/22.tiktokv.com`, `accounts.google.com`, and `android.clients.google.com` in 1.5-1.7 s. However, `sing-box` `route.rules` lacked `{"action": "sniff"}` and `{"protocol": "dns", "action": "hijack-dns"}`, so mobile apps' UDP/53 DNS queries fell into the HTTP outbound (`router: UDP is not supported by outbound: proxy`). Added both rules (rebuilt + leak-green on Users 10 & 12 at `65.195.107.138`; SFA Logs on User 12 now show zero errors). Also fixed `sfa_import` not returning early on the empty `"No profiles configured"` Dashboard.
+- **Space VPN wake (`be9cd20`)**: Secondary users' SFA service sleeps (`up=False`) after switching away while lockdown stays on; `cmd_login` now runs `_ensure_vpn_up` before entering any app.
+- **Google / YouTube (`c149f09`, `519caee`, `317edfb`, `5689546`)**: Force-stops stale GMS (`Checking info...` bounce), skips `"Forgot email?"` link, dismisses optional `"Add a selfie for sign-in"` via `"Not now"`, skips re-adding if `dumpsys account` already holds the account, clears YouTube notification dialogs, taps YouTube `"Accounts"` to read the signed-in email, and recognizes Android's `"Account sync"`/`"Remove account"` page as sign-in done.
+- **Keyboard & platform selectors (`e591920`, `f20a89b`, `7163658`, `1160ebe`, `42398e8`)**: Dismisses Emoji Keyboard's `"Agree And Continue"` privacy modal on focus in Google/TikTok/Instagram, skips TikTok's top `"Email / Username"` tab + hides soft keyboard before `Continue`, matches Instagram 456's single-page `"Mobile number or email"` form + top-bar handle fallback, fast-detects Instagram character CAPTCHAs and Google `"Something went wrong"`, and adds unattended Gmail notification OTP polling.
+
+| Account | User | Status | Detail / Evidence |
+|---|---|---|---|
+| **Speed Clips — YouTube** (`horalixscripts3@gmail.com`) | 10 | **Logged in** | Verified `logged_in: true` (`login-speed-yt5`), channel `Speed Travel Fan` (`@speedexpediacli`, `data/shots/diag-u10-yt2.png`). |
+| **Timmy Clips — YouTube** (`horalixscripts6@gmail.com`) | 12 | **Logged in** | Verified `logged_in: true` (`login-timmy-yt5`, handle `horalixscripts6`), signed into Android cleanly. |
+| **Speed Clips — Instagram** (`faizchess55@gmail.com`) | 10 | **Needs human CAPTCHA** | Credentials submitted cleanly over fixed DNS; stopped on `"Enter the characters you see"` CAPTCHA (`data/shots/instagram-timeout-1795385329.png`). |
+| **Timmy Clips — Instagram** (`horalixscripts6@gmail.com`) | 12 | **Spins on `Log in`** | Fresh `pm clear` + fixed DNS typed email & password cleanly, blue `Log in` button spun 120 s (`data/shots/instagram-timeout-1795386419.png`). Likely Meta risk/endpoint throttle on `65.195.107.138` mobile SDK (while SFA logs were clean). |
+| **Speed Clips — TikTok** (`horalixscripts3@gmail.com`) | 10 | **Spins on `Continue`** | Filled `horalixscripts3@gmail.com` cleanly, pink `Continue` spun 30 s (`data/shots/tiktok-email-timeout-1795385987.png`). Note: `horalixscripts3@gmail.com` is now in User 10 Android if testing `"Continue with Google"` or checking TikTok login username with user. |
+| **Timmy Clips — TikTok** (`horalixscripts6@gmail.com`) | 12 | **Spins on `Continue`** | Filled `horalixscripts6@gmail.com` cleanly, pink `Continue` spun 30 s (`data/shots/tiktok-email-timeout-1795386209.png`). |
+
+Phone left clean on **User 0**, **`Asia/Jakarta`**, **`lock=free`**, USB + Wi-Fi ADB connected, ready for the `06:00 WIB` YouTube Short run (`data/robot-sit-youtube-1123.json`).
+
+Previous entry — 2026-11-23, 03:20 WIB. **User 10 and User 12 VPN blocker solved — proxies are healthy, bug was RobotApp/SFA state.**
 Direct probes from the laptop via Chameleon showed both `us-ps-1-virginia` (`208.214.162.185:50100`) and
 `us-ps-2-newyork` (`65.195.107.138:50100`) reach `1.1.1.1`, TikTok, Instagram, YouTube (`200`), and Google
 (`302`) cleanly. Inside the phone, neither space was actually using `us-ps-2-newyork`: User 10 (`Speed Clips`)
