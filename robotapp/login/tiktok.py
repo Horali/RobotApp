@@ -338,7 +338,7 @@ class TikTokLogin:
             if element.enabled and element.says("Profile") and element.bounds[1] >= height * 0.85:
                 self.screen.tap(element)
                 return
-        raise RuntimeError("the Profile tab is not on screen")
+        raise ScreenTimeout("the Profile tab is not on screen")
 
     def _type_into_field(self, value: str, label: str) -> None:
         field = find(self.screen.elements(), label) or find(self.screen.elements(), "email")
