@@ -52,6 +52,10 @@ _CAMERA_OR_PICKER = Signature(
 
 
 class YouTubePoster:
+    # How long the details screen may stay up after the Upload tap before the tap is called a no-op.
+    # A class attribute so a test does not have to wait 25 s.
+    UPLOAD_START_GRACE_S = 25.0
+
     def __init__(
         self,
         phone: Phone,
@@ -451,13 +455,35 @@ class YouTubePoster:
             time.sleep(1.0)
 
     def _wait_uploaded(self) -> None:
-        """Upload + processing, up to 5 minutes; done when the feed is back."""
-        deadline = time.monotonic() + 300
+        """Upload + processing, up to 5 minutes; done when YouTube says it took the file, or the feed is back.
+
+        The first read after the tap can still be the details tree (or the previous screen): a single
+        HOME match is not proof, so the feed has to hold for three reads in a row, and a details screen
+        that is still up after 25 s is reported as "the tap did not start an upload" (measured
+        2026-11-22 on TikTok: the same one-read check called a 1.3 s no-op a success).
+        """
+        pressed_at = time.monotonic()
+        deadline = pressed_at + 300
+        quiet = 0
         while time.monotonic() < deadline:
             elements = self.screen.elements()
-            if UPLOADED.matches(elements) or HOME.matches(elements):
-                return
-            time.sleep(2.0)
+            text = " ".join(e.text + " " + e.desc for e in elements).lower()
+            if any(word in text for word in ("uploading", "upload complete", "uploaded", "processing")):
+                return  # YouTube itself says the file is in: the link read is what proves the post
+            if DETAILS.matches(elements) and find_exact(elements, "Upload Short") is not None:
+                if time.monotonic() - pressed_at > self.UPLOAD_START_GRACE_S:
+                    raise RuntimeError(
+                        "the Upload Short tap did not start an upload (the details screen is still up); "
+                        "nothing else was pressed"
+                    )
+                quiet = 0
+            elif HOME.matches(elements):
+                quiet += 1
+                if quiet >= 3:
+                    return
+            else:
+                quiet = 0
+            time.sleep(1.5)
         raise RuntimeError("the upload did not finish")
 
     def _read_link(self) -> str | None:

@@ -278,7 +278,28 @@ def test_upload_is_pressed_once_and_the_link_is_read(journal, monkeypatch) -> No
     assert journal.outcome("job-1", "u1") == "posted"
 
 
-def test_a_signed_out_youtube_stops_the_post(journal) -> None:
+def test_an_upload_tap_that_starts_nothing_says_so(journal, monkeypatch) -> None:
+    """The details screen staying up means the tap missed; it must not be called an upload."""
+    from robotapp.post import youtube as youtube_module
+
+    monkeypatch.setattr(youtube_module.YouTubePoster, "UPLOAD_START_GRACE_S", 0.1)
+
+    class StuckOnUpload(ScriptedScreen):
+        def tap(self, element) -> None:
+            label = element.text or element.desc
+            if label == "Upload Short" and self.state == "details":
+                self.taps.append(label)   # the tap lands on nothing: the screen never moves
+                return
+            super().tap(element)
+
+    stuck = StuckOnUpload()
+    poster = YouTubePoster(LinkedPhone(stuck), stuck, journal, "job-1")
+    result = poster.post(spec())
+    assert result.outcome == "unsure_after_post"
+    assert "did not start an upload" in (result.reason or "")
+    assert stuck.taps.count("Upload Short") == 1
+
+
     screen = ScriptedScreen("you_signed_out")     # the You tab has no channel name on it
     poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-1")
     result = poster.post(spec())
