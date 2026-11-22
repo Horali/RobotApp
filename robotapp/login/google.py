@@ -89,15 +89,33 @@ class GoogleLogin:
     def login(self, email: str, email_account_id: str, user: int) -> LoginResult:
         """Add the brand's Google account to a space, for YouTube. Never types the Gmail password
         anywhere but Google's own password field."""
-        self.phone.force_stop(GMS, user)
-        self.phone.force_stop("com.android.settings", user)
-        time.sleep(1.0)
-        self._open_accounts(user)
-        self._add_google_account(email)
-        self._password(email_account_id)
-        self._after_password()
+        if not self._account_present(user, email):
+            self.phone.force_stop(GMS, user)
+            self.phone.force_stop("com.android.settings", user)
+            time.sleep(1.0)
+            self._open_accounts(user)
+            self._add_google_account(email)
+            self._password(email_account_id)
+            self._after_password()
         channel = self._check_channel(user)
         return LoginResult(channel=channel, logged_in=channel is not None)
+
+    def _account_present(self, user: int, email: str) -> bool:
+        """True when `email` is already signed into Android's AccountManager for `user`."""
+        try:
+            out = self.phone.shell("dumpsys account", timeout=20)
+        except Exception:  # noqa: BLE001
+            return False
+        in_user = False
+        needle = f"account {{name={email.lower()}, type=com.google}}"
+        for raw in out.splitlines():
+            stripped = raw.strip()
+            if stripped.startswith("User UserInfo{"):
+                in_user = stripped.startswith(f"User UserInfo{{{user}:")
+                continue
+            if in_user and needle in stripped.lower():
+                return True
+        return False
 
     # -- the settings walk -----------------------------------------------------------------------
     def _open_accounts(self, user: int) -> None:
@@ -269,6 +287,16 @@ class GoogleLogin:
         deadline = time.monotonic() + 45
         while time.monotonic() < deadline:
             elements = self.screen.elements()
+            dismissed = False
+            for label in ("Don't allow", "Not now", "No thanks", "Skip", "Got it"):
+                btn = find_exact(elements, label)
+                if btn is not None:
+                    self.screen.tap(btn)
+                    time.sleep(1.0)
+                    dismissed = True
+                    break
+            if dismissed:
+                continue
             avatar = next((e for e in elements if "Account" in (e.desc or "")), None)
             if avatar is None:
                 height = self.screen.size()[1] if hasattr(self.screen, "size") else 2400

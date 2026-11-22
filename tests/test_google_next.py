@@ -172,3 +172,40 @@ def test_optional_selfie_prompt_with_not_now_is_dismissed_not_stopped() -> None:
     locked_screen = Screen([el("Verify it's you"), el("Take a video selfie"), el("Next")])
     with pytest.raises(NeedsHuman, match="verify it's you|selfie"):
         GoogleLogin(phone=None, screen=locked_screen, chameleon=None)._after_password()
+
+
+def test_account_present_and_check_channel_dismisses_notification_dialog() -> None:
+    from robotapp.fake import FakePhone, fake_guard
+
+    phone = FakePhone(guard=fake_guard())
+    phone.expect(
+        r"dumpsys account",
+        "User UserInfo{0:Owner:13}:\n"
+        "  Account {name=owner@gmail.com, type=com.google}\n"
+        "User UserInfo{10:Speed Clips:410}:\n"
+        "  Account {name=speed@gmail.com, type=com.google}\n"
+        "User UserInfo{12:Timmy Clips:410}:\n",
+    )
+    gl = GoogleLogin(phone=phone, screen=None, chameleon=None)
+    assert gl._account_present(10, "speed@gmail.com") is True
+    assert gl._account_present(10, "owner@gmail.com") is False
+    assert gl._account_present(12, "speed@gmail.com") is False
+
+    screen = Screen([
+        el("Allow YouTube to send you notifications?"),
+        el("DON\u2019T ALLOW", bounds=(48, 2157, 1032, 2316)),
+    ])
+    orig_tap = screen.tap
+
+    def flow_tap(element) -> None:
+        orig_tap(element)
+        if element.text == "DON\u2019T ALLOW":
+            screen.current = [el("You", bounds=(864, 2180, 1080, 2320))]
+        elif element.text == "You":
+            screen.current = [el("Speed Clips"), el("@SpeedExpediaClips", bounds=(200, 300, 600, 360))]
+
+    screen.tap = flow_tap  # type: ignore[method-assign]
+    gl_ui = GoogleLogin(phone=phone, screen=screen, chameleon=None)
+    assert gl_ui._check_channel(10) == "@SpeedExpediaClips"
+    assert "DON\u2019T ALLOW" in screen.taps
+    assert "You" in screen.taps
