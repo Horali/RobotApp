@@ -258,3 +258,9 @@ def test_add_google_account_fails_fast_on_something_went_wrong() -> None:
     screen.tap = tap_to_error  # type: ignore[method-assign]
     with pytest.raises(NeedsHuman, match="something went wrong"):
         GoogleLogin(phone=None, screen=screen, chameleon=None)._add_google_account("user@gmail.com")
+
+
+def test_after_password_exits_when_android_returns_to_account_sync_screen() -> None:
+    screen = Screen([el("Google"), el("horalixscripts6@gmail.com"), el("Account sync"), el("Remove account")])
+    GoogleLogin(phone=None, screen=screen, chameleon=None)._after_password()
+    assert screen.taps == []

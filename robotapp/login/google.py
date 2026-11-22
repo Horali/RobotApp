@@ -37,7 +37,10 @@ PASSWORD_FORM = Signature("google password", any_of=("Enter your password", "pas
 CODE_FORM = Signature("google code", any_of=("Verify it", "2-Step Verification", "code", "Get a code"))
 TERMS = Signature("google terms", any_of=("I agree", "Google Terms of Service", "Accept"))
 SERVICES = Signature("google services", any_of=("Backup to Google Drive", "Google services", "Web & App Activity"))
-DONE = Signature("google done", any_of=("Account added", "signed in", "Done", "Set up"))
+DONE = Signature(
+    "google done",
+    any_of=("Account added", "signed in", "Done", "Set up", "Account sync", "Remove account"),
+)
 
 CAPTCHA = Signature("captcha", any_of=("Confirm you're human", "Slide to verify", "Verify you are human",
                                        "puzzle", "Rotate the image", "drag the slider"))
