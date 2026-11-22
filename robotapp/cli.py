@@ -597,6 +597,8 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
         )
     try:
         try:
+            if args.user > 0:
+                _ensure_vpn_up(phone, screen, args.user, emit)
             if args.platform == "youtube":
                 result = login.login(args.email, account_id, args.user)
             else:
@@ -621,6 +623,27 @@ def cmd_login(args: argparse.Namespace, settings: Settings) -> int:
         return EXIT_OK if result.logged_in else EXIT_ERROR
     finally:
         leave_space(phone)
+
+
+def _ensure_vpn_up(phone, screen, user: int, emit, wait_s: float = 30.0) -> None:
+    """Wake SFA when a space's always-on VPN slept in the background so lockdown doesn't block login."""
+    from .vpn import SFA_PACKAGE
+
+    state = vpn_state(phone, user)
+    if state.get("up") or state.get("always_on_app") != SFA_PACKAGE:
+        return
+    emit({"t": "info", "name": "vpn wake", "user": user})
+    phone.start_app(SFA_PACKAGE, user)
+    deadline = time.monotonic() + wait_s
+    while time.monotonic() < deadline:
+        state = vpn_state(phone, user)
+        if state.get("up"):
+            emit({"t": "info", "name": "vpn wake", "user": user, "up": True})
+            return
+        if screen is not None:
+            _tap_start_if_present(screen, emit)
+        time.sleep(2.0)
+    raise RobotError(f"VPN for user {user} did not wake up under lockdown")
 
 
 def _extract_gmail_code(dump: str) -> str:

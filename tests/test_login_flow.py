@@ -335,3 +335,35 @@ def test_extract_gmail_code_reads_six_digit_otp_only() -> None:
     )
     assert _extract_gmail_code(dump) == "482910"
     assert _extract_gmail_code("NotificationRecord(0x2: pkg=com.google.android.gm)\nandroid.text=hello") == ""
+
+
+def test_ensure_vpn_up_wakes_sleeping_sfa_before_login(monkeypatch) -> None:
+    import robotapp.cli as cli_mod
+    from robotapp.ui import Element as UiElement
+    from robotapp.vpn import SFA_PACKAGE
+
+    phone = FakePhone(guard=fake_guard())
+    states = iter([
+        {"up": False, "always_on_app": SFA_PACKAGE, "lockdown": True, "detail": ""},
+        {"up": False, "always_on_app": SFA_PACKAGE, "lockdown": True, "detail": ""},
+        {"up": True, "always_on_app": SFA_PACKAGE, "lockdown": True, "detail": "VPN CONNECTED"},
+    ])
+    monkeypatch.setattr(cli_mod, "vpn_state", lambda ph, u: next(states))
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    class WakeScreen:
+        def __init__(self) -> None:
+            self.taps: list[str] = []
+
+        def elements(self):
+            return [UiElement(text="", desc="Start", bounds=(864, 1950, 1020, 2106), clickable=True)]
+
+        def tap(self, elem) -> None:
+            self.taps.append(elem.desc or elem.text)
+
+    screen = WakeScreen()
+    events: list[dict] = []
+    cli_mod._ensure_vpn_up(phone, screen, 10, events.append, wait_s=10)
+    assert f"monkey -p {SFA_PACKAGE} --user 10 1" in phone.commands
+    assert screen.taps == ["Start"]
+    assert any(e.get("name") == "vpn wake" and e.get("up") is True for e in events)
