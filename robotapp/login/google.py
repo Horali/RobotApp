@@ -144,9 +144,20 @@ class GoogleLogin:
         if google is None:
             raise RuntimeError("'Google' is not in the account-type list")
         self.screen.tap(google)
-        # A "checking info" spinner can sit between the pick and the email form.
-        wait_for(self.screen, EMAIL_FORM, 60)
-        els = self.screen.elements()
+        # A "checking info" spinner can sit between the pick and the email form; fail fast on Google's error page.
+        deadline = time.monotonic() + 60
+        els: list[Element] = []
+        while time.monotonic() < deadline:
+            els = self.screen.elements()
+            if EMAIL_FORM.matches(els):
+                break
+            text = " ".join((e.text or "") + " " + (e.desc or "") for e in els).lower()
+            if "something went wrong" in text or "please go back and try again" in text:
+                raise NeedsHuman("Google says: something went wrong", self._shot("google-error"))
+            time.sleep(1.5)
+        else:
+            texts = ", ".join(sorted({(e.text or e.desc).strip() for e in els if (e.text or e.desc).strip()}))[:240]
+            raise ScreenTimeout(f"waited 60s for '{EMAIL_FORM.name}'; on screen: {texts or '(nothing readable)'}")
         field = (
             find_exact(els, "Email or phone")
             or find(els, "Email or phone")

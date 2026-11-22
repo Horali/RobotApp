@@ -173,6 +173,7 @@ class TikTokLogin:
                 if field is not None:
                     self.screen.tap(field)
                     time.sleep(0.5)
+                self._dismiss_keyboard_terms(self.screen.elements())
                 self.screen.type_secret(password)
             finally:
                 del password
@@ -348,7 +349,24 @@ class TikTokLogin:
                 return
         raise ScreenTimeout("the Profile tab is not on screen")
 
+    def _dismiss_keyboard_terms(self, elements: list[Element]) -> bool:
+        """Dismiss the Emoji Keyboard privacy modal that hijacks EditText focus in fresh spaces."""
+        text = " ".join((e.text or "") + " " + (e.desc or "") for e in elements).lower()
+        if "emoji keyboard" not in text and "using this keyboard" not in text:
+            return False
+        agree = (
+            find_exact(elements, "Agree And Continue")
+            or find(elements, "Agree And Continue")
+            or find_exact(elements, "Close")
+        )
+        if agree is not None:
+            self.screen.tap(agree)
+            time.sleep(1.5)
+            return True
+        return False
+
     def _type_into_field(self, value: str, label: str) -> None:
+        self._dismiss_keyboard_terms(self.screen.elements())
         elements = self.screen.elements()
         # Avoid re-tapping the top "Email / Username" tab (y < 420); tap the lower EditText field if needed.
         field = next(
@@ -358,20 +376,17 @@ class TikTokLogin:
         if field is not None:
             self.screen.tap(field)
             time.sleep(0.6)
+            self._dismiss_keyboard_terms(self.screen.elements())
         self.screen.type_text(value, min_ms=60, max_ms=160)
+        self._dismiss_keyboard_terms(self.screen.elements())
         if hasattr(self.screen, "hide_keyboard"):
             self.screen.hide_keyboard()
 
     def _tap_any(self, labels: tuple[str, ...]) -> None:
         for _ in range(2):
             elements = self.screen.elements()
-            text = " ".join((e.text or "") + " " + (e.desc or "") for e in elements).lower()
-            if "emoji keyboard" in text or "using this keyboard" in text:
-                agree = find_exact(elements, "Agree And Continue") or find(elements, "Agree And Continue")
-                if agree is not None:
-                    self.screen.tap(agree)
-                    time.sleep(1.5)
-                    continue
+            if self._dismiss_keyboard_terms(elements):
+                continue
             for label in labels:
                 button = find(elements, label)
                 if button is not None:

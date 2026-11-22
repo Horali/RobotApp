@@ -242,3 +242,19 @@ def test_advance_dismisses_emoji_keyboard_terms_overlay() -> None:
     screen.tap = flow  # type: ignore[method-assign]
     GoogleLogin(phone=None, screen=screen, chameleon=None)._advance("google email", tries=3)
     assert screen.taps == ["Agree And Continue", "Next"]
+
+
+def test_add_google_account_fails_fast_on_something_went_wrong() -> None:
+    from robotapp.errors import NeedsHuman
+
+    screen = Screen([el("Google", bounds=(210, 663, 894, 728))])
+    orig_tap = screen.tap
+
+    def tap_to_error(element) -> None:
+        orig_tap(element)
+        if element.text == "Google":
+            screen.current = [el("Something went wrong"), el("Please go back and try again.")]
+
+    screen.tap = tap_to_error  # type: ignore[method-assign]
+    with pytest.raises(NeedsHuman, match="something went wrong"):
+        GoogleLogin(phone=None, screen=screen, chameleon=None)._add_google_account("user@gmail.com")

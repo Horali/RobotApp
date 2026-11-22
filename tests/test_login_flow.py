@@ -423,3 +423,39 @@ def test_tiktok_type_into_field_skips_top_tab_and_hides_keyboard() -> None:
     login._tap_any(("Continue",))
     assert screen.hid >= 2
     assert screen.taps[-1] == "Continue"
+
+
+def test_tiktok_type_into_field_dismisses_emoji_keyboard_before_typing(monkeypatch) -> None:
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    class ModalBeforeTypingScreen(LoginScreen):
+        def __init__(self) -> None:
+            super().__init__(state="email_form")
+            self.modal = False
+
+        def elements(self) -> list[Element]:
+            if self.modal:
+                return [
+                    el("Terms and Conditions"),
+                    el("By using this keyboard, you agree to Privacy Policy of Emoji Keyboard"),
+                    el("Agree And Continue", bounds=(72, 2000, 1008, 2140), clickable=True),
+                ]
+            return [el("Email address", bounds=(138, 498, 852, 562), clickable=True)]
+
+        def tap(self, element: Element) -> None:
+            label = element.text or element.desc
+            self.taps.append(label)
+            if label == "Email address":
+                self.modal = True
+            elif label == "Agree And Continue":
+                self.modal = False
+
+        def type_text(self, text: str, min_ms: int = 40, max_ms: int = 110) -> None:
+            assert self.modal is False, "Emoji Keyboard modal must be dismissed before typing"
+            super().type_text(text, min_ms=min_ms, max_ms=max_ms)
+
+    screen = ModalBeforeTypingScreen()
+    login = TikTokLogin(FakePhone(guard=fake_guard()), screen, FakeChameleon())
+    login._type_into_field("user@gmail.com", label="Email")
+    assert screen.taps == ["Email address", "Agree And Continue"]
+    assert screen.typed == ["user@gmail.com"]
