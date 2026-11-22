@@ -145,3 +145,30 @@ def test_add_google_account_does_not_tap_forgot_email_when_hint_is_blank() -> No
     GoogleLogin(phone=phone, screen=screen, chameleon=None)._add_google_account("user@gmail.com")
     assert "Forgot email?" not in screen.taps
     assert typed == ["user@gmail.com"]
+
+
+def test_optional_selfie_prompt_with_not_now_is_dismissed_not_stopped() -> None:
+    from robotapp.errors import NeedsHuman
+
+    # Optional enrollment offer with "Not now" -> taps "Not now" and completes on "Done".
+    screen = Screen([
+        el("Add a selfie for sign-in"),
+        el("Take a short video of your face"),
+        el("Not now"),
+        el("Continue"),
+    ])
+    orig_tap = screen.tap
+
+    def tap_to_done(element) -> None:
+        orig_tap(element)
+        if element.text == "Not now":
+            screen.current = [el("Account added")]
+
+    screen.tap = tap_to_done  # type: ignore[method-assign]
+    GoogleLogin(phone=None, screen=screen, chameleon=None)._after_password()
+    assert "Not now" in screen.taps
+
+    # Mandatory selfie challenge with no dismiss button -> still stops with NeedsHuman.
+    locked_screen = Screen([el("Verify it's you"), el("Take a video selfie"), el("Next")])
+    with pytest.raises(NeedsHuman, match="verify it's you|selfie"):
+        GoogleLogin(phone=None, screen=locked_screen, chameleon=None)._after_password()

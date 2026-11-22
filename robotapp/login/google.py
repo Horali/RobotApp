@@ -184,8 +184,17 @@ class GoogleLogin:
             text = " ".join(e.text + " " + e.desc for e in elements).lower()
             if CAPTCHA.matches(elements):
                 raise NeedsHuman("Google shows a CAPTCHA", self._shot("google-captcha"))
+            if "already exists" in text:
+                return
+            dismiss = (
+                find_exact(elements, "Not now")
+                or find_exact(elements, "Skip")
+                or find_exact(elements, "No thanks")
+            )
             for word in STOP_WORDS:
                 if word in text:
+                    if word in ("selfie", "video selfie") and dismiss is not None and "verify it's you" not in text:
+                        continue
                     raise NeedsHuman(f"Google says: {word}", self._shot("google-stop"))
             if TERMS.matches(elements):
                 button = find_exact(elements, "I agree") or find(elements, "I agree")
