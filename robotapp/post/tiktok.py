@@ -36,6 +36,10 @@ PLAY_PACKAGE = "com.android.vending"
 _PLAY_SHEET_WORDS = ("additional files", "download from play", "dismiss update dialog")
 
 
+class NotPublished(RuntimeError):
+    """The Profile is up and holds no video: the press published nothing (not a failed link read)."""
+
+
 def _says_play_sheet(elements: list[Element]) -> bool:
     text = " ".join(((e.text or "") + " " + (e.desc or "")) for e in elements).lower()
     return any(word in text for word in _PLAY_SHEET_WORDS)
@@ -70,6 +74,10 @@ SHARE_ON_TIKTOK = Signature("tiktok share from another app", any_of=("Share on T
 
 
 class TikTokPoster:
+    # How long a tapped profile tile may take to prove it is a video page. A class attribute so a
+    # test can shorten it: on the phone the page animates in, on the fake screen it is already there.
+    VIDEO_PAGE_WAIT_S = 8.0
+
     def __init__(
         self,
         phone: Phone,
@@ -139,9 +147,10 @@ class TikTokPoster:
 
         # From here on, never press Post twice.
         self._step(9, "press post")
-        if not self.journal.mark(self.job_id, PRESSED, spec.upload_id, spec.platform):
+        may_press, why_not = self.journal.claim_press(self.job_id, spec.upload_id, spec.platform)
+        if not may_press:
             result.outcome = UNSURE
-            result.reason = "Post was already pressed for this upload; not pressing again"
+            result.reason = why_not
             log.warning("tiktok: %s", result.reason)
             return result
         try:
@@ -167,6 +176,14 @@ class TikTokPoster:
         self._step(11, "read link")
         try:
             result.url = self._read_link()
+        except NotPublished as exc:
+            # The profile is a better witness than the overlay: nothing was published, so say that
+            # instead of "posted, link not readable". The press is still claimed: no second tap.
+            result.outcome = UNSURE
+            result.reason = f"the press published nothing: {exc}"
+            log.warning("tiktok: %s", result.reason)
+            self.journal.mark(self.job_id, UNSURE, spec.upload_id, spec.platform, {"reason": result.reason})
+            return result
         except Exception as exc:  # noqa: BLE001 - the post is out; the link can be asked for
             result.reason = f"posted, link not readable: {exc}"
             log.warning("tiktok: %s", result.reason)
@@ -587,35 +604,51 @@ class TikTokPoster:
                 break
 
     def _wait_uploaded(self) -> None:
-        """The upload overlay: up to 5 minutes (§6.4 step 10). Done when the feed is back."""
-        deadline = time.monotonic() + 300
-        saw_overlay = False
+        """The upload overlay: up to 5 minutes (§6.4 step 10). Done when the composer stays gone.
+
+        Measured 2026-11-22: the old version returned the moment a home/profile signature appeared — and
+        the first hierarchy read after the tap could still be the *profile* from step 2, so a post that
+        never uploaded was called "done" in 1.3 s. The composer has to be gone on three reads in a row
+        (a stale tree cannot pass), an overlay counts as evidence, and a composer still up after 25 s is
+        said out loud: the tap started nothing.
+        """
+        pressed_at = time.monotonic()
+        deadline = pressed_at + 300
+        quiet = 0
         while time.monotonic() < deadline:
             elements = self.screen.elements()
             text = " ".join(e.text + " " + e.desc for e in elements).lower()
             if any(word in text for word in ("uploading", "uploaded", "posting", "processing")):
-                saw_overlay = True
+                quiet = 0
+            elif POST_SCREEN.matches(elements) and find_exact(elements, "Post") is not None:
+                if time.monotonic() - pressed_at > 25:
+                    raise RuntimeError(
+                        "the Post tap did not start an upload (the composer is still up); nothing else was pressed"
+                    )
+                quiet = 0
             elif HOME.matches(elements) or PROFILE.matches(elements):
-                return  # back on the feed: the overlay finished (or never had time to show)
-            time.sleep(2.0)
+                quiet += 1
+                if quiet >= 3:
+                    return
+            else:
+                quiet = 0
+            time.sleep(1.5)
         raise RuntimeError("the upload overlay did not finish")
 
     def _read_link(self) -> str | None:
-        """Profile → newest video → Share → Copy link, then read the clipboard (§6.4 step 11).
+        """Profile → newest published video → Share → Copy link, then read the clipboard (§6.4 step 11).
 
-        Measured on trill 47.8.3: the profile's first tile sits at about (16 %, 40 %) of the screen; the share
-        arrow carries the description "Share video. N shares"; the share sheet's "Copy link" is the first entry.
+        Measured on trill 47.8.3: the profile's first tile sits about a third of the way down; the share
+        arrow carries the description "Share video. N shares"; the share sheet's "Copy link" is the first
+        entry. Measured 2026-11-22: the old fixed tap at (16 %, 40 %) opened the **Drafts** page (that row
+        sits above the grid), so a fine post looked like a failed link read — the tile is now found by
+        the screen, and a tile that does not open a video page is backed out of and the next one tried.
         """
-        if not self._tap_nav("Profile"):
-            self._tap_desc("Profile")
-        wait_for(self.screen, PROFILE, 20)
-        time.sleep(1.5)
-        width, height = self.screen.size()
-        self.phone.tap(int(width * 0.16), int(height * 0.40))  # newest tile, top-left of the grid
-        time.sleep(3.5)
+        self._open_profile()
+        self._open_newest_video()
         if not self._tap_share():
             self._shot("tiktok-share")
-            raise RuntimeError("the Share button is not on the video")
+            raise RuntimeError("the video page has no Share button")
         wait_for(self.screen, SHARE_SHEET, 20)
         for attempt in range(3):
             button = find(self.screen.elements(), "Copy link")
@@ -628,15 +661,76 @@ class TikTokPoster:
         time.sleep(1.5)
         return self._clipboard()
 
+    def _open_profile(self) -> None:
+        if not self._tap_nav("Profile"):
+            self._tap_desc("Profile")
+        wait_for(self.screen, PROFILE, 20)
+        time.sleep(1.5)
+
+    def _open_newest_video(self) -> None:
+        """Tap the newest *published* video, proving each tap landed on a video page.
+
+        Raises `NotPublished` when the profile is really up and holds no video: on this build that is
+        the difference between "the post is out, the link read failed" and "the press published
+        nothing", and those two must never be confused (2026-11-22: the second was reported as the
+        first).
+        """
+        candidates = self._video_tiles()
+        for tile in candidates[:4]:
+            self.screen.tap(tile)
+            if self._wait_video_page(self.VIDEO_PAGE_WAIT_S):
+                return
+            self.screen.press_back()
+            time.sleep(2.0)
+        width, height = self.screen.size()
+        self.phone.tap(int(width * 0.17), int(height * 0.45))  # the grid's first tile, last resort
+        if self._wait_video_page(self.VIDEO_PAGE_WAIT_S):
+            return
+        self.screen.press_back()
+        time.sleep(1.5)
+        if PROFILE.matches(self.screen.elements()):
+            raise NotPublished("the profile has no published video (the press did not publish this clip)")
+        raise RuntimeError("could not open the newest video from the profile")
+
+    def _video_tiles(self) -> list[Element]:
+        """Clickable tiles below the profile's header, top-left first — the Drafts row is not one."""
+        width, height = self.screen.size()
+        tiles = [
+            e for e in self.screen.elements()
+            if e.clickable
+            and e.bounds[1] >= height * 0.28
+            and e.bounds[3] <= height * 0.85
+            and (e.bounds[2] - e.bounds[0]) >= width * 0.18
+            and (e.bounds[3] - e.bounds[1]) >= height * 0.05
+        ]
+        tiles.sort(key=lambda e: (e.bounds[1], e.bounds[0]))
+        return tiles
+
+    def _wait_video_page(self, timeout_s: float) -> bool:
+        """True when the screen is a video page: it has the share arrow a video page has."""
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            if self._feed_share() is not None:
+                return True
+            time.sleep(1.0)
+        return False
+
+    def _feed_share(self) -> Element | None:
+        """The share arrow on a feed video: its label is "Share video. 1,338 shares"."""
+        for element in self.screen.elements():
+            label = (element.desc or element.text or "").strip().lower()
+            if label == "share" or label.startswith("share video"):
+                return element
+        return None
+
     def _tap_share(self) -> bool:
-        """The share arrow on a video: its label is "Share video. 1,338 shares", so match on the prefix."""
+        """The share arrow on a video (see `_feed_share`), waited for: the video page animates in."""
         deadline = time.monotonic() + 15
         while time.monotonic() < deadline:
-            for element in self.screen.elements():
-                label = (element.desc or element.text or "").strip().lower()
-                if label == "share" or label.startswith("share video"):
-                    self.screen.tap(element)
-                    return True
+            button = self._feed_share()
+            if button is not None:
+                self.screen.tap(button)
+                return True
             time.sleep(1.0)
         return False
 
