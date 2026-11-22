@@ -249,9 +249,13 @@ def sfa_import(phone: Phone, screen, url: str, user: int, emit=lambda event: Non
         if tapped:
             continue
         if (
-            find(elements, "Profiles") is not None
-            or find(elements, "Dashboard") is not None
-            or ("Create" in seen and find(elements, "Edit Profile") is not None)
+            "import OK" in seen
+            and "no profiles configured" not in low
+            and (
+                find(elements, "Profiles") is not None
+                or find(elements, "Dashboard") is not None
+                or ("Create" in seen and find(elements, "Edit Profile") is not None)
+            )
         ):
             return True
     return False

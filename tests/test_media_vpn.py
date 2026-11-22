@@ -244,6 +244,48 @@ def test_sfa_import_raises_on_error_dialog_instead_of_tapping_ok() -> None:
     assert "OK" not in screen.taps
 
 
+def test_sfa_import_waits_past_empty_dashboard_until_create_completes(monkeypatch) -> None:
+    from robotapp.ui import Element
+    from robotapp.vpn import sfa_import
+
+    monkeypatch.setattr("time.sleep", lambda s: None)
+
+    def el(text: str) -> Element:
+        return Element(text=text, bounds=(0, 1400, 1080, 1560), clickable=True)
+
+    class StagedImportScreen:
+        def __init__(self) -> None:
+            self.step = 0
+            self.taps: list[str] = []
+
+        def elements(self) -> list[Element]:
+            # First read shows empty Dashboard + Profiles before the Check Update / import dialogs render.
+            if self.step == 0:
+                self.step = 1
+                return [el("Dashboard"), el("Profiles"), el("No profiles configured")]
+            if self.step == 1:
+                return [el("Check Update"), el("No, thanks"), el("OK"), el("Dashboard"), el("Profiles")]
+            if self.step == 2:
+                return [el("Are you sure to import remote profile 127.0.0.1:50877?"), el("Cancel"), el("OK")]
+            if self.step == 3:
+                return [el("Create")]
+            return [el("Edit Profile")]
+
+        def tap(self, element) -> None:
+            label = element.text or ""
+            self.taps.append(label)
+            if label == "No, thanks":
+                self.step = 2
+            elif label == "OK":
+                self.step = 3
+            elif label == "Create":
+                self.step = 4
+
+    screen = StagedImportScreen()
+    assert sfa_import(FakePhone(guard=fake_guard()), screen, "http://127.0.0.1:50877/tok/config.json", 12) is True
+    assert screen.taps == ["No, thanks", "OK", "Create"]
+
+
 def test_setup_vpn_uses_adb_reverse_loopback_for_import(monkeypatch) -> None:
     from robotapp.cli import setup_vpn
     from robotapp.config import Settings
