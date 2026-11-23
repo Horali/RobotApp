@@ -5,7 +5,13 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-23, 08:30 WIB. **`vtubers Clips` YouTube Short is LIVE (`https://www.youtube.com/shorts/LrOw4-OKsBg`) — all 3 throwaway platforms (IG, TT, YT) now have live robot posts.**
+Last updated: 2026-11-23, 14:04 WIB. **YouTube `_read_link()` fixed & live-verified over Wi-Fi (`192.168.1.8:5555`); ready for brand logins whenever user is ready.**
+- **YouTube `_read_link()` + Wi-Fi ADB (`14:04 WIB`)**:
+  - Re-enabled Wi-Fi wireless debugging (`adb tcpip 5555` -> `192.168.1.8:5555`) so `RobotApp` stays connected without the cable.
+  - Fixed `_read_link()` in `robotapp/post/youtube.py` (`12/12` passing in `tests/test_youtube_flow.py`): `You` tab opens `View channel` -> channel `Shorts` grid -> newest Short's `More actions` 3-dot menu (`Drafts` naturally skipped) -> `Share` -> `Copy link`, with an Android 13 secondary-user fallback that pastes (`KEYCODE_PASTE` `279`) into YouTube's foreground `Search` bar when `device.clipboard` returns `None`.
+  - Live-verified on User 11 (`@HoraliCript`, no upload): returned `https://youtube.com/shorts/LrOw4-OKsBg?si=gJG77SuV732SZWnU` cleanly and left phone on **User 0**, **`Asia/Jakarta`**, **`lock=free`**.
+
+Previous entry — 2026-11-23, 08:30 WIB. **`vtubers Clips` YouTube Short is LIVE (`https://www.youtube.com/shorts/LrOw4-OKsBg`) — all 3 throwaway platforms (IG, TT, YT) now have live robot posts.**
 - **Morning YouTube Short run (`morning-youtube-1123`, commits `484ffb9`, `e64e7a6`)**:
   - `038412461d60436faf123cac7bd58b0d` (`"Jynxzi found Herobrine in a Minecraft horror mod"`) uploaded once in User 11 (`@HoraliCript`, Virginia IP `208.214.162.185`, `America/New_York`), verified live via headless Chrome at `https://www.youtube.com/shorts/LrOw4-OKsBg` with zero duplicates, and marked `posted` in ClipMaker (`POST /api/phone-posted`).
   - Fixes (`11/11` passing in `tests/test_youtube_flow.py`): ignore Android SystemUI `com.android.systemui:id/home` when leaving `You` tab, keep `svc power stayon true` during sittings, retry `Create` tap if YouTube loses foreground or ignores first tap, skip `"Drafts"` / `"Create video"` / `touch_outside` in `_pick_video` and match duration per tile, type inline `"Caption your Short"` title, and pick `"No, it's not made for kids"` on YouTube 21.46's unlabelled Litho `Select audience` screen. Note: `_read_link` after Upload still hit `the video's menu (...) is not on screen`, so link readback on `Your videos` can be measured later; Upload itself succeeded cleanly on the first tap (`engaged_s: 212.8`).

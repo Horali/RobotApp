@@ -506,3 +506,75 @@ def test_inline_caption_and_litho_audience_picker_are_completed(journal) -> None
     assert screen.state == "details"
 
 
+def test_read_link_uses_view_channel_more_actions_and_search_paste_fallback(journal) -> None:
+    """Measured 2026-11-23: You -> View channel -> More actions -> Share -> Copy link + KEYCODE_PASTE."""
+    drafts_tile = Element(desc="Drafts", bounds=(0, 852, 358, 1449), clickable=True)
+    short_tile = Element(desc="Jynxzi Short", bounds=(361, 852, 719, 1449), clickable=True)
+    more_actions = Element(desc="More actions", bounds=(653, 876, 707, 930), clickable=True)
+    search_btn = Element(desc="Search", resource_id="com.google.android.youtube:id/menu_item_view",
+                         bounds=(792, 108, 936, 252), clickable=True)
+
+    class Android13LinkScreen(ScriptedScreen):
+        def __init__(self) -> None:
+            super().__init__("home")
+            self._clipboard = None
+            self._pasted: str | None = None
+
+        def elements(self) -> list[Element]:
+            if self.state == "channel":
+                return [search_btn, drafts_tile, short_tile, more_actions]
+            if self.state == "video_menu":
+                return [Element(text="Promote"), Element(text="Share", clickable=True), Element(text="Delete")]
+            if self.state == "share_sheet2":
+                return [Element(desc="Copy link", bounds=(60, 1908, 1056, 2052), clickable=True)]
+            if self.state == "search_box":
+                return [Element(text=self._pasted or "Search YouTube", bounds=(150, 120, 900, 220), clickable=True)]
+            return super().elements()
+
+        def tap(self, element: Element) -> None:
+            label = (element.text or element.desc).strip()
+            self.taps.append(label or "row")
+            if self.state == "you" and label == "View channel":
+                self.state = "channel"
+            elif self.state == "channel" and label == "More actions":
+                self.state = "video_menu"
+            elif self.state == "video_menu" and label == "Share":
+                self.state = "share_sheet2"
+            elif self.state == "share_sheet2" and label == "Copy link":
+                self.state = "channel"
+            elif self.state == "channel" and label == "Search":
+                self.state = "search_box"
+            else:
+                self.taps.pop()
+                super().tap(element)
+
+        def press_back(self) -> None:
+            self.taps.append("back")
+            if self.state == "search_box":
+                self.state = "channel"
+            else:
+                super().press_back()
+
+        def focused_text(self) -> str | None:
+            return self._pasted if self.state == "search_box" else super().focused_text()
+
+    screen = Android13LinkScreen()
+    phone = LinkedPhone(screen)
+    commands: list[str] = []
+
+    def shell_with_paste(cmd: str, timeout: int = 30) -> str:
+        commands.append(cmd)
+        if "279" in cmd:
+            screen._pasted = "https://youtube.com/shorts/LrOw4-OKsBg"
+        return ""
+
+    phone.shell = shell_with_paste
+    poster = YouTubePoster(phone, screen, journal, "job-readlink")
+    url = poster._read_link()
+
+    assert url == "https://youtube.com/shorts/LrOw4-OKsBg"
+    assert any("279" in call for call in commands)
+    assert screen.state == "channel"
+
+
+

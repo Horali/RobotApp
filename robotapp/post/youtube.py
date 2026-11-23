@@ -58,6 +58,17 @@ def _is_systemui(element: Element) -> bool:
     return element.resource_id.startswith("com.android.systemui:")
 
 
+def _extract_youtube_url(text: str | None) -> str | None:
+    """Return the first canonical YouTube Short/video URL embedded in `text`, if any."""
+    if not text:
+        return None
+    for match in re.finditer(r"https?://\S+", text):
+        candidate = match.group(0).rstrip(".,;)>\"'")
+        if any(host in candidate for host in ("youtube.com/shorts", "youtu.be/", "youtube.com/watch")):
+            return candidate
+    return None
+
+
 class YouTubePoster:
     # How long the details screen may stay up after the Upload tap before the tap is called a no-op.
     # A class attribute so a test does not have to wait 25 s.
@@ -634,30 +645,87 @@ class YouTubePoster:
         raise RuntimeError("the upload did not finish")
 
     def _read_link(self) -> str | None:
-        """You -> Your videos -> the newest -> ... -> Copy link. The clipboard only counts with
-        youtube.com/shorts or youtu.be in it."""
+        """You -> View channel / Your videos -> More actions -> Share -> Copy link.
+
+        Measured 2026-11-23 (YouTube 21.46 on Android 13, secondary user 11):
+        - The You tab exposes `View channel` (no `Your videos`), which opens the channel Shorts
+          grid with `Drafts` first and the newest Short next (`More actions` -> `Share` -> `Copy link`).
+        - Android 13 hides secondary-user clipboard reads from `device.clipboard` (`None`), so when
+          direct clipboard read returns nothing we paste (`KEYCODE_PASTE`) into YouTube's Search bar.
+        """
         self._open_you()
-        videos = find(self.screen.elements(), "Your videos")
+        time.sleep(1.5)
+        you_els = [e for e in self.screen.elements() if not _is_systemui(e)]
+        videos = find(you_els, "Your videos")
+        if videos is None:
+            videos = next(
+                (e for e in you_els if e.clickable and e.says("View channel")),
+                find(you_els, "View channel"),
+            )
         if videos is not None:
             self.screen.tap(videos)
-            time.sleep(3.0)
-        width, height = self.screen.size()
-        self.phone.tap(int(width * 0.5), int(height * 0.30))   # the newest video row
-        time.sleep(3.5)
-        menu = find(self.screen.elements(), "...") or find(self.screen.elements(), "More options")
-        if menu is None:
-            raise RuntimeError("the video's menu (...) is not on screen")
-        self.screen.tap(menu)
-        wait_for(self.screen, SHARE_SHEET, 20)
-        link = find_exact(self.screen.elements(), "Copy link")
+            time.sleep(3.5)
+        els = [e for e in self.screen.elements() if not _is_systemui(e)]
+        more_actions = sorted(
+            (e for e in els if e.enabled and (e.desc or e.text or "").strip() == "More actions"),
+            key=lambda e: (e.bounds[1], e.bounds[0]),
+        )
+        if more_actions:
+            self.screen.tap(more_actions[0])
+            time.sleep(2.0)
+            menu_els = [e for e in self.screen.elements() if not _is_systemui(e)]
+            share = find_exact(menu_els, "Share") or find(menu_els, "Share")
+            if share is None:
+                raise RuntimeError("the video menu has no 'Share' item")
+            self.screen.tap(share)
+        else:
+            width, height = self.screen.size()
+            self.phone.tap(int(width * 0.5), int(height * 0.30))   # legacy newest video row
+            time.sleep(3.5)
+            menu = find(self.screen.elements(), "...") or find(self.screen.elements(), "More options")
+            if menu is None:
+                raise RuntimeError("the video's menu (...) is not on screen")
+            self.screen.tap(menu)
+        sheet_els = wait_for(self.screen, SHARE_SHEET, 20)
+        link = find_exact(sheet_els, "Copy link") or find(sheet_els, "Copy link")
         if link is None:
             raise RuntimeError("'Copy link' is not in the share sheet")
         self.screen.tap(link)
         time.sleep(1.5)
-        value = self.screen.clipboard()
-        if value and ("youtube.com/shorts" in value or "youtu.be" in value):
-            return value.strip()
-        return None
+        url = _extract_youtube_url(self.screen.clipboard())
+        if url is not None:
+            return url
+        return self._paste_clipboard_via_search()
+
+    def _paste_clipboard_via_search(self) -> str | None:
+        """Read the user's clipboard on Android 13 by pasting into YouTube's foreground Search box."""
+        els = [e for e in self.screen.elements() if not _is_systemui(e)]
+        search = next((e for e in els if e.clickable and e.says("Search")), find(els, "Search"))
+        if search is None:
+            return None
+        self.screen.tap(search)
+        time.sleep(1.5)
+        self.phone.shell("input keyevent 279", timeout=10)   # KEYCODE_PASTE
+        time.sleep(0.8)
+        url = _extract_youtube_url(self.screen.focused_text())
+        if url is None:
+            for element in self.screen.elements():
+                if not _is_systemui(element):
+                    url = _extract_youtube_url(element.text) or _extract_youtube_url(element.desc)
+                    if url is not None:
+                        break
+        for _ in range(3):
+            els_after = [e for e in self.screen.elements() if not _is_systemui(e)]
+            in_search = any(
+                any(k in (e.text or "").lower() for k in ("youtube.com", "youtu.be", "search youtube"))
+                or e.says("Clear")
+                for e in els_after
+            )
+            if not in_search:
+                break
+            self.screen.press_back()
+            time.sleep(0.6)
+        return url
 
     def _open_you(self) -> None:
         """The bottom bar's "You" tab (exact label in the bottom bar).
