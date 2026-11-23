@@ -5,7 +5,13 @@ Status: **building.** Plan finished 2026-11-18; P1 (the Chameleon route) is buil
 
 ## Progress
 
-Last updated: 2026-11-23, 05:30 WIB. **Both YouTubes (Speed + Timmy) are logged in & verified; app DNS + 8 login bugs fixed; 4 social logins need morning attention.**
+Last updated: 2026-11-23, 08:30 WIB. **`vtubers Clips` YouTube Short is LIVE (`https://www.youtube.com/shorts/LrOw4-OKsBg`) — all 3 throwaway platforms (IG, TT, YT) now have live robot posts.**
+- **Morning YouTube Short run (`morning-youtube-1123`, commits `484ffb9`, `e64e7a6`)**:
+  - `038412461d60436faf123cac7bd58b0d` (`"Jynxzi found Herobrine in a Minecraft horror mod"`) uploaded once in User 11 (`@HoraliCript`, Virginia IP `208.214.162.185`, `America/New_York`), verified live via headless Chrome at `https://www.youtube.com/shorts/LrOw4-OKsBg` with zero duplicates, and marked `posted` in ClipMaker (`POST /api/phone-posted`).
+  - Fixes (`11/11` passing in `tests/test_youtube_flow.py`): ignore Android SystemUI `com.android.systemui:id/home` when leaving `You` tab, keep `svc power stayon true` during sittings, retry `Create` tap if YouTube loses foreground or ignores first tap, skip `"Drafts"` / `"Create video"` / `touch_outside` in `_pick_video` and match duration per tile, type inline `"Caption your Short"` title, and pick `"No, it's not made for kids"` on YouTube 21.46's unlabelled Litho `Select audience` screen. Note: `_read_link` after Upload still hit `the video's menu (...) is not on screen`, so link readback on `Your videos` can be measured later; Upload itself succeeded cleanly on the first tap (`engaged_s: 212.8`).
+  - Phone restored cleanly to **User 0**, **`Asia/Jakarta`**, **`lock=free`**.
+
+Previous entry — 2026-11-23, 05:30 WIB. **Both YouTubes (Speed + Timmy) are logged in & verified; app DNS + 8 login bugs fixed; 4 social logins need morning attention.**
 Overnight work (commits `1b7df3a`..`42398e8`) found and fixed why all secondary-space logins were stalling or failing:
 - **VPN / DNS (`0c79ea2`, `181b482`)**: Laptop TLS probes confirmed `us-ps-2-newyork` (`65.195.107.138:50100`) reaches `i.instagram.com`, `b.i.instagram.com`, `graph.instagram.com`, `api16/22.tiktokv.com`, `accounts.google.com`, and `android.clients.google.com` in 1.5-1.7 s. However, `sing-box` `route.rules` lacked `{"action": "sniff"}` and `{"protocol": "dns", "action": "hijack-dns"}`, so mobile apps' UDP/53 DNS queries fell into the HTTP outbound (`router: UDP is not supported by outbound: proxy`). Added both rules (rebuilt + leak-green on Users 10 & 12 at `65.195.107.138`; SFA Logs on User 12 now show zero errors). Also fixed `sfa_import` not returning early on the empty `"No profiles configured"` Dashboard.
 - **Space VPN wake (`be9cd20`)**: Secondary users' SFA service sleeps (`up=False`) after switching away while lockdown stays on; `cmd_login` now runs `_ensure_vpn_up` before entering any app.
