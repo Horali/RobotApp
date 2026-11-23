@@ -99,6 +99,16 @@ def run(
     pushed: dict[str, str] = {}
     user = sitting.user if sitting.user is not None else _user_of(phone)
 
+    # Keep the screen on for the whole sitting (measured 2026-11-23 06:05): with the phone charging
+    # at 100 %, XOS's own charging screen ("13 / XOS LAUNCHER") takes the foreground mid-flow and the
+    # next tap lands on the launcher's app drawer. Stay-awake is the cheap half of the answer; the
+    # posters' "is my app still in front" recovery is the other.
+    try:
+        phone.shell("svc power stayon true", timeout=10)
+        phone.shell("input keyevent KEYCODE_WAKEUP", timeout=10)
+    except Exception as exc:  # noqa: BLE001 - a sitting must not fail because a wake-up nudge did
+        emit({"t": "warning", "name": "stay awake", "reason": str(exc)})
+
     for index, spec in enumerate(sitting.posts, start=1):
         emit({"t": "step", "job": sitting.job_id, "post": spec.upload_id, "n": index, "of": len(sitting.posts), "name": "start"})
         if not post_allowed() and not build_mode():

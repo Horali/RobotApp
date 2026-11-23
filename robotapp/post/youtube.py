@@ -49,6 +49,13 @@ _CAMERA_OR_PICKER = Signature(
     any_of=("Import video from photo library", "Record button", "Close camera",
             "Create from gallery", "Recents", "Create video"),
 )
+_HEADER_LABELS = frozenset({"drafts", "create video", "recents", "next", "close"})
+_GALLERY_HEADERS = frozenset({"create from gallery", "recents", "drafts", "create video"})
+
+
+def _is_systemui(element: Element) -> bool:
+    """Exclude Android navigation/status bars so SystemUI buttons never match YouTube tabs."""
+    return element.resource_id.startswith("com.android.systemui:")
 
 
 class YouTubePoster:
@@ -261,11 +268,16 @@ class YouTubePoster:
                 name = label          # on this build the channel's name is a content-desc, not a text
                 break
         # Back to the feed by tapping the bottom Home tab: Back here would leave the app.
-        for element in elements:
-            if (element.desc or element.text or "").strip() == "Home" and element.bounds[1] > height * 0.85:
-                self.screen.tap(element)
-                time.sleep(2.0)
-                break
+        # Ignore SystemUI so Android's nav-bar Home button is never tapped instead of YouTube's tab.
+        home_tabs = [
+            element for element in elements
+            if not _is_systemui(element)
+            and (element.desc or element.text or "").strip() == "Home"
+            and element.bounds[1] > height * 0.85
+        ]
+        if home_tabs:
+            self.screen.tap(min(home_tabs, key=lambda e: e.bounds[1]))
+            time.sleep(2.0)
         else:
             self._back_to_feed()
         if name is None:
@@ -280,7 +292,69 @@ class YouTubePoster:
         return None
 
     def _open_create(self) -> None:
-        """The Create tab in the bottom bar; on this build it opens the Shorts camera directly."""
+        """The Create tab in the bottom bar; on this build it opens the Shorts camera directly.
+
+        Two attempts: measured 2026-11-23 06:05, the phone's own charging screen ("13 / XOS LAUNCHER")
+        took the foreground between the channel check and Create, the create tab was therefore never
+        found, and the coordinate fallback landed on the home gesture - every later step then read the
+        launcher's app drawer. If YouTube is not in front after the tap, it is brought back and the tap
+        tried once more instead of walking into the launcher.
+        """
+        for _attempt in range(2):
+            self._tap_create_tab()
+            time.sleep(2.5)
+            if not self._in_front():
+                self._shot("youtube-lost-foreground")
+                self.phone.start_app(self.package, self.user)
+                time.sleep(6.0)
+                continue
+            # This build's Create can open a chooser with two big tabs - "Drafts" and "Create video" -
+            # and the gallery grid underneath it. "Create video" on this build leads to the AI creation
+            # screen, while the grid is already the picker (measured 2026-11-21), so it is tapped only when
+            # no clip is on screen.
+            elements = self.screen.elements()
+            if not _CAMERA_OR_PICKER.matches(elements) and HOME.matches(elements):
+                width, height = self.screen.size()
+                icon = next(
+                    (
+                        e for e in elements
+                        if not _is_systemui(e)
+                        and e.resource_id.endswith(":id/image")
+                        and e.bounds[0] >= width * 0.50
+                        and e.bounds[2] <= width * 0.75
+                        and e.bounds[1] > height * 0.85
+                    ),
+                    None,
+                )
+                if icon is not None:
+                    self.screen.tap(icon)
+                else:
+                    self._tap_create_tab()
+                time.sleep(3.0)
+                elements = self.screen.elements()
+            has_clips = GALLERY.matches(elements) or any(
+                e.resource_id.endswith("thumb_image_view")
+                or (e.desc or e.text or "").strip().lower().endswith(".mp4")
+                or re.fullmatch(r"\d{1,2}:\d{2}", (e.text or "").strip())
+                for e in elements
+            )
+            chooser = find_exact(elements, "Create video") or find_exact(elements, "Create a Short")
+            if chooser is not None and not has_clips:
+                self.screen.tap(chooser)
+                time.sleep(3.0)
+            # A "Back / Continue" prompt can sit between Create and the picker (measured 2026-11-21).
+            for _ in range(3):
+                elements = self.screen.elements()
+                cont = find_exact(elements, "Continue")
+                if cont is None:
+                    break
+                self.screen.tap(cont)
+                time.sleep(3.0)
+            return
+        raise RuntimeError("Create never opened the camera: YouTube kept leaving the foreground")
+
+    def _tap_create_tab(self) -> None:
+        """Tap the bottom bar's Create; the coordinate fallback stays above the home gesture line."""
         deadline = time.monotonic() + 20
         create = None
         while time.monotonic() < deadline and create is None:
@@ -289,38 +363,20 @@ class YouTubePoster:
             create = next(
                 (
                     e for e in elements
-                    if e.enabled and e.bounds[1] > height * 0.85
+                    if not _is_systemui(e) and e.enabled and e.bounds[1] > height * 0.85
                     and "create" in ((e.desc or "") + " " + (e.text or "")).lower()
                 ),
                 None,
             )
             if create is None:
                 time.sleep(1.5)
-        if create is None:
-            width, height = self.screen.size()
-            self.phone.tap(int(width * 0.625), int(height * 0.96))
-            time.sleep(3.0)
+        if create is not None:
+            self.screen.tap(create)
             return
-        self.screen.tap(create)
-        time.sleep(3.0)
-        # This build's Create can open a chooser with two big tabs - "Drafts" and "Create video" -
-        # and the gallery grid underneath it. "Create video" on this build leads to the AI creation
-        # screen, while the grid is already the picker (measured 2026-11-21), so it is tapped only when
-        # no clip is on screen.
-        elements = self.screen.elements()
-        has_clips = any((e.desc or e.text or "").strip().lower().endswith(".mp4") for e in elements)
-        chooser = find_exact(elements, "Create video") or find_exact(elements, "Create a Short")
-        if chooser is not None and not has_clips:
-            self.screen.tap(chooser)
-            time.sleep(3.0)
-        # A "Back / Continue" prompt can sit between Create and the picker (measured 2026-11-21).
-        for _ in range(3):
-            elements = self.screen.elements()
-            cont = find_exact(elements, "Continue")
-            if cont is None:
-                break
-            self.screen.tap(cont)
-            time.sleep(3.0)
+        # 0.96 of the height is this phone's gesture bar: a tap there goes Home and the launcher
+        # takes the flow (measured 2026-11-23). Stay above it.
+        width, height = self.screen.size()
+        self.phone.tap(int(width * 0.625), int(height * 0.93))
 
     def _clear_draft_picker(self) -> None:
         """Leave the draft list that an interrupted run can leave behind; it blocks a new Short.
@@ -348,23 +404,60 @@ class YouTubePoster:
         self.phone.tap(int(width * 0.10), int(height * 0.73))
 
     def _pick_video(self, spec: PostSpec) -> None:
-        # The tiles are the gallery itself; "Create from gallery" in that header leads to YouTube's AI
-        # creation page (measured 2026-11-21), so it must not be tapped.
+        # The tiles are the gallery itself; "Drafts", "Create video", and "Create from gallery" sit
+        # above the grid (measured 2026-11-23), so skip header/overlay nodes and match duration to the tile.
         elements = self.screen.elements()
-        self._assert_length(elements, spec)
         width, height = self.screen.size()
-        big = [e for e in elements if e.clickable and e.area >= (width * height) * 0.02 and e.bounds[1] > height * 0.1]
-        if big:
-            tile = min(big, key=lambda e: (e.bounds[1], e.bounds[0]))
+        thumbs = [
+            e for e in elements
+            if not _is_systemui(e)
+            and (e.resource_id.endswith("thumb_image_view") or (e.desc or "").strip().lower().endswith(".mp4"))
+        ]
+        if thumbs:
+            tile = min(thumbs, key=lambda e: (e.bounds[1], e.bounds[0]))
+        else:
+            header_bottoms = [
+                e.bounds[3] for e in elements
+                if ((e.text or "").strip().lower() in _GALLERY_HEADERS
+                    or (e.desc or "").strip().lower() in _GALLERY_HEADERS)
+                and e.bounds[3] < height * 0.5
+            ]
+            min_y = max(int(height * 0.1), max(header_bottoms, default=0))
+            big = [
+                e for e in elements
+                if not _is_systemui(e)
+                and e.clickable
+                and not e.resource_id.endswith(":id/touch_outside")
+                and e.area >= (width * height) * 0.02
+                and e.area < (width * height) * 0.5
+                and e.bounds[1] >= min_y
+                and (e.text or e.desc or "").strip().lower() not in _HEADER_LABELS
+            ]
+            tile = min(big, key=lambda e: (e.bounds[1], e.bounds[0])) if big else None
+        self._assert_length(elements, spec, tile=tile)
+        if tile is not None:
             self.screen.tap(tile)
         else:
             self.phone.tap(int(width * 0.17), int(height * 0.34))
         time.sleep(2.5)
 
-    def _assert_length(self, elements: list[Element], spec: PostSpec) -> None:
+    def _assert_length(self, elements: list[Element], spec: PostSpec, tile: Element | None = None) -> None:
         if not spec.length_s:
             return
-        for element in elements:
+        if tile is not None:
+            tx1, ty1, tx2, ty2 = tile.bounds
+            matched = [
+                e for e in elements
+                if re.fullmatch(r"(\d{1,2}):(\d{2})", e.text.strip())
+                and e.bounds[0] >= tx1 and e.bounds[2] <= tx2
+                and ty1 - 60 <= (e.bounds[1] + e.bounds[3]) // 2 <= ty2 + 20
+            ]
+            if not matched:
+                return
+            candidates = matched
+        else:
+            candidates = elements
+        for element in candidates:
             m = re.fullmatch(r"(\d{1,2}):(\d{2})", element.text.strip())
             if m:
                 shown = int(m.group(1)) * 60 + int(m.group(2))
@@ -520,6 +613,8 @@ class YouTubePoster:
         """
         height = self.screen.size()[1]
         for element in self.screen.elements():
+            if _is_systemui(element):
+                continue
             label = (element.desc or element.text or "").strip()
             if label == "You" and element.bounds[1] > height * 0.85:
                 self.screen.tap(element)

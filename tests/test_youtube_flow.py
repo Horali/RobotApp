@@ -360,3 +360,94 @@ def test_a_code_to_another_destination_asks_for_a_human() -> None:
     with pytest.raises(NeedsHuman) as caught:
         login.login("timmy.clips@gmail.com", "acct-1", user=11)
     assert "code" in str(caught.value).lower()
+
+
+def test_check_channel_ignores_systemui_home_button(journal) -> None:
+    """Android's SystemUI Home button must never be tapped instead of YouTube's bottom Home tab."""
+    tapped_bounds: list[tuple[int, int, int, int]] = []
+    sys_home = Element(text="", desc="Home", resource_id="com.android.systemui:id/home",
+                       bounds=(420, 2340, 660, 2460), clickable=True)
+    yt_home = Element(text="Home", desc="Home", resource_id="", bounds=(0, 2196, 270, 2340), clickable=True)
+
+    class SysUiYouScreen(ScriptedScreen):
+        def elements(self) -> list[Element]:
+            if self.state == "you":
+                base = [e for e in SCREENS["you"] if (e.desc or e.text).strip() != "Home"]
+                return [sys_home, *base, yt_home]
+            return super().elements()
+
+        def tap(self, element: Element) -> None:
+            tapped_bounds.append(element.bounds)
+            super().tap(element)
+
+    screen = SysUiYouScreen("home")
+    poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-sysui")
+    channel = poster._check_channel()
+
+    assert channel == "Horali Cript"
+    assert sys_home.bounds not in tapped_bounds
+    assert yt_home.bounds in tapped_bounds
+    assert screen.state == "home"
+
+
+def test_pick_video_skips_drafts_create_video_and_scrim_and_checks_tile_duration(journal) -> None:
+    """The measured 2026-11-23 picker includes clickable Drafts/Create video cards and touch_outside scrim."""
+    real_picker = [
+        Element(resource_id="com.google.android.youtube:id/touch_outside", bounds=(0, 108, 1080, 2340), clickable=True),
+        Element(desc="Close", resource_id="com.google.android.youtube:id/gallery_header_close_button",
+                bounds=(18, 156, 162, 228), clickable=True),
+        Element(desc="Drafts", bounds=(24, 270, 528, 462), clickable=True),
+        Element(desc="Create video", bounds=(552, 270, 1056, 462), clickable=True),
+        Element(text="Create from gallery", bounds=(0, 504, 779, 629)),
+        Element(text="Recents", desc="Recents", bounds=(779, 504, 1080, 629), clickable=True),
+        Element(bounds=(3, 641, 357, 1270), clickable=True),
+        Element(desc="robot-20261123-060018.mp4",
+                resource_id="com.google.android.youtube:id/thumb_image_view",
+                bounds=(3, 641, 357, 1270), clickable=False),
+        Element(text="0:48", resource_id="com.google.android.youtube:id/duration_text_view",
+                bounds=(231, 1186, 339, 1252)),
+        Element(bounds=(363, 641, 717, 1270), clickable=True),
+        Element(desc="2026-11-21-180344356.mp4",
+                resource_id="com.google.android.youtube:id/thumb_image_view",
+                bounds=(363, 641, 717, 1270), clickable=False),
+        Element(text="0:56", resource_id="com.google.android.youtube:id/duration_text_view",
+                bounds=(591, 1186, 699, 1252)),
+    ]
+
+    class RealPickerScreen(ScriptedScreen):
+        def __init__(self) -> None:
+            super().__init__("picker")
+            self.tapped_tiles: list[Element] = []
+
+        def elements(self) -> list[Element]:
+            return real_picker
+
+        def tap(self, element: Element) -> None:
+            self.tapped_tiles.append(element)
+
+    screen = RealPickerScreen()
+    poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-picker")
+    poster._pick_video(spec())
+
+    assert len(screen.tapped_tiles) == 1
+    assert screen.tapped_tiles[0].bounds == (3, 641, 357, 1270)
+    assert screen.tapped_tiles[0].desc == "robot-20261123-060018.mp4"
+
+
+def test_open_create_does_not_tap_create_video_when_gallery_is_already_open(journal) -> None:
+    """When Create opens directly into the gallery grid, never tap 'Create video' (Dream Screen)."""
+
+    class DirectPickerScreen(ScriptedScreen):
+        def tap(self, element: Element) -> None:
+            label = (element.text or element.desc).strip()
+            self.taps.append(label)
+            if self.state == "home" and label == "Create":
+                self.state = "picker"
+
+    screen = DirectPickerScreen("home")
+    poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-direct-picker")
+    poster._open_create()
+
+    assert screen.state == "picker"
+    assert "Create video" not in screen.taps
+
