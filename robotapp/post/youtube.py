@@ -483,13 +483,12 @@ class YouTubePoster:
             time.sleep(1.0)
 
     def _write_title(self, spec: PostSpec) -> None:
-        """The Short's title = ClipMaker's title, when the build exposes a title field at all.
+        """The Short's title = ClipMaker's title, supporting both modal and inline caption fields.
 
-        Measured 2026-11-21 twice: tapping the row ("Add details") changes the screen but no text field
-        appears, and then clear_text / set_text / hide_keyboard each block for about a minute - the step
-        cost 142 s of a 190 s run for nothing. So the title is typed only when the screen actually shows
-        a title field ("Add a title", "Describe your Short"); otherwise it is skipped in a second and
-        YouTube's default title stands (it can be edited on the video afterwards).
+        On builds with an explicit title prompt ("Add a title", "Describe your Short"), tap the
+        title row and type into the sheet. On builds with only the inline "Caption your Short" box
+        (measured 2026-11-23 on YouTube 21.46), tap "Caption your Short" directly so we never tap the
+        non-clickable "Add details" header by mistake.
         """
         wanted = (spec.title or spec.full_caption).strip()[:100]
         elements = self.screen.elements()
@@ -498,8 +497,12 @@ class YouTubePoster:
             for e in elements
             for needle in ("add a title", "describe your short", "title that describes")
         )
-        row = find(elements, "Add details") or find(elements, "Title") or find(elements, "Caption your Short")
-        if not hint or row is None:
+        if hint:
+            row = find(elements, "Add details") or find(elements, "Title") or find(elements, "Caption your Short")
+        else:
+            caption = find_exact(elements, "Caption your Short") or find(elements, "Caption your Short")
+            row = caption if caption is not None and caption.clickable else None
+        if row is None:
             log.warning("youtube: this build exposes no title field; YouTube's default title is used")
             return
         self.screen.tap(row)
@@ -528,7 +531,7 @@ class YouTubePoster:
     def _set_visibility(self) -> None:
         """Public, and 'No, it's not made for kids' (the same as the laptop uploader)."""
         elements = self.screen.elements()
-        public = find_exact(elements, "Public") or find(self.screen.elements(), "Public")
+        public = find_exact(elements, "Public") or find(elements, "Public")
         if public is None:
             # Some builds show the choices only after tapping the visibility row.
             row = find(elements, "Visibility") or find(elements, "Private")
@@ -546,6 +549,57 @@ class YouTubePoster:
         if kids is not None:
             self.screen.tap(kids)
             time.sleep(1.0)
+            return
+        # YouTube 21.46 hides Visibility/Audience row labels inside Litho containers: "Select audience"
+        # is the full-width clickable row immediately above "Show more", and on its sub-screen
+        # "No, it's not made for kids" sits directly below the "Learn more" row (measured 2026-11-23).
+        width, height = self.screen.size()
+        show_more = find(elements, "Show more")
+        if show_more is None:
+            return
+        above_show_more = [
+            e for e in elements
+            if not _is_systemui(e)
+            and e.clickable
+            and e.bounds[0] <= 20 and e.bounds[2] >= width - 20
+            and e.bounds[1] >= height * 0.4
+            and e.bounds[3] <= show_more.bounds[1] + 20
+        ]
+        if not above_show_more:
+            return
+        aud_row = max(above_show_more, key=lambda e: e.bounds[1])
+        self.screen.tap(aud_row)
+        time.sleep(2.0)
+        aud_els = self.screen.elements()
+        choice = (
+            find(aud_els, "No, it's not made for kids")
+            or find(aud_els, "not made for kids")
+            or find(aud_els, "No, it's Not made for kids")
+        )
+        if choice is None:
+            learn = find(aud_els, "Learn more")
+            if learn is not None:
+                below = [
+                    e for e in aud_els
+                    if not _is_systemui(e)
+                    and e.clickable
+                    and e.bounds[0] <= 20 and e.bounds[2] >= width - 20
+                    and e.bounds[1] > learn.bounds[3]
+                ]
+                choice = min(below, key=lambda e: e.bounds[1]) if below else None
+        if choice is not None:
+            self.screen.tap(choice)
+            time.sleep(1.0)
+        if not DETAILS.matches(self.screen.elements()):
+            back = next(
+                (e for e in self.screen.elements() if not _is_systemui(e) and e.says("Back")),
+                None,
+            )
+            if back is not None:
+                self.screen.tap(back)
+            else:
+                self.screen.press_back()
+            wait_for(self.screen, DETAILS, 10)
 
     def _wait_uploaded(self) -> None:
         """Upload + processing, up to 5 minutes; done when YouTube says it took the file, or the feed is back.

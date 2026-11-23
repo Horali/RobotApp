@@ -451,3 +451,58 @@ def test_open_create_does_not_tap_create_video_when_gallery_is_already_open(jour
     assert screen.state == "picker"
     assert "Create video" not in screen.taps
 
+
+def test_inline_caption_and_litho_audience_picker_are_completed(journal) -> None:
+    """Measured 2026-11-23: details shows clickable 'Caption your Short' and unlabelled Litho audience rows."""
+    tapped: list[tuple[int, int, int, int]] = []
+    vis_row = Element(bounds=(0, 1170, 1080, 1338), clickable=True)
+    aud_row = Element(bounds=(0, 1338, 1080, 1506), clickable=True)
+    yes_kids = Element(bounds=(0, 714, 1080, 930), clickable=True)
+    learn_more = Element(desc="Learn more", bounds=(672, 762, 792, 882), clickable=True)
+    no_kids = Element(bounds=(0, 930, 1080, 1098), clickable=True)
+    age_row = Element(bounds=(0, 1149, 1080, 1317), clickable=True)
+    back_btn = Element(desc="Back", bounds=(24, 108, 168, 252), clickable=True)
+
+    class LithoDetailsScreen(ScriptedScreen):
+        def elements(self) -> list[Element]:
+            if self.state == "details":
+                return [
+                    Element(desc="Navigate up", bounds=(0, 108, 168, 252), clickable=True),
+                    Element(text="Add details", bounds=(216, 139, 520, 220), clickable=False),
+                    Element(text="Caption your Short", bounds=(329, 315, 1044, 429), clickable=True),
+                    vis_row,
+                    aud_row,
+                    Element(desc="Show more", bounds=(36, 1518, 1044, 1662), clickable=True),
+                    Element(text="Upload Short", bounds=(558, 2184, 1044, 2304), clickable=True),
+                ]
+            if self.state == "audience":
+                return [back_btn, yes_kids, learn_more, no_kids, age_row]
+            return super().elements()
+
+        def tap(self, element: Element) -> None:
+            tapped.append(element.bounds)
+            if self.state == "details" and element.bounds == aud_row.bounds:
+                self.state = "audience"
+                self.taps.append("Select audience")
+                return
+            if self.state == "audience" and element.bounds == back_btn.bounds:
+                self.state = "details"
+                self.taps.append("Back")
+                return
+            super().tap(element)
+
+    screen = LithoDetailsScreen("details")
+    poster = YouTubePoster(LinkedPhone(screen), screen, journal, "job-litho")
+    s = spec()
+    poster._write_title(s)
+    poster._set_visibility()
+
+    assert s.title in screen.typed
+    assert "Caption your Short" in screen.taps
+    assert aud_row.bounds in tapped
+    assert vis_row.bounds not in tapped
+    assert no_kids.bounds in tapped
+    assert yes_kids.bounds not in tapped
+    assert screen.state == "details"
+
+
